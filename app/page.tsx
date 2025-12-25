@@ -8,24 +8,24 @@ import {
 
 // --- Interfaces ---
 interface Category { id: number; name: string; }
-interface Product { 
-  id: number; 
-  name: string; 
-  price: number; 
-  image_url: string; 
-  category: string; 
-  description: string; 
-  is_available: boolean; 
-  has_noodle?: boolean; 
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  image_url: string;
+  category: string;
+  description: string;
+  is_available: boolean;
+  has_noodle?: boolean;
   noodle_options?: string[]; // เพิ่มฟิลด์นี้เพื่อให้รองรับข้อมูลจาก Database
 }
 
-interface CartItem extends Product { 
-  quantity: number; 
-  note?: string; 
-  selectedNoodle?: string; 
-  isSpecial?: boolean; 
-  totalItemPrice: number; 
+interface CartItem extends Product {
+  quantity: number;
+  note?: string;
+  selectedNoodle?: string;
+  isSpecial?: boolean;
+  totalItemPrice: number;
 }
 interface Order { id: number; total_price: number; status: string; table_no: string; created_at: string; items: any[]; }
 
@@ -34,7 +34,7 @@ export default function RestaurantApp() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [selectedCat, setSelectedCat] = useState<string | null>(null); 
+  const [selectedCat, setSelectedCat] = useState<string | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [view, setView] = useState<'menu' | 'cart' | 'orders' | 'bill'>('menu');
   const [orderSuccess, setOrderSuccess] = useState(false);
@@ -42,8 +42,8 @@ export default function RestaurantApp() {
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const [tempQty, setTempQty] = useState(1);
   const [tempNote, setTempNote] = useState('');
-  
-  const [selectedNoodle, setSelectedNoodle] = useState<string>(''); 
+
+  const [selectedNoodle, setSelectedNoodle] = useState<string>('');
   const [isSpecial, setIsSpecial] = useState<boolean>(false);
 
   // --- Effects ---
@@ -68,7 +68,7 @@ export default function RestaurantApp() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'menus' },
         () => {
-          fetchData(); 
+          fetchData();
         }
       )
       .subscribe();
@@ -82,7 +82,7 @@ export default function RestaurantApp() {
   const fetchData = async () => {
     const { data: catData } = await supabase.from('categories').select('*');
     if (catData) setCategories(catData);
-    
+
     const { data: prodData } = await supabase
       .from('menus')
       .select('*')
@@ -116,29 +116,29 @@ export default function RestaurantApp() {
     const priceWithOption = activeProduct.price + (isSpecial ? 10 : 0);
 
     setCart(prev => {
-      const existing = prev.find(item => 
-        item.id === activeProduct.id && 
-        item.selectedNoodle === selectedNoodle && 
+      const existing = prev.find(item =>
+        item.id === activeProduct.id &&
+        item.selectedNoodle === selectedNoodle &&
         item.isSpecial === isSpecial &&
         item.note === tempNote
       );
 
       if (existing) {
         return prev.map(item => (
-          item.id === activeProduct.id && 
-          item.selectedNoodle === selectedNoodle && 
+          item.id === activeProduct.id &&
+          item.selectedNoodle === selectedNoodle &&
           item.isSpecial === isSpecial &&
           item.note === tempNote
         ) ? { ...item, quantity: item.quantity + tempQty } : item);
       }
 
-      return [...prev, { 
-        ...activeProduct, 
-        quantity: tempQty, 
+      return [...prev, {
+        ...activeProduct,
+        quantity: tempQty,
         note: tempNote,
         selectedNoodle: selectedNoodle,
         isSpecial: isSpecial,
-        totalItemPrice: priceWithOption 
+        totalItemPrice: priceWithOption
       }];
     });
     setActiveProduct(null);
@@ -146,13 +146,13 @@ export default function RestaurantApp() {
 
   const updateQuantity = (id: number, delta: number, note?: string, noodle?: string, special?: boolean) => {
     setCart(prev => prev.map(item =>
-      (item.id === id && item.note === note && item.selectedNoodle === noodle && item.isSpecial === special) 
-      ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
+      (item.id === id && item.note === note && item.selectedNoodle === noodle && item.isSpecial === special)
+        ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
     ));
   };
 
   const removeFromCart = (id: number, note?: string, noodle?: string, special?: boolean) => {
-    setCart(prev => prev.filter(item => 
+    setCart(prev => prev.filter(item =>
       !(item.id === id && item.note === note && item.selectedNoodle === noodle && item.isSpecial === special)
     ));
   };
@@ -194,7 +194,7 @@ export default function RestaurantApp() {
   const totalCartPrice = cart.reduce((sum, item) => sum + (item.totalItemPrice * item.quantity), 0);
   const totalBillAmount = orders.reduce((sum, order) => sum + order.total_price, 0);
   const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  
+
   const filteredProducts = selectedCat ? products.filter(p => p.category === selectedCat) : products;
   const preparingCount = orders.filter(o => o.status === 'รอ' || o.status === 'กำลังทำ').length;
   const servedCount = orders.filter(o => o.status === 'เสร็จแล้ว').length;
@@ -286,9 +286,8 @@ export default function RestaurantApp() {
                         {item.selectedNoodle && `${item.selectedNoodle} • `}จำนวน x{item.quantity}
                       </p>
                     </div>
-                    <div className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-colors ${
-                      order.status === 'เสร็จแล้ว' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-orange-50 border-orange-100 text-orange-400'
-                    }`}>
+                    <div className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-colors ${order.status === 'เสร็จแล้ว' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-orange-50 border-orange-100 text-orange-400'
+                      }`}>
                       {order.status === 'เสร็จแล้ว' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
                       <span className="text-[10px] font-bold">{order.status === 'รอ' ? 'รอยืนยัน' : order.status}</span>
                     </div>
@@ -403,10 +402,10 @@ export default function RestaurantApp() {
           <div className="bg-white w-full max-w-md mx-auto rounded-t-[40px] p-6 animate-in slide-in-from-bottom duration-300 max-h-[90vh] overflow-y-auto">
             <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
             <div className="rounded-[32px] overflow-hidden mb-4 h-48 shadow-sm"><img src={activeProduct.image_url} className="w-full h-full object-cover" /></div>
-            
+
             <div className="flex justify-between items-start mb-2">
-                <h2 className="text-2xl font-bold">{activeProduct.name}</h2>
-                <p className="text-2xl font-black text-[#F97316]">฿{activeProduct.price}</p>
+              <h2 className="text-2xl font-bold">{activeProduct.name}</h2>
+              <p className="text-2xl font-black text-[#F97316]">฿{activeProduct.price}</p>
             </div>
             <p className="text-sm text-gray-400 mb-6">{activeProduct.description}</p>
 
@@ -420,9 +419,8 @@ export default function RestaurantApp() {
                     <button
                       key={noodle}
                       onClick={() => setSelectedNoodle(noodle)}
-                      className={`py-3 px-4 rounded-2xl text-xs font-bold border-2 transition-all ${
-                        selectedNoodle === noodle ? 'border-[#F97316] bg-orange-50 text-[#F97316]' : 'border-gray-100 text-gray-400'
-                      }`}
+                      className={`py-3 px-4 rounded-2xl text-xs font-bold border-2 transition-all ${selectedNoodle === noodle ? 'border-[#F97316] bg-orange-50 text-[#F97316]' : 'border-gray-100 text-gray-400'
+                        }`}
                     >
                       {noodle}
                     </button>
@@ -432,21 +430,20 @@ export default function RestaurantApp() {
             )}
 
             <div className="mb-6">
-                <p className="text-sm font-bold mb-3">ตัวเลือกเพิ่มเติม</p>
-                <button 
-                    onClick={() => setIsSpecial(!isSpecial)}
-                    className={`w-full flex justify-between items-center p-4 rounded-2xl border-2 transition-all ${
-                        isSpecial ? 'border-[#F97316] bg-orange-50' : 'border-gray-100'
-                    }`}
-                >
-                    <div className="flex items-center gap-3">
-                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center ${isSpecial ? 'border-[#F97316] bg-[#F97316]' : 'border-gray-300'}`}>
-                            {isSpecial && <CheckCircle2 size={14} className="text-white" />}
-                        </div>
-                        <span className={`font-bold text-sm ${isSpecial ? 'text-[#F97316]' : 'text-gray-600'}`}>สั่งพิเศษ (ปริมาณเพิ่มขึ้น)</span>
-                    </div>
-                    <span className="font-bold text-sm text-gray-400">+ ฿10</span>
-                </button>
+              <p className="text-sm font-bold mb-3">ตัวเลือกเพิ่มเติม</p>
+              <button
+                onClick={() => setIsSpecial(!isSpecial)}
+                className={`w-full flex justify-between items-center p-4 rounded-2xl border-2 transition-all ${isSpecial ? 'border-[#F97316] bg-orange-50' : 'border-gray-100'
+                  }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center ${isSpecial ? 'border-[#F97316] bg-[#F97316]' : 'border-gray-300'}`}>
+                    {isSpecial && <CheckCircle2 size={14} className="text-white" />}
+                  </div>
+                  <span className={`font-bold text-sm ${isSpecial ? 'text-[#F97316]' : 'text-gray-600'}`}>สั่งพิเศษ (ปริมาณเพิ่มขึ้น)</span>
+                </div>
+                <span className="font-bold text-sm text-gray-400">+ ฿10</span>
+              </button>
             </div>
 
             <div className="bg-[#FFFBF5] border border-orange-100 rounded-2xl p-4 mb-6 flex items-start gap-3">
@@ -468,14 +465,13 @@ export default function RestaurantApp() {
 
             <div className="flex gap-4">
               <button onClick={() => setActiveProduct(null)} className="flex-1 py-4 font-bold text-gray-400">ยกเลิก</button>
-              <button 
-                onClick={confirmAddToCart} 
+              <button
+                onClick={confirmAddToCart}
                 disabled={activeProduct.has_noodle && !selectedNoodle}
-                className={`flex-[2] py-4 rounded-2xl font-black text-lg shadow-lg transition-all ${
-                    (activeProduct.has_noodle && !selectedNoodle) 
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                className={`flex-[2] py-4 rounded-2xl font-black text-lg shadow-lg transition-all ${(activeProduct.has_noodle && !selectedNoodle)
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     : 'bg-[#F97316] text-white'
-                }`}
+                  }`}
               >
                 {activeProduct.has_noodle && !selectedNoodle ? 'กรุณาเลือกเส้น' : 'เพิ่มลงตะกร้า'}
               </button>
@@ -488,7 +484,11 @@ export default function RestaurantApp() {
         <button onClick={() => setView('cart')} className={`flex flex-col items-center ${view === 'cart' ? 'text-[#F97316]' : 'text-[#8B5E3C]/40'} relative`}>
           <div className={`p-2 rounded-xl ${view === 'cart' ? 'bg-orange-50' : ''}`}><ShoppingCart size={24} /></div>
           <span className="text-[10px] font-bold mt-1">ตะกร้า</span>
-          {totalItemsCount > 0 && <span className="absolute top-0 right-0 bg-red-500 text-white text-[8px] w-5 h-5 rounded-full flex items-center justify-center font-bold border-2 border-white">{totalItemsCount}</span>}
+          {totalItemsCount > 0 && (
+            <span className="absolute top-0 right-0 bg-red-500 text-white text-[8px] w-5 h-5 rounded-full flex items-center justify-center font-bold border-2 border-white">
+              {totalItemsCount}
+            </span>
+          )}
         </button>
         <button onClick={() => setView('orders')} className={`flex flex-col items-center ${view === 'orders' ? 'text-[#F97316]' : 'text-[#8B5E3C]/40'}`}>
           <div className={`p-2 rounded-xl ${view === 'orders' ? 'bg-orange-50' : ''}`}><ClipboardList size={24} /></div>
