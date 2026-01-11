@@ -1,12 +1,12 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { 
-  Utensils, ClipboardList, TrendingUp, Plus, 
+import {
+  Utensils, ClipboardList, TrendingUp, Plus,
   Search, Edit3, Trash2, X, Image as ImageIcon,
   Check, UploadCloud, Clock, ChefHat, CheckCircle2,
   Loader2, Calendar, DollarSign, ListFilter, ListChecks,
-  PlusCircle, Timer, BellRing, Wallet 
+  PlusCircle, Timer, BellRing, Wallet
 } from 'lucide-react';
 
 export default function AdminApp() {
@@ -36,54 +36,185 @@ export default function AdminApp() {
     name: '', price: '', category: 'เมนูข้าว', image_url: '', imageFile: null as File | null, noodle_options: [] as string[]
   });
 
+  // Notification sound function
+  const playNotificationSound = () => {
+    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGWi78OScTgwOUKzn77RgGwU7k9r0y3kpBSh+zPLaizsKElyx6OyrWBUIQ6Hn8r1nHwUqgc3y2Ik3CBlouvDknE4MDlCs5++0YBsFO5Pa9Mt5KQUofszy2os7ChJcsevsq1gVCEOh5/K9Zx8FKoHN8tiJNwgZaLrw5JxODA5QrOfvtGAbBTuT2vTLeSkFKH7M8tqLOwoSXLHo7KtYFQhDoe');
+    audio.play().catch(e => console.log('Audio play failed:', e));
+  };
+
   useEffect(() => {
     fetchMenus();
     fetchOrders();
-    
+
+    // BroadcastChannel for Realtime Demo (Listen for "Call Bill" from Customer)
+    const channel = new BroadcastChannel('restaurant_demo_channel');
+    channel.onmessage = (event) => {
+      const { type, id, status, table_no } = event.data;
+      if (type === 'ORDER_UPDATE') {
+        setOrders(prev => {
+          // Check if order exists
+          const exists = prev.find(o => o.id === id);
+          if (exists) {
+            return prev.map(o => o.id === id ? { ...o, status } : o);
+          } else {
+            // New order incoming - play notification sound
+            playNotificationSound();
+            return [{ id, table_no, status, total_price: 150, created_at: new Date().toISOString(), items: [] }, ...prev];
+          }
+        });
+      }
+    };
+
     const menuSub = supabase.channel('menu_change').on('postgres_changes', { event: '*', schema: 'public', table: 'menus' }, () => fetchMenus()).subscribe();
     const orderSub = supabase.channel('order_change').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchOrders()).subscribe();
 
-    return () => { 
-      supabase.removeChannel(menuSub); 
+    return () => {
+      supabase.removeChannel(menuSub);
       supabase.removeChannel(orderSub);
+      channel.close();
     };
   }, []);
 
+  /* --- MOCK DATA FOR DEMO --- */
+  const MOCK_MENUS = [
+    { id: 1, name: "ข้าวผัดปู", price: 80, category: "เมนูข้าว", image_url: "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80", is_available: true },
+    { id: 2, name: "ก๋วยเตี๋ยวต้มยำ", price: 120, category: "เมนูเส้น", image_url: "https://images.unsplash.com/photo-1555126634-323283e090fa?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80", is_available: true, noodle_options: ['เส้นเล็ก', 'เส้นใหญ่'] },
+    { id: 3, name: "ผัดกะเพรา", price: 60, category: "เมนูข้าว", image_url: "https://images.unsplash.com/photo-1599305090598-fe179d501227?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80", is_available: true },
+    { id: 4, name: "ต้มยำกุ้ง", price: 150, category: "กับข้าว", image_url: "https://images.unsplash.com/photo-1548943487-a2e4e43b485c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80", is_available: true },
+  ];
+
+  const MOCK_ORDERS = [
+    { id: 101, table_no: '5', status: 'เสร็จสิ้น', created_at: new Date().toISOString(), total_price: 150, items: [{ name: "ต้มยำกุ้ง", quantity: 1, price: 150, selectedNoodle: "" }] },
+    { id: 102, table_no: '2', status: 'เสร็จสิ้น', created_at: new Date(Date.now() - 1000 * 60 * 10).toISOString(), total_price: 80, items: [{ name: "ข้าวผัดปู", quantity: 1, price: 80 }] },
+    { id: 103, table_no: '3', status: 'เสร็จสิ้น', created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(), total_price: 120, items: [{ name: "ก๋วยเตี๋ยวต้มยำ", quantity: 1, price: 120 }] },
+    { id: 104, table_no: '7', status: 'เสร็จสิ้น', created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(), total_price: 200, items: [{ name: "ผัดกะเพรา", quantity: 2, price: 60 }, { name: "ข้าวผัดปู", quantity: 1, price: 80 }] }
+  ];
+
+  /* --- Fetching Logic --- */
+  /* --- Fetching Logic (Hybrid: Real DB -> LocalStorage -> Mock) --- */
   const fetchMenus = async () => {
-    const { data } = await supabase.from('menus').select('*').order('id', { ascending: false });
-    if (data) setMenus(data);
+    try {
+      // 1. Try Fetching from Real Database
+      const { data, error } = await supabase.from('menus').select('*').order('id', { ascending: false });
+
+      if (!error) {
+        // ถ้า query สำเร็จ (แม้จะไม่มีข้อมูล) ให้ใช้ข้อมูลจาก DB
+        setMenus(data || []);
+        if (typeof window !== 'undefined') localStorage.setItem('demo_menus', JSON.stringify(data || []));
+      } else {
+        // กรณี Error จริงๆ (เช่น No connection) ถึงจะใช้ Mock/Cache
+        console.warn("Supabase fetch error, using Cached/Mock Menus:", error);
+        if (typeof window !== 'undefined') {
+          const savedMenus = localStorage.getItem('demo_menus');
+          if (savedMenus) setMenus(JSON.parse(savedMenus));
+          else setMenus(MOCK_MENUS);
+        } else {
+          setMenus(MOCK_MENUS);
+        }
+      }
+    } catch (e) {
+      console.warn("Fetch Exception", e);
+      setMenus(MOCK_MENUS);
+    }
   };
 
   const fetchOrders = async () => {
-    const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-    if (data) setOrders(data);
+    try {
+      // 1. Fetch from Real Database
+      const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+
+      let baseOrders = data || [];
+
+      if (typeof window !== 'undefined') {
+        const savedOrdersStr = localStorage.getItem('demo_admin_orders');
+        let savedOrders = savedOrdersStr ? JSON.parse(savedOrdersStr) : [];
+
+        // ผสานข้อมูล: ใช้ข้อมูลจริงจาก Database เป็นหลัก
+        // และเอาข้อมูลที่ระบบจำไว้ (เฉพาะที่เป็นของจริง) มารวม
+        const combined = [...baseOrders];
+        savedOrders.forEach((s: any) => {
+          // กรองเอาเฉพาะข้อมูลจริง (ID > 1000 หรือ ID ที่ไม่มีใน Mock เดิม)
+          // หรือเอาเฉพาะที่ไม่อยู่ใน MOCK_ORDERS ดั้งเดิม (ID 101-104)
+          const isMock = s.id >= 101 && s.id <= 104;
+          if (!isMock && !combined.some(c => c.id === s.id)) {
+            combined.push(s);
+          }
+        });
+
+        setOrders(combined);
+        localStorage.setItem('demo_admin_orders', JSON.stringify(combined));
+      } else {
+        setOrders(baseOrders);
+      }
+
+      if (error) console.warn("Supabase Fetch Error", error);
+    } catch (e) {
+      console.warn("Fetch Exception", e);
+      setOrders(MOCK_ORDERS);
+    }
   };
 
+  /* --- CRUD Operations (Effective Local State) --- */
   const updateOrderStatus = async (id: number, newStatus: string) => {
-    const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', id);
-    if (error) alert("อัปเดตไม่สำเร็จ: " + error.message);
-    else fetchOrders();
+    // Optimistic Update
+    const updatedOrders = orders.map(o => o.id === id ? { ...o, status: newStatus } : o);
+    setOrders(updatedOrders);
+
+    // Save to Persistence
+    if (typeof window !== 'undefined') localStorage.setItem('demo_admin_orders', JSON.stringify(updatedOrders));
+
+    // Broadcast to other tabs (Kitchen / Customer) for Demo Realtime Experience
+    const channel = new BroadcastChannel('restaurant_demo_channel');
+    channel.postMessage({ type: 'ORDER_UPDATE', id, status: newStatus, table_no: orders.find(o => o.id === id)?.table_no });
+
+    await supabase.from('orders').update({ status: newStatus }).eq('id', id);
   };
 
   const deleteOrder = async (id: number) => {
-    if(confirm("ต้องการลบข้อมูลออเดอร์นี้ออกจากระบบใช่หรือไม่?")) {
-      const { error } = await supabase.from('orders').delete().eq('id', id);
-      if (error) alert("ไม่สามารถลบได้: " + error.message);
-      else fetchOrders();
+    if (confirm("ต้องการลบข้อมูลออเดอร์นี้ออกจากระบบใช่หรือไม่?")) {
+      // Optimistic Delete
+      const updatedOrders = orders.filter(o => o.id !== id);
+      setOrders(updatedOrders);
+
+      // Save to Persistence
+      if (typeof window !== 'undefined') localStorage.setItem('demo_admin_orders', JSON.stringify(updatedOrders));
+
+      await supabase.from('orders').delete().eq('id', id);
     }
   };
 
   const deleteMenu = async (id: number) => {
-    if(confirm("ยืนยันการลบเมนูนี้?")) {
-      const { error } = await supabase.from('menus').delete().eq('id', id);
-      if (error) alert("ลบไม่สำเร็จ: " + error.message);
-      else fetchMenus();
+    if (confirm("ยืนยันการลบเมนูนี้?")) {
+      // Optimistic Delete
+      const updatedMenus = menus.filter(m => m.id !== id);
+      setMenus(updatedMenus);
+
+      if (typeof window !== 'undefined') localStorage.setItem('demo_menus', JSON.stringify(updatedMenus));
+
+      // Broadcast Delete to Customer
+      const channel = new BroadcastChannel('restaurant_demo_channel');
+      channel.postMessage({ type: 'MENU_UPDATE', action: 'DELETE', id });
+
+      await supabase.from('menus').delete().eq('id', id);
     }
   };
 
   const toggleMenuAvailability = async (id: number, currentStatus: boolean) => {
+    // Optimistic Update
+    const updatedMenus = menus.map(m => m.id === id ? { ...m, is_available: !currentStatus } : m);
+    setMenus(updatedMenus);
+
+    if (typeof window !== 'undefined') localStorage.setItem('demo_menus', JSON.stringify(updatedMenus));
+
+    const newItem = updatedMenus.find(m => m.id === id);
+
+    // Broadcast Update to Customer
+    const channel = new BroadcastChannel('restaurant_demo_channel');
+    if (newItem) {
+      channel.postMessage({ type: 'MENU_UPDATE', action: 'UPSERT', item: newItem });
+    }
+
     await supabase.from('menus').update({ is_available: !currentStatus }).eq('id', id);
-    fetchMenus();
   };
 
   const billingOrdersCount = orders.filter(o => o.status === 'เรียกเช็คบิล').length;
@@ -102,6 +233,12 @@ export default function AdminApp() {
     if (file) setFormData({ ...formData, imageFile: file, image_url: URL.createObjectURL(file) });
   };
 
+  /* --- Helper Functions --- */
+  const getTimeAgo = (date: string) => {
+    const minutes = Math.floor((new Date().getTime() - new Date(date).getTime()) / 60000);
+    return minutes > 0 ? `${minutes} นาทีที่แล้ว` : 'เมื่อสักครู่';
+  };
+
   const handleAddCustomNoodle = () => {
     const trimmed = customNoodle.trim();
     if (trimmed !== '' && !noodleTypes.includes(trimmed)) {
@@ -112,7 +249,7 @@ export default function AdminApp() {
   };
 
   const handleDeleteNoodleType = (noodleToDelete: string) => {
-    if(confirm(`ต้องการลบตัวเลือก "${noodleToDelete}" ?`)) {
+    if (confirm(`ต้องการลบตัวเลือก "${noodleToDelete}" ?`)) {
       setNoodleTypes(prev => prev.filter(n => n !== noodleToDelete));
       setFormData(prev => ({ ...prev, noodle_options: prev.noodle_options.filter(n => n !== noodleToDelete) }));
     }
@@ -135,6 +272,33 @@ export default function AdminApp() {
     }
     setIsSaving(true);
     let finalImageUrl = formData.image_url;
+
+    // LOCAL UPDATE LOGIC (DEMO MODE)
+    const newMenuData = {
+      id: editingId || Date.now(), // Generate fake ID for new items
+      name: formData.name,
+      price: Number(formData.price),
+      category: formData.category,
+      image_url: finalImageUrl || "https://via.placeholder.com/150",
+      noodle_options: formData.noodle_options,
+      has_noodle: (formData.noodle_options && formData.noodle_options.length > 0),
+      is_available: true
+    };
+
+    let updatedMenus;
+    if (editingId) {
+      updatedMenus = menus.map(m => m.id === editingId ? { ...m, ...newMenuData } : m);
+    } else {
+      updatedMenus = [newMenuData, ...menus];
+    }
+
+    setMenus(updatedMenus);
+    if (typeof window !== 'undefined') localStorage.setItem('demo_menus', JSON.stringify(updatedMenus));
+
+    // Broadcast change to Customer Page
+    const channel = new BroadcastChannel('restaurant_demo_channel');
+    channel.postMessage({ type: 'MENU_UPDATE', action: 'UPSERT', item: newMenuData });
+
     try {
       if (formData.imageFile) {
         const fileName = `${Date.now()}-${formData.imageFile.name}`;
@@ -142,29 +306,128 @@ export default function AdminApp() {
         const { data: publicUrlData } = supabase.storage.from('menu-images').getPublicUrl(fileName);
         finalImageUrl = publicUrlData.publicUrl;
       }
-      const menuData = {
+
+      const menuPayload = {
         name: formData.name, price: Number(formData.price), category: formData.category,
         image_url: finalImageUrl, noodle_options: formData.noodle_options,
-        has_noodle: (formData.noodle_options && formData.noodle_options.length > 0) 
+        has_noodle: (formData.noodle_options && formData.noodle_options.length > 0)
       };
-      if (editingId) await supabase.from('menus').update(menuData).eq('id', editingId);
-      else await supabase.from('menus').insert([{ ...menuData, is_available: true }]);
-      
+
+      if (editingId) await supabase.from('menus').update(menuPayload).eq('id', editingId);
+      else await supabase.from('menus').insert([{ ...menuPayload, is_available: true }]);
+    } catch (err: any) {
+      console.warn("Supabase save failed (Demo Mode) - Ignoring error", err);
+    } finally {
+      setIsSaving(false);
       setIsModalOpen(false);
       setEditingId(null);
       setFormData({ name: '', price: '', category: 'เมนูข้าว', image_url: '', imageFile: null, noodle_options: [] });
-      fetchMenus();
-    } catch (err: any) { alert(err.message); } finally { setIsSaving(false); }
+    }
   };
 
-  const getTimeAgo = (date: string) => {
-    const minutes = Math.floor((new Date().getTime() - new Date(date).getTime()) / 60000);
-    return minutes > 0 ? `${minutes} นาทีที่แล้ว` : 'เมื่อสักครู่';
+  /* --- Login State --- */
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loginEmail, setLoginEmail] = useState(''); // เปลี่ยนจาก Username เป็น Email ตามมาตรฐาน Supabase
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+
+  // ตรวจสอบ Session เมื่อเปิดหน้าเว็บ
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) setIsLoggedIn(true);
+    };
+    checkUser();
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAuthenticating(true);
+    setLoginError(false);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
+
+      if (error) {
+        setLoginError(true);
+      } else {
+        setIsLoggedIn(true);
+      }
+    } catch (err) {
+      setLoginError(true);
+    } finally {
+      setIsAuthenticating(false);
+    }
   };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setIsLoggedIn(false);
+  };
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-[#FFF5F8] flex items-center justify-center p-6 bg-[radial-gradient(circle_at_20%_20%,#FFD1DC_0%,transparent_25%),radial-gradient(circle_at_80%_80%,#FFB7C5_0%,transparent_25%)]">
+        <div className="bg-white/80 backdrop-blur-2xl w-full max-w-sm p-10 rounded-[3rem] shadow-[0_32px_64px_-16px_rgba(255,182,197,0.3)] border border-pink-100/50 text-center relative overflow-hidden">
+          {/* ตกแต่งพื้นหลังเล็กน้อย */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-pink-50 rounded-full -mr-16 -mt-16 blur-3xl opacity-50"></div>
+
+          <div className="relative mb-10">
+            <div className="w-24 h-24 bg-gradient-to-br from-[#FFD1DC] to-[#FF9AA2] rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-pink-100/50 transform rotate-6 hover:rotate-0 transition-transform duration-500">
+              <span className="text-6xl drop-shadow-lg">🦐</span>
+            </div>
+            <h1 className="text-3xl font-black text-[#FF85A1] tracking-tight">Pa Kung Shop</h1>
+            <p className="text-[10px] text-pink-300 font-black uppercase tracking-[0.2em] mt-2">Admin Dashboard Login</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4 relative">
+            <div className="group">
+              <input
+                type="email"
+                placeholder="อีเมลแอดมิน"
+                className={`w-full bg-white p-5 rounded-[1.8rem] font-bold outline-none border-2 transition-all shadow-sm ${loginError ? 'border-red-400 bg-red-50 text-red-500' : 'border-pink-50 focus:border-[#FFB7B2] group-hover:border-pink-100'}`}
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="group">
+              <input
+                type="password"
+                placeholder="รหัสผ่าน"
+                className={`w-full bg-white p-5 rounded-[1.8rem] font-bold outline-none border-2 transition-all shadow-sm ${loginError ? 'border-red-400 bg-red-50 text-red-500' : 'border-pink-50 focus:border-[#FFB7B2] group-hover:border-pink-100'}`}
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                required
+              />
+              {loginError && (
+                <p className="text-red-400 text-[10px] font-bold mt-3 flex items-center justify-center gap-1 animate-pulse">
+                  <X size={12} /> อีเมลหรือรหัสผ่านไม่ถูกต้อง
+                </p>
+              )}
+            </div>
+            <button
+              type="submit"
+              disabled={isAuthenticating}
+              className="w-full bg-gradient-to-r from-[#FF9AA2] to-[#FFB7B2] text-white py-5 rounded-[1.8rem] font-black text-lg shadow-lg shadow-pink-100/60 hover:scale-[1.02] active:scale-95 transition-all mt-4 disabled:opacity-50"
+            >
+              {isAuthenticating ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ ✨'}
+            </button>
+          </form>
+
+          <p className="text-[9px] text-pink-300 mt-10 font-bold uppercase tracking-widest">© 2026 Admin Portal v2.0</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] text-[#1E293B] font-sans pb-32 relative">
-      
+
       {/* แจ้งเตือนเช็คบิล */}
       {billingOrdersCount > 0 && (
         <div onClick={() => setActiveTab('billing')} className="fixed top-4 left-4 right-4 z-[110] bg-red-600 text-white p-4 rounded-3xl shadow-2xl flex items-center justify-between animate-bounce cursor-pointer border-2 border-white">
@@ -181,9 +444,17 @@ export default function AdminApp() {
       {/* TAB: MENU */}
       {activeTab === 'menu' && (
         <main className="p-6 max-w-md mx-auto animate-in fade-in duration-500">
-          <header className="mb-6">
-            <h1 className="text-3xl font-black tracking-tight">จัดการเมนู</h1>
-            <p className="text-gray-400 font-bold text-sm">{menus.length} รายการ</p>
+          <header className="mb-6 flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-black tracking-tight">จัดการเมนู</h1>
+              <p className="text-gray-400 font-bold text-sm">{menus.length} รายการ</p>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="bg-white text-red-400 px-4 py-2 rounded-2xl border border-red-50 hover:bg-red-50 transition-colors font-black text-[10px] shadow-sm uppercase tracking-wider"
+            >
+              ออกจากระบบ
+            </button>
           </header>
 
           <div className="flex gap-4 mb-8">
@@ -223,7 +494,7 @@ export default function AdminApp() {
                   </div>
                   <div className="flex items-center justify-between mt-2">
                     <div className="flex items-center gap-2">
-                      <button 
+                      <button
                         onClick={() => toggleMenuAvailability(item.id, item.is_available)}
                         className={`w-10 h-5 rounded-full relative transition-all ${item.is_available ? 'bg-[#34D399]' : 'bg-gray-300'}`}
                       >
@@ -240,7 +511,6 @@ export default function AdminApp() {
               </div>
             ))}
           </div>
-          <button onClick={() => { setEditingId(null); setFormData({name:'', price:'', category:'เมนูข้าว', image_url:'', imageFile:null, noodle_options: []}); setIsModalOpen(true); }} className="fixed bottom-32 right-6 bg-[#1E293B] text-white px-6 py-4 rounded-full font-black flex items-center gap-2 shadow-2xl z-20"><Plus size={20} strokeWidth={4} />เพิ่มเมนู</button>
         </main>
       )}
 
@@ -259,11 +529,11 @@ export default function AdminApp() {
 
           <div className="space-y-6">
             {orders.filter(o => {
-                if (orderSubTab === 'กำลังดำเนินการ') return ['รอ', 'กำลังเตรียม', 'กำลังทำ', 'เรียกเช็คบิล'].includes(o.status);
-                if (orderSubTab === 'เสร็จแล้ว') return ['เสร็จแล้ว', 'เสร็จสิ้น'].includes(o.status);
-                if (orderSubTab === 'ยกเลิก') return o.status === 'ออร์เดอร์ยกเลิก' || o.status === 'ยกเลิก';
-                return true;
-              }).map((order) => (
+              if (orderSubTab === 'กำลังดำเนินการ') return ['รอ', 'กำลังเตรียม', 'กำลังทำ', 'เรียกเช็คบิล'].includes(o.status);
+              if (orderSubTab === 'เสร็จแล้ว') return ['เสร็จแล้ว', 'เสร็จสิ้น'].includes(o.status);
+              if (orderSubTab === 'ยกเลิก') return o.status === 'ออร์เดอร์ยกเลิก' || o.status === 'ยกเลิก';
+              return true;
+            }).map((order) => (
               <div key={order.id} className={`bg-white p-6 rounded-[2.5rem] shadow-sm border-2 transition-all ${order.status === 'เรียกเช็คบิล' ? 'border-red-500 ring-4 ring-red-50' : 'border-gray-50'}`}>
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-4">
@@ -291,7 +561,21 @@ export default function AdminApp() {
                   ) : orderSubTab === 'กำลังดำเนินการ' ? (
                     <>
                       <button onClick={() => updateOrderStatus(order.id, 'ยกเลิก')} className="flex-1 bg-gray-50 text-gray-400 py-3.5 rounded-3xl font-black text-sm">ยกเลิก</button>
-                      <button onClick={() => updateOrderStatus(order.id, order.status === 'รอ' ? 'กำลังทำ' : 'เสร็จแล้ว')} className={`flex-[1.5] text-white py-3.5 rounded-3xl font-black text-sm ${order.status === 'รอ' ? 'bg-blue-600' : 'bg-[#10B981]'}`}>{order.status === 'รอ' ? 'รับออเดอร์' : 'เสร็จแล้ว'}</button>
+                      {order.status === 'รอ' ? (
+                        <button
+                          onClick={() => {
+                            // แอดมินกดรับออเดอร์ → เปลี่ยนสถานะเป็น "กำลังเตรียม" เพื่อให้หน้าครัวเห็น
+                            updateOrderStatus(order.id, 'กำลังเตรียม');
+                          }}
+                          className="flex-[2] bg-blue-600 text-white py-3.5 rounded-3xl font-black text-sm"
+                        >
+                          รับออเดอร์
+                        </button>
+                      ) : (
+                        <div className="flex-[2] bg-green-50 text-green-600 py-3.5 rounded-3xl font-black text-sm flex items-center justify-center gap-2">
+                          <CheckCircle2 size={18} /> ส่งไปครัวแล้ว
+                        </div>
+                      )}
                     </>
                   ) : null}
                 </div>
@@ -310,55 +594,55 @@ export default function AdminApp() {
               <p className="text-red-500 font-bold text-sm">รอดำเนินการ {billingOrdersCount} โต๊ะ</p>
             </div>
             <div className="bg-red-50 p-3 rounded-2xl text-red-500">
-                <Wallet size={24} strokeWidth={3} />
+              <Wallet size={24} strokeWidth={3} />
             </div>
           </header>
 
           <div className="space-y-6">
             {orders.filter(o => o.status === 'เรียกเช็คบิล').length === 0 ? (
-                <div className="text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-gray-100">
-                    <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <CheckCircle2 size={40} className="text-gray-200" />
-                    </div>
-                    <p className="text-gray-400 font-black">ไม่มีรายการเรียกเช็คบิล</p>
+              <div className="text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-gray-100">
+                <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 size={40} className="text-gray-200" />
                 </div>
+                <p className="text-gray-400 font-black">ไม่มีรายการเรียกเช็คบิล</p>
+              </div>
             ) : (
-                orders.filter(o => o.status === 'เรียกเช็คบิล').map((order) => (
-                    <div key={order.id} className="bg-white p-6 rounded-[2.5rem] shadow-xl border-2 border-red-500 ring-8 ring-red-50 animate-in zoom-in">
-                        <div className="flex justify-between items-center mb-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-2xl bg-red-500 flex items-center justify-center text-2xl font-black text-white shadow-lg shadow-red-200">{order.table_no}</div>
-                                <div>
-                                    <h3 className="font-black text-xl">โต๊ะ {order.table_no}</h3>
-                                    <p className="text-xs text-red-400 font-bold uppercase tracking-widest">กำลังรอชำระเงิน</p>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-[10px] text-gray-400 font-bold">{getTimeAgo(order.created_at)}</p>
-                            </div>
-                        </div>
-
-                        <div className="bg-gray-50 rounded-3xl p-5 mb-6 space-y-3">
-                            {order.items?.map((item: any, idx: number) => (
-                                <div key={idx} className="flex justify-between font-bold text-sm">
-                                    <span className="text-[#1E293B]">{item.quantity}x {item.name}</span>
-                                    <span className="font-black">฿{item.price * item.quantity}</span>
-                                </div>
-                            ))}
-                            <div className="border-t border-dashed border-gray-300 pt-3 flex justify-between items-center">
-                                <span className="text-gray-400 font-black uppercase text-xs">ยอดรวมทั้งสิ้น</span>
-                                <span className="text-2xl font-black text-red-600">฿{order.total_price}</span>
-                            </div>
-                        </div>
-
-                        <button 
-                            onClick={() => updateOrderStatus(order.id, 'เสร็จสิ้น')} 
-                            className="w-full bg-[#10B981] hover:bg-[#059669] text-white py-5 rounded-[2rem] font-black text-lg flex items-center justify-center gap-3 shadow-lg shadow-green-100 transition-all active:scale-95"
-                        >
-                            <CheckCircle2 size={24} /> ยืนยันรับเงินแล้ว
-                        </button>
+              orders.filter(o => o.status === 'เรียกเช็คบิล').map((order) => (
+                <div key={order.id} className="bg-white p-6 rounded-[2.5rem] shadow-xl border-2 border-red-500 ring-8 ring-red-50 animate-in zoom-in">
+                  <div className="flex justify-between items-center mb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-red-500 flex items-center justify-center text-2xl font-black text-white shadow-lg shadow-red-200">{order.table_no}</div>
+                      <div>
+                        <h3 className="font-black text-xl">โต๊ะ {order.table_no}</h3>
+                        <p className="text-xs text-red-400 font-bold uppercase tracking-widest">กำลังรอชำระเงิน</p>
+                      </div>
                     </div>
-                ))
+                    <div className="text-right">
+                      <p className="text-[10px] text-gray-400 font-bold">{getTimeAgo(order.created_at)}</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-3xl p-5 mb-6 space-y-3">
+                    {order.items?.map((item: any, idx: number) => (
+                      <div key={idx} className="flex justify-between font-bold text-sm">
+                        <span className="text-[#1E293B]">{item.quantity}x {item.name}</span>
+                        <span className="font-black">฿{item.price * item.quantity}</span>
+                      </div>
+                    ))}
+                    <div className="border-t border-dashed border-gray-300 pt-3 flex justify-between items-center">
+                      <span className="text-gray-400 font-black uppercase text-xs">ยอดรวมทั้งสิ้น</span>
+                      <span className="text-2xl font-black text-red-600">฿{order.total_price}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => updateOrderStatus(order.id, 'เสร็จสิ้น')}
+                    className="w-full bg-[#10B981] hover:bg-[#059669] text-white py-5 rounded-[2rem] font-black text-lg flex items-center justify-center gap-3 shadow-lg shadow-green-100 transition-all active:scale-95"
+                  >
+                    <CheckCircle2 size={24} /> ยืนยันรับเงินแล้ว
+                  </button>
+                </div>
+              ))
             )}
           </div>
         </main>
@@ -373,17 +657,26 @@ export default function AdminApp() {
           </header>
 
           <div className="flex bg-gray-100 p-1 rounded-2xl mb-6">
-            <button 
+            <button
               onClick={() => setSalesViewMode('daily')}
               className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all ${salesViewMode === 'daily' ? 'bg-white text-[#1E293B] shadow-sm' : 'text-gray-400'}`}
             >
               รายวัน
             </button>
-            <button 
-              onClick={() => setSalesViewMode('monthly')}
-              className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all ${salesViewMode === 'monthly' ? 'bg-white text-[#1E293B] shadow-sm' : 'text-gray-400'}`}
+          </div>
+
+          <div className="flex justify-between items-center mb-4 px-2">
+            <h2 className="text-xl font-black text-[#1E293B]">สรุปยอดขาย</h2>
+            <button
+              onClick={() => {
+                if (confirm("ต้องการรีเซ็ตข้อมูลทดสอบกลับไปค่าเริ่มต้นใช่หรือไม่? (ข้อมูลที่บันทึกในเครื่องจะถูกล้าง)")) {
+                  localStorage.removeItem('demo_admin_orders');
+                  fetchOrders();
+                }
+              }}
+              className="text-[10px] font-bold text-pink-400 border border-pink-100 px-3 py-1 rounded-full bg-pink-50/30 hover:bg-pink-50 transition-colors"
             >
-              รายเดือน
+              รีเซ็ตข้อมูลทดสอบ
             </button>
           </div>
 
@@ -394,15 +687,15 @@ export default function AdminApp() {
             <div className="flex-1">
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">เลือกช่วงเวลา</p>
               {salesViewMode === 'daily' ? (
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   className="w-full font-bold text-[#1E293B] outline-none bg-transparent"
                   value={selectedSalesDate}
                   onChange={(e) => setSelectedSalesDate(e.target.value)}
                 />
               ) : (
-                <input 
-                  type="month" 
+                <input
+                  type="month"
                   className="w-full font-bold text-[#1E293B] outline-none bg-transparent"
                   value={selectedSalesMonth}
                   onChange={(e) => setSelectedSalesMonth(e.target.value)}
@@ -414,20 +707,24 @@ export default function AdminApp() {
           {(() => {
             // ✅ การกรองข้อมูลแบบใหม่ที่แม่นยำกว่าเดิม
             const filteredSales = orders.filter(o => {
-              // นับเฉพาะออเดอร์ที่ 'เสร็จสิ้น' (ชำระเงินแล้ว) หรือ 'เสร็จแล้ว'
-              if (o.status !== 'เสร็จสิ้น' && o.status !== 'เสร็จแล้ว') return false;
-              
+              // ในหน้า "ยอดขาย" ให้นับเฉพาะที่ 'เสร็จสิ้น' (ชำระเงินแล้ว) เท่านั้น
+              if (o.status !== 'เสร็จสิ้น') return false;
+
               const d = new Date(o.created_at);
+              // ใช้ ToDateString เพื่อความแน่นอนในการเปรียบเทียบวัน
               const year = d.getFullYear();
               const month = String(d.getMonth() + 1).padStart(2, '0');
               const day = String(d.getDate()).padStart(2, '0');
-              
+
               const orderDateStr = `${year}-${month}-${day}`;
               const orderMonthStr = `${year}-${month}`;
-              
-              return salesViewMode === 'daily' 
-                ? orderDateStr === selectedSalesDate
-                : orderMonthStr === selectedSalesMonth;
+
+              // เปรียบเทียบกับวันที่ข้างนอก
+              if (salesViewMode === 'daily') {
+                return orderDateStr === selectedSalesDate;
+              } else {
+                return orderMonthStr === selectedSalesMonth;
+              }
             });
 
             const totalRevenue = filteredSales.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
@@ -509,21 +806,21 @@ export default function AdminApp() {
           <div className="bg-white w-full max-w-md h-full p-8 overflow-y-auto">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-2xl font-black">{editingId ? 'แก้ไขเมนู' : 'เพิ่มเมนูใหม่'}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="p-2 bg-gray-100 rounded-full"><X size={24}/></button>
+              <button onClick={() => setIsModalOpen(false)} className="p-2 bg-gray-100 rounded-full"><X size={24} /></button>
             </div>
             <form onSubmit={handleSaveMenu} className="space-y-6 pb-20">
               <div onClick={() => !isSaving && fileInputRef.current?.click()} className="w-full h-40 bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden cursor-pointer">
                 {formData.image_url ? <img src={formData.image_url} className="w-full h-full object-cover" /> : <ImageIcon size={30} className="text-gray-300" />}
                 <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
               </div>
-              <input type="text" placeholder="ชื่อเมนู" required className="w-full bg-gray-50 rounded-[1.5rem] p-5 font-bold outline-none" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
-              <input type="number" placeholder="ราคา" required className="w-full bg-gray-50 rounded-[1.5rem] p-5 font-bold outline-none" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} />
-              
+              <input type="text" placeholder="ชื่อเมนู" required className="w-full bg-gray-50 rounded-[1.5rem] p-5 font-bold outline-none" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+              <input type="number" placeholder="ราคา" required className="w-full bg-gray-50 rounded-[1.5rem] p-5 font-bold outline-none" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} />
+
               <div>
                 <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">หมวดหมู่</label>
                 <div className="flex gap-2 overflow-x-auto no-scrollbar">
                   {['เมนูข้าว', 'เมนูเส้น', 'กับข้าว'].map(cat => (
-                    <button key={cat} type="button" onClick={() => setFormData({...formData, category: cat})} className={`px-5 py-2.5 rounded-full text-[10px] font-black whitespace-nowrap ${formData.category === cat ? 'bg-[#1E293B] text-white' : 'bg-gray-100 text-gray-400'}`}>{cat}</button>
+                    <button key={cat} type="button" onClick={() => setFormData({ ...formData, category: cat })} className={`px-5 py-2.5 rounded-full text-[10px] font-black whitespace-nowrap ${formData.category === cat ? 'bg-[#1E293B] text-white' : 'bg-gray-100 text-gray-400'}`}>{cat}</button>
                   ))}
                 </div>
               </div>
@@ -555,8 +852,24 @@ export default function AdminApp() {
       {/* NAV BAR (คงเดิม) */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t p-5 flex justify-around items-center z-50">
         <button onClick={() => setActiveTab('menu')} className={`flex flex-col items-center gap-1 ${activeTab === 'menu' ? 'text-[#1E293B]' : 'text-gray-300'}`}><Utensils size={24} /><span className="text-[9px] font-black">เมนู</span></button>
-        <button onClick={() => setActiveTab('order')} className={`flex flex-col items-center gap-1 relative ${activeTab === 'order' ? 'text-[#1E293B]' : 'text-gray-300'}`}><ClipboardList size={24} /><span className="text-[9px] font-black">ออเดอร์</span></button>
-        <button onClick={() => setActiveTab('billing')} className={`flex flex-col items-center gap-1 relative ${activeTab === 'billing' ? 'text-red-500' : 'text-gray-300'}`}><Wallet size={24} /><span className="text-[9px] font-black">เช็คบิล</span></button>
+        <button onClick={() => setActiveTab('order')} className={`flex flex-col items-center gap-1 relative ${activeTab === 'order' ? 'text-[#1E293B]' : 'text-gray-300'}`}>
+          <ClipboardList size={24} />
+          <span className="text-[9px] font-black">ออเดอร์</span>
+          {orders.filter(o => o.status === 'รอ').length > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-black">
+              {orders.filter(o => o.status === 'รอ').length}
+            </span>
+          )}
+        </button>
+        <button onClick={() => setActiveTab('billing')} className={`flex flex-col items-center gap-1 relative ${activeTab === 'billing' ? 'text-red-500' : 'text-gray-300'}`}>
+          <Wallet size={24} />
+          <span className="text-[9px] font-black">เช็คบิล</span>
+          {billingOrdersCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-black animate-pulse">
+              {billingOrdersCount}
+            </span>
+          )}
+        </button>
         <button onClick={() => setActiveTab('sales')} className={`flex flex-col items-center gap-1 ${activeTab === 'sales' ? 'text-orange-500' : 'text-gray-300'}`}><TrendingUp size={24} /><span className="text-[9px] font-black">ยอดขาย</span></button>
       </nav>
     </div>

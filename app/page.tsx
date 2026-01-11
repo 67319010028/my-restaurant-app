@@ -6,6 +6,9 @@ import {
   Trash2, ArrowLeft, Utensils, CheckCircle2, FileText, Clock, ChevronRight
 } from 'lucide-react';
 
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+
 // --- Interfaces ---
 interface Category { id: number; name: string; }
 interface Product {
@@ -17,7 +20,7 @@ interface Product {
   description: string;
   is_available: boolean;
   has_noodle?: boolean;
-  noodle_options?: string[]; // เพิ่มฟิลด์นี้เพื่อให้รองรับข้อมูลจาก Database
+  noodle_options?: string[];
 }
 
 interface CartItem extends Product {
@@ -29,7 +32,11 @@ interface CartItem extends Product {
 }
 interface Order { id: number; total_price: number; status: string; table_no: string; created_at: string; items: any[]; }
 
-export default function RestaurantApp() {
+// แยกคอมโพเนนต์หลักออกมาเพื่อใช้ Suspense หุ้ม
+function RestaurantAppContent() {
+  const searchParams = useSearchParams();
+  const tableNo = searchParams.get('table') || '5';
+
   // --- States ---
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -51,11 +58,48 @@ export default function RestaurantApp() {
     fetchData();
     fetchOrders();
 
+    // BroadcastChannel for Demo Realtime Sync
+    const channel = new BroadcastChannel('restaurant_demo_channel');
+    channel.onmessage = (event) => {
+      const { type, status, table_no, action, item, id } = event.data;
+
+      // Order Status Update (e.g. Payment Completed) - Check matching table
+      if (type === 'ORDER_UPDATE' && table_no === tableNo) {
+        if (status === 'เสร็จสิ้น') {
+          // Payment Completed -> Reset App
+          alert("ขอบคุณที่ใช้บริการ! การชำระเงินเสร็จสิ้น");
+
+          // Persist "Paid" state so refreshing doesn't bring back mock orders
+          if (typeof window !== 'undefined') localStorage.setItem(`demo_session_clear_${tableNo}`, 'true');
+
+          setOrders([]);
+          setCart([]);
+          setView('menu');
+        } else {
+          fetchOrders();
+        }
+      }
+
+      // Menu Update (Add/Edit/Delete/Toggle)
+      if (type === 'MENU_UPDATE') {
+        if (action === 'UPSERT' && item) {
+          setProducts(prev => {
+            const exists = prev.find(p => p.id === item.id);
+            if (exists) return prev.map(p => p.id === item.id ? { ...p, ...item } : p);
+            return [item as Product, ...prev];
+          });
+        }
+        if (action === 'DELETE' && id) {
+          setProducts(prev => prev.filter(p => p.id !== id));
+        }
+      }
+    };
+
     const orderChannel = supabase
       .channel('customer_realtime_status')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders', filter: 'table_no=eq.5' },
+        { event: '*', schema: 'public', table: 'orders', filter: `table_no=eq.${tableNo}` },
         (payload) => {
           fetchOrders();
         }
@@ -76,29 +120,160 @@ export default function RestaurantApp() {
     return () => {
       supabase.removeChannel(orderChannel);
       supabase.removeChannel(menuChannel);
+      channel.close();
     };
-  }, []);
+  }, [tableNo]);
 
+  /* --- Mock Data --- */
+  const MOCK_CATEGORIES: Category[] = [
+    { id: 1, name: "เมนูข้าว" },
+    { id: 2, name: "เมนูเส้น" },
+    { id: 3, name: "กับข้าว" }
+  ];
+
+  const MOCK_PRODUCTS: Product[] = [
+    {
+      id: 1,
+      name: "ข้าวผัดปู",
+      price: 80,
+      image_url: "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
+      category: "เมนูข้าว",
+      description: "ข้าวผัดปูหอมกลิ่นกระทะ ใส่เนื้อปูสดใหม่",
+      is_available: true
+    },
+    {
+      id: 2,
+      name: "ก๋วยเตี๋ยวต้มยำกุ้งน้ำข้น",
+      price: 120,
+      image_url: "https://images.unsplash.com/photo-1555126634-323283e090fa?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
+      category: "เมนูเส้น",
+      description: "ก๋วยเตี๋ยวต้มยำกุ้งรสจัดจ้าน เครื่องแน่น",
+      is_available: true,
+      has_noodle: true,
+      noodle_options: ["เส้นเล็ก", "เส้นใหญ่", "บะหมี่", "หมี่ขาว", "วุ้นเส้น"]
+    },
+    {
+      id: 3,
+      name: "ผัดกะเพราหมูสับ",
+      price: 60,
+      image_url: "https://images.unsplash.com/photo-1599305090598-fe179d501227?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
+      category: "เมนูข้าว",
+      description: "ผัดกะเพราหมูสับรสเด็ด เผ็ดกำลังดี",
+      is_available: true
+    },
+    {
+      id: 4,
+      name: "ต้มยำกุ้ง",
+      price: 150,
+      image_url: "https://images.unsplash.com/photo-1548943487-a2e4e43b485c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
+      category: "กับข้าว",
+      description: "ต้มยำกุ้งน้ำข้น รสชาติไทยแท้",
+      is_available: true
+    },
+    {
+      id: 5,
+      name: "ข้าวขาหมู",
+      price: 70,
+      image_url: "https://images.unsplash.com/photo-1432139555190-58524dae6a55?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
+      category: "เมนูข้าว",
+      description: "ข้าวขาหมูเนื้อนุ่ม น้ำราดกลมกล่อม",
+      is_available: false
+    }
+  ];
+
+  /* --- Fetching Logic (Demo Mode) --- */
   const fetchData = async () => {
-    const { data: catData } = await supabase.from('categories').select('*');
-    if (catData) setCategories(catData);
+    try {
+      // Fetch Categories
+      const { data: catData, error: catError } = await supabase.from('categories').select('*');
+      if (catError) {
+        setCategories(MOCK_CATEGORIES);
+      } else if (catData) {
+        setCategories(catData);
+      } else {
+        setCategories(MOCK_CATEGORIES);
+      }
 
-    const { data: prodData } = await supabase
-      .from('menus')
-      .select('*')
-      .order('id', { ascending: false });
+      // Fetch Products (Check Persistence First)
+      if (typeof window !== 'undefined') {
+        const savedMenus = localStorage.getItem('demo_menus');
+        if (savedMenus) {
+          setProducts(JSON.parse(savedMenus));
+          return;
+        }
+      }
 
-    if (prodData) setProducts(prodData as Product[]);
+      const { data: prodData, error: prodError } = await supabase
+        .from('menus')
+        .select('*')
+        .order('id', { ascending: false });
+
+      if (!prodError) {
+        // ถ้า query สำเร็จ ให้ใช้ข้อมูลจาก DB เสมอ (แม้จะไม่มีเมนู)
+        setProducts(prodData as Product[] || []);
+      } else {
+        // กรณี Error จริงๆ
+        setProducts(MOCK_PRODUCTS);
+      }
+    } catch (e) {
+      console.warn('Unexpected error in fetchData, using fallback:', e);
+      setCategories(MOCK_CATEGORIES);
+      setProducts(MOCK_PRODUCTS);
+    }
   };
 
+  /* --- Mock Data for Customer Orders (Demo Mode) --- */
+  /* --- Mock Data for Customer Orders (Demo Mode) --- */
+  const MOCK_CUSTOMER_ORDERS: Order[] = [
+    {
+      id: 101,
+      total_price: 150,
+      status: 'เสร็จแล้ว',
+      table_no: tableNo,
+      created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+      items: [
+        { name: "ต้มยำกุ้ง", quantity: 1, price: 150, totalItemPrice: 150, image_url: "https://images.unsplash.com/photo-1548943487-a2e4e43b485c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" }
+      ]
+    }
+  ];
+
   const fetchOrders = async () => {
-    const { data } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('table_no', '5')
-      .neq('status', 'เสร็จสิ้น')
-      .order('created_at', { ascending: false });
-    if (data) setOrders(data);
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('table_no', tableNo)
+        .neq('status', 'เสร็จสิ้น')
+        .order('created_at', { ascending: false });
+
+      if (!error) {
+        // ถ้า query สำเร็จ ให้ใช้ข้อมูลจริงเสมอ 
+        const activeOrders = data || [];
+        setOrders(activeOrders);
+
+        // ตรวจสอบว่าโต๊ะนี้กำลังเช็คบิลอยู่หรือไม่
+        const isCurrentlyBilling = activeOrders.some(o => o.status === 'เรียกเช็คบิล');
+        if (isCurrentlyBilling) {
+          // ถ้ากำลังเช็คบิล ให้เซฟไว้ในเครื่องด้วยเพื่อช่วยคุม UI
+          if (typeof window !== 'undefined') localStorage.setItem(`table_billing_${tableNo}`, 'true');
+        } else {
+          if (typeof window !== 'undefined') localStorage.removeItem(`table_billing_${tableNo}`);
+        }
+      } else {
+        // กรณี Error
+        if (typeof window !== 'undefined' && localStorage.getItem(`demo_session_clear_${tableNo}`) === 'true') {
+          setOrders([]);
+        } else {
+          setOrders(MOCK_CUSTOMER_ORDERS);
+        }
+      }
+    } catch (e) {
+      if (typeof window !== 'undefined' && localStorage.getItem(`demo_session_clear_${tableNo}`) === 'true') {
+        setOrders([]);
+      } else {
+        setOrders(MOCK_CUSTOMER_ORDERS);
+      }
+    }
   };
 
   const openProductDetail = (product: Product) => {
@@ -159,36 +334,70 @@ export default function RestaurantApp() {
 
   const submitOrder = async () => {
     const totalPrice = cart.reduce((sum, item) => sum + (item.totalItemPrice * item.quantity), 0);
-    const { error } = await supabase.from('orders').insert([{
-      items: cart,
+
+    // Demo Mode Logic
+    console.log("Submitting order (Demo Mode)...", cart);
+
+    setOrderSuccess(true);
+
+    // Clear the "Session Cleared" flag because user is starting a NEW fresh order session
+    if (typeof window !== 'undefined') localStorage.removeItem(`demo_session_clear_${tableNo}`);
+
+    // Mock adding order to local state so user feels it works
+    const newOrder: Order = {
+      id: Math.floor(Math.random() * 10000),
       total_price: totalPrice,
       status: 'รอ',
-      table_no: "5"
-    }]);
+      table_no: tableNo,
+      created_at: new Date().toISOString(),
+      items: cart
+    };
 
-    if (!error) {
-      setOrderSuccess(true);
-      setCart([]);
-      fetchOrders();
-      setTimeout(() => {
-        setOrderSuccess(false);
-        setView('orders');
-      }, 2000);
-    } else {
-      alert("เกิดข้อผิดพลาด: " + error.message);
-    }
+    // Optimistic update
+    setOrders(prev => [newOrder, ...prev]);
+
+    // Try real submit
+    try {
+      const { error } = await supabase.from('orders').insert([{
+        items: cart,
+        total_price: totalPrice,
+        status: 'รอ',
+        table_no: tableNo
+      }]);
+      if (error) console.warn("Supabase submit failed (Demo Mode Active)", error);
+    } catch (e) { console.warn("Submit Exception", e); }
+
+    setCart([]);
+
+    setTimeout(() => {
+      setOrderSuccess(false);
+      setView('orders');
+    }, 2000);
   };
-
   const callForBill = async () => {
+    // Optimistic Update for Demo Mode
+    setOrders(prev => prev.map(o => o.table_no === tableNo ? { ...o, status: 'เรียกเช็คบิล' } : o));
+
+    // Broadcast to Admin
+    const channel = new BroadcastChannel('restaurant_demo_channel');
+    // Find the current order ID for Table 5 to send accurate ID (Mock ID or Real ID)
+    const currentOrder = orders.find(o => o.table_no === tableNo && o.status !== 'เสร็จสิ้น');
+    if (currentOrder) {
+      channel.postMessage({ type: 'ORDER_UPDATE', id: currentOrder.id, status: 'เรียกเช็คบิล', table_no: tableNo });
+    } else {
+      // Fallback if no order found but user clicked (e.g. mock)
+      channel.postMessage({ type: 'ORDER_UPDATE', id: 101, status: 'เรียกเช็คบิล', table_no: tableNo });
+    }
+
     const { error } = await supabase
       .from('orders')
       .update({ status: 'เรียกเช็คบิล' })
-      .eq('table_no', '5')
+      .eq('table_no', tableNo)
       .neq('status', 'เสร็จสิ้น');
 
-    if (!error) {
-      alert('แจ้งพนักงานเรียบร้อยค่ะ กำลังเตรียมใบเสร็จให้คุณลูกค้า');
-    }
+    if (error) console.warn("Supabase call bill failed (Demo Mode)", error);
+
+    alert('แจ้งพนักงานเรียบร้อยค่ะ กำลังเตรียมใบเสร็จให้คุณลูกค้า (จำลอง)');
   };
 
   const totalCartPrice = cart.reduce((sum, item) => sum + (item.totalItemPrice * item.quantity), 0);
@@ -207,7 +416,7 @@ export default function RestaurantApp() {
           <button onClick={() => setView('menu')}><ArrowLeft size={24} /></button>
           <div>
             <h1 className="text-xl font-bold">ตะกร้าสินค้า</h1>
-            <p className="text-[10px] opacity-60">โต๊ะ 5 • {cart.length} รายการ</p>
+            <p className="text-[10px] opacity-60">โต๊ะ {tableNo} • {cart.length} รายการ</p>
           </div>
         </header>
         <main className="p-4 space-y-4">
@@ -339,7 +548,7 @@ export default function RestaurantApp() {
                         {item.selectedNoodle && <span className="text-[10px] text-gray-400">{item.selectedNoodle}</span>}
                       </div>
                     </div>
-                    <span className="font-bold">฿{item.totalItemPrice * item.quantity}</span>
+                    <span className="font-bold">฿{(item.totalItemPrice || item.price) * item.quantity}</span>
                   </div>
                 )))
               )}
@@ -364,7 +573,7 @@ export default function RestaurantApp() {
     <div className="max-w-md mx-auto bg-[#FFFBF5] min-h-screen pb-24 font-sans text-[#41281A]">
       <header className="bg-[#41281A] text-white p-6 pt-10 rounded-b-[40px] shadow-lg">
         <div className="flex justify-between items-start mb-6">
-          <div><p className="text-[10px] opacity-70">โต๊ะ 5</p><h1 className="text-2xl font-black">ร้านป้ากุ้ง</h1></div>
+          <div><p className="text-[10px] opacity-70">โต๊ะ {tableNo}</p><h1 className="text-2xl font-black">ร้านป้ากุ้ง</h1></div>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
           <button onClick={() => setSelectedCat(null)} className={`px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap ${!selectedCat ? 'bg-[#F97316]' : 'bg-[#5C3D2E] text-white/40'}`}>ทั้งหมด</button>
@@ -375,8 +584,28 @@ export default function RestaurantApp() {
       </header>
 
       <main className="p-4 space-y-4">
+        {/* Banner: แจ้งเตือนเมื่อกำลังเช็คบิล */}
+        {orders.some(o => o.status === 'เรียกเช็คบิล') && (
+          <div className="bg-red-50 border-2 border-red-100 p-4 rounded-3xl flex items-center gap-3 animate-pulse">
+            <div className="bg-red-500 text-white p-2 rounded-xl">
+              <Clock size={20} />
+            </div>
+            <div>
+              <p className="font-black text-red-600 text-sm">กำลังอยู่ในขั้นตอนเช็คบิล</p>
+              <p className="text-[10px] text-red-400 font-bold uppercase tracking-wider">งดสั่งอาหารเพิ่มชั่วคราว</p>
+            </div>
+          </div>
+        )}
+
         {filteredProducts.map((item) => (
-          <div key={item.id} onClick={() => openProductDetail(item)} className={`bg-white p-3 rounded-2xl shadow-sm flex items-center gap-4 border border-orange-50/50 cursor-pointer relative ${!item.is_available ? 'opacity-60' : ''}`}>
+          <div
+            key={item.id}
+            onClick={() => {
+              if (orders.some(o => o.status === 'เรียกเช็คบิล')) return;
+              openProductDetail(item);
+            }}
+            className={`bg-white p-3 rounded-2xl shadow-sm flex items-center gap-4 border border-orange-50/50 cursor-pointer relative ${(!item.is_available || orders.some(o => o.status === 'เรียกเช็คบิล')) ? 'opacity-60' : ''}`}
+          >
             <div className="w-24 h-24 bg-gray-100 rounded-2xl overflow-hidden shrink-0 relative">
               <img src={item.image_url} className="w-full h-full object-cover" />
               {!item.is_available && (
@@ -415,7 +644,7 @@ export default function RestaurantApp() {
                 <p className="text-sm font-bold mb-3 flex items-center gap-2"><Utensils size={16} className="text-orange-400" /> เลือกเส้น</p>
                 <div className="grid grid-cols-2 gap-2">
                   {/* เปลี่ยนจาก Array คงที่ เป็น activeProduct.noodle_options */}
-                  {activeProduct.noodle_options.map((noodle) => (
+                  {activeProduct.noodle_options.map((noodle: string) => (
                     <button
                       key={noodle}
                       onClick={() => setSelectedNoodle(noodle)}
@@ -469,8 +698,8 @@ export default function RestaurantApp() {
                 onClick={confirmAddToCart}
                 disabled={activeProduct.has_noodle && !selectedNoodle}
                 className={`flex-[2] py-4 rounded-2xl font-black text-lg shadow-lg transition-all ${(activeProduct.has_noodle && !selectedNoodle)
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-[#F97316] text-white'
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-[#F97316] text-white'
                   }`}
               >
                 {activeProduct.has_noodle && !selectedNoodle ? 'กรุณาเลือกเส้น' : 'เพิ่มลงตะกร้า'}
@@ -481,8 +710,8 @@ export default function RestaurantApp() {
       )}
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white p-4 flex justify-around max-w-md mx-auto rounded-t-[32px] shadow-2xl border-t border-gray-50">
-        <button onClick={() => setView('cart')} className={`flex flex-col items-center ${view === 'cart' ? 'text-[#F97316]' : 'text-[#8B5E3C]/40'} relative`}>
-          <div className={`p-2 rounded-xl ${view === 'cart' ? 'bg-orange-50' : ''}`}><ShoppingCart size={24} /></div>
+        <button onClick={() => setView('cart')} className="flex flex-col items-center text-[#8B5E3C]/40 relative">
+          <div className="p-2 rounded-xl"><ShoppingCart size={24} /></div>
           <span className="text-[10px] font-bold mt-1">ตะกร้า</span>
           {totalItemsCount > 0 && (
             <span className="absolute top-0 right-0 bg-red-500 text-white text-[8px] w-5 h-5 rounded-full flex items-center justify-center font-bold border-2 border-white">
@@ -490,15 +719,30 @@ export default function RestaurantApp() {
             </span>
           )}
         </button>
-        <button onClick={() => setView('orders')} className={`flex flex-col items-center ${view === 'orders' ? 'text-[#F97316]' : 'text-[#8B5E3C]/40'}`}>
-          <div className={`p-2 rounded-xl ${view === 'orders' ? 'bg-orange-50' : ''}`}><ClipboardList size={24} /></div>
+        <button onClick={() => setView('orders')} className="flex flex-col items-center text-[#8B5E3C]/40">
+          <div className="p-2 rounded-xl"><ClipboardList size={24} /></div>
           <span className="text-[10px] font-bold mt-1">ที่สั่งแล้ว</span>
         </button>
-        <button onClick={() => setView('bill')} className={`flex flex-col items-center ${view === 'bill' ? 'text-[#F97316]' : 'text-[#8B5E3C]/40'}`}>
-          <div className={`p-2 rounded-xl ${view === 'bill' ? 'bg-orange-50' : ''}`}><Receipt size={24} /></div>
+        <button onClick={() => setView('bill')} className="flex flex-col items-center text-[#8B5E3C]/40">
+          <div className="p-2 rounded-xl"><Receipt size={24} /></div>
           <span className="text-[10px] font-bold mt-1">เช็คบิล</span>
         </button>
       </nav>
     </div>
+  );
+}
+
+export default function RestaurantApp() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#FFFBF5]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F97316] mx-auto mb-4"></div>
+          <p className="text-[#8B5E3C] font-bold">กำลังโหลดร้านกุ้ง...</p>
+        </div>
+      </div>
+    }>
+      <RestaurantAppContent />
+    </Suspense>
   );
 }
