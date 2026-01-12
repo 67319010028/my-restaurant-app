@@ -72,7 +72,24 @@ export default function AdminApp() {
     };
 
     const menuSub = supabase.channel('menu_change').on('postgres_changes', { event: '*', schema: 'public', table: 'menus' }, () => fetchMenus()).subscribe();
-    const orderSub = supabase.channel('order_change').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchOrders()).subscribe();
+
+    // ✅ Improved Realtime Listener for Orders (Cross-Device Support)
+    const orderSub = supabase.channel('order_change').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'orders'
+    }, (payload: any) => {
+      // 1. Play sound on NEW order or BILL request
+      if (payload.eventType === 'INSERT') {
+        playNotificationSound();
+      } else if (payload.eventType === 'UPDATE') {
+        if (payload.new.status === 'เรียกเช็คบิล' && payload.old.status !== 'เรียกเช็คบิล') {
+          playNotificationSound();
+        }
+      }
+      // 2. Refresh orders after any DB change
+      fetchOrders();
+    }).subscribe();
 
     return () => {
       supabase.removeChannel(menuSub);
@@ -161,19 +178,39 @@ export default function AdminApp() {
   };
 
   /* --- CRUD Operations (Effective Local State) --- */
-  const updateOrderStatus = async (id: number, newStatus: string) => {
-    // Optimistic Update
-    const updatedOrders = orders.map(o => o.id === id ? { ...o, status: newStatus } : o);
-    setOrders(updatedOrders);
+  const updateOrderStatus = async (id: number, newStatus: string, tableNo?: string) => {
+    // 1. Prepare updated orders array
+    let updatedOrders;
+    if (newStatus === 'เสร็จสิ้น' && tableNo) {
+      // ✅ If paying, close ALL orders for that table
+      updatedOrders = orders.map(o => o.table_no === tableNo ? { ...o, status: newStatus } : o);
+    } else {
+      updatedOrders = orders.map(o => o.id === id ? { ...o, status: newStatus } : o);
+    }
 
-    // Save to Persistence
+    // 2. Local State & Storage Update
+    setOrders(updatedOrders);
     if (typeof window !== 'undefined') localStorage.setItem('demo_admin_orders', JSON.stringify(updatedOrders));
 
-    // Broadcast to other tabs (Kitchen / Customer) for Demo Realtime Experience
+    // 3. Broadcast to Customer/Kitchen
     const channel = new BroadcastChannel('restaurant_demo_channel');
-    channel.postMessage({ type: 'ORDER_UPDATE', id, status: newStatus, table_no: orders.find(o => o.id === id)?.table_no });
+    channel.postMessage({
+      type: 'ORDER_UPDATE',
+      id,
+      status: newStatus,
+      table_no: tableNo || orders.find(o => o.id === id)?.table_no
+    });
 
-    await supabase.from('orders').update({ status: newStatus }).eq('id', id);
+    // 4. Supabase Update
+    try {
+      if (newStatus === 'เสร็จสิ้น' && tableNo) {
+        await supabase.from('orders').update({ status: newStatus }).eq('table_no', tableNo).neq('status', 'เสร็จสิ้น');
+      } else {
+        await supabase.from('orders').update({ status: newStatus }).eq('id', id);
+      }
+    } catch (e) {
+      console.warn('Supabase update failed (Demo Mode active):', e);
+    }
   };
 
   const deleteOrder = async (id: number) => {
@@ -613,50 +650,65 @@ export default function AdminApp() {
           </header>
 
           <div className="space-y-6">
-            {orders.filter(o => o.status === 'เรียกเช็คบิล').length === 0 ? (
-              <div className="text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-gray-100">
-                <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle2 size={40} className="text-gray-200" />
-                </div>
-                <p className="text-gray-400 font-black">ไม่มีรายการเรียกเช็คบิล</p>
+            {/* --- Aggregated Billing View: Group by Table --- */}
+            {Array.from(new Set(orders.filter(o => o.status === 'เรียกเช็คบิล').map(o => o.table_no))).length === 0 ? (
+              <div className="p-12 text-center text-gray-400 bg-white rounded-3xl border-2 border-dashed border-gray-100 italic">
+                ยังไม่มีโต๊ะเรียกเช็คบิลในขณะนี้
               </div>
             ) : (
-              orders.filter(o => o.status === 'เรียกเช็คบิล').map((order) => (
-                <div key={order.id} className="bg-white p-6 rounded-[2.5rem] shadow-xl border-2 border-red-500 ring-8 ring-red-50 animate-in zoom-in">
-                  <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-red-500 flex items-center justify-center text-2xl font-black text-white shadow-lg shadow-red-200">{order.table_no}</div>
-                      <div>
-                        <h3 className="font-black text-xl">โต๊ะ {order.table_no}</h3>
-                        <p className="text-xs text-red-400 font-bold uppercase tracking-widest">กำลังรอชำระเงิน</p>
+              Array.from(new Set(orders.filter(o => o.status === 'เรียกเช็คบิล').map(o => o.table_no))).map((tableNo) => {
+                const tableOrders = orders.filter(o => o.table_no === tableNo && o.status === 'เรียกเช็คบิล');
+                const totalAmount = tableOrders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
+
+                return (
+                  <div key={tableNo} className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-2">
+                    <div className="bg-[#41281A] p-4 text-white flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="bg-orange-500 p-2 rounded-xl"><Utensils size={18} /></div>
+                        <span className="font-black text-lg">โต๊ะ {tableNo}</span>
+                      </div>
+                      <div className="bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1.5 border border-white/20">
+                        <Clock size={12} className="text-orange-300" /> เรียกเช็คบิลแล้ว
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[10px] text-gray-400 font-bold">{getTimeAgo(order.created_at)}</p>
-                    </div>
-                  </div>
 
-                  <div className="bg-gray-50 rounded-3xl p-5 mb-6 space-y-3">
-                    {order.items?.map((item: any, idx: number) => (
-                      <div key={idx} className="flex justify-between font-bold text-sm">
-                        <span className="text-[#1E293B]">{item.quantity}x {item.name}</span>
-                        <span className="font-black">฿{item.price * item.quantity}</span>
+                    <div className="p-6">
+                      <div className="space-y-4 mb-6">
+                        {tableOrders.map((order, idx) => (
+                          <div key={order.id} className="space-y-2 border-b border-gray-50 pb-4 last:border-0 last:pb-0">
+                            {order.items?.map((item: any, i: number) => (
+                              <div key={i} className="flex justify-between text-sm">
+                                <span className="text-gray-500 font-medium">{item.quantity}x {item.name} {item.isSpecial && '(พิเศษ)'}</span>
+                                <span className="font-bold">฿{(item.totalItemPrice || item.price) * item.quantity}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                    <div className="border-t border-dashed border-gray-300 pt-3 flex justify-between items-center">
-                      <span className="text-gray-400 font-black uppercase text-xs">ยอดรวมทั้งสิ้น</span>
-                      <span className="text-2xl font-black text-red-600">฿{order.total_price}</span>
+
+                      <div className="flex justify-between items-center pt-4 border-t border-gray-100 mb-6">
+                        <span className="text-gray-400 font-medium">รวมยอดชำระทั้งสิ้น</span>
+                        <span className="text-2xl font-black text-[#F97316]">฿{totalAmount}</span>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => updateOrderStatus(tableOrders[0].id, 'กำลังเตรียม')}
+                          className="flex-1 py-3 border-2 border-gray-100 rounded-2xl text-gray-400 font-bold text-sm active:scale-95 transition-transform"
+                        >
+                          ย้อนกลับ
+                        </button>
+                        <button
+                          onClick={() => updateOrderStatus(0, 'เสร็จสิ้น', tableNo as string)}
+                          className="flex-[2] py-3 bg-green-500 text-white rounded-2xl font-black shadow-lg shadow-green-100 active:scale-95 transition-transform flex items-center justify-center gap-2"
+                        >
+                          <CheckCircle2 size={18} /> ยืนยันรับเงิน
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  <button
-                    onClick={() => updateOrderStatus(order.id, 'เสร็จสิ้น')}
-                    className="w-full bg-[#10B981] hover:bg-[#059669] text-white py-5 rounded-[2rem] font-black text-lg flex items-center justify-center gap-3 shadow-lg shadow-green-100 transition-all active:scale-95"
-                  >
-                    <CheckCircle2 size={24} /> ยืนยันรับเงินแล้ว
-                  </button>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </main>

@@ -37,21 +37,32 @@ export default function KitchenPage() {
     // BroadcastChannel for Realtime Sync (Listen for updates from Admin)
     const broadcastChannel = new BroadcastChannel('restaurant_demo_channel');
     broadcastChannel.onmessage = (event) => {
-      const { type, action, id, status, item } = event.data;
+      const { type, action, id, status, item, table_no } = event.data;
 
       if (type === 'ORDER_UPDATE') {
+        if (status === 'เสร็จสิ้น' && table_no) {
+          // ✅ Case: Table-wide billing (Remove all orders for this table)
+          setOrders(prev => {
+            const updated = prev.map(o => o.table_no === table_no ? { ...o, status: 'เสร็จสิ้น' } : o);
+            if (typeof window !== 'undefined') localStorage.setItem('demo_admin_orders', JSON.stringify(updated));
+            return updated;
+          });
+          return;
+        }
+
         setOrders(prev => {
           const exists = prev.find(o => o.id === id);
           if (exists) {
             const updated = prev.map(o => o.id === id ? { ...o, status } : o);
             if (typeof window !== 'undefined') localStorage.setItem('demo_admin_orders', JSON.stringify(updated));
             return updated;
-          } else {
-            // If new order (though usually 'รอ' status first), add it
+          } else if (item) {
+            // If new order
             const newOrders = [item, ...prev];
             if (typeof window !== 'undefined') localStorage.setItem('demo_admin_orders', JSON.stringify(newOrders));
             return newOrders;
           }
+          return prev;
         });
       }
     };

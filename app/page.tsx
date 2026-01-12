@@ -35,7 +35,19 @@ interface Order { id: number; total_price: number; status: string; table_no: str
 // แยกคอมโพเนนต์หลักออกมาเพื่อใช้ Suspense หุ้ม
 function RestaurantAppContent() {
   const searchParams = useSearchParams();
-  const tableNo = searchParams.get('table') || '5';
+  const [tableNo, setTableNo] = useState('5');
+
+  useEffect(() => {
+    const table = searchParams.get('table');
+    if (table) {
+      setTableNo(table);
+    } else if (typeof window !== 'undefined') {
+      // Fallback: Check window.location directly if useSearchParams fails
+      const params = new URLSearchParams(window.location.search);
+      const t = params.get('table') || params.get('t');
+      if (t) setTableNo(t);
+    }
+  }, [searchParams]);
 
   // --- States ---
   const [categories, setCategories] = useState<Category[]>([]);
@@ -395,29 +407,39 @@ function RestaurantAppContent() {
     }, 2000);
   };
   const callForBill = async () => {
-    // Optimistic Update for Demo Mode
+    // 1. Calculate Summary for the total bill
+    const billPrice = orders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
+    const billItems = orders.flatMap(o => o.items || []);
+
+    // 2. Optimistic Update for Demo Mode
     setOrders(prev => prev.map(o => o.table_no === tableNo ? { ...o, status: 'เรียกเช็คบิล' } : o));
 
-    // Broadcast to Admin
+    // 3. Broadcast to Admin (Send FULL data to ensure admin sees it even if refreshed)
     const channel = new BroadcastChannel('restaurant_demo_channel');
-    // Find the current order ID for Table 5 to send accurate ID (Mock ID or Real ID)
-    const currentOrder = orders.find(o => o.table_no === tableNo && o.status !== 'เสร็จสิ้น');
-    if (currentOrder) {
-      channel.postMessage({ type: 'ORDER_UPDATE', id: currentOrder.id, status: 'เรียกเช็คบิล', table_no: tableNo });
-    } else {
-      // Fallback if no order found but user clicked (e.g. mock)
-      channel.postMessage({ type: 'ORDER_UPDATE', id: 101, status: 'เรียกเช็คบิล', table_no: tableNo });
+    const firstOrder = orders.find(o => o.table_no === tableNo && o.status !== 'เสร็จสิ้น');
+
+    channel.postMessage({
+      type: 'ORDER_UPDATE',
+      id: firstOrder?.id || Date.now(),
+      status: 'เรียกเช็คบิล',
+      table_no: tableNo,
+      total_price: billPrice,
+      items: billItems
+    });
+
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: 'เรียกเช็คบิล' })
+        .eq('table_no', tableNo)
+        .neq('status', 'เสร็จสิ้น');
+
+      if (error) console.warn("Supabase call bill failed (Demo Mode)", error);
+    } catch (e) {
+      console.warn("Supabase exception in call bill:", e);
     }
 
-    const { error } = await supabase
-      .from('orders')
-      .update({ status: 'เรียกเช็คบิล' })
-      .eq('table_no', tableNo)
-      .neq('status', 'เสร็จสิ้น');
-
-    if (error) console.warn("Supabase call bill failed (Demo Mode)", error);
-
-    alert('แจ้งพนักงานเรียบร้อยค่ะ กำลังเตรียมใบเสร็จให้คุณลูกค้า (จำลอง)');
+    alert('แจ้งพนักงานเรียบร้อยค่ะ กำลังเตรียมใบเสร็จให้คุณลูกค้า');
   };
 
   const totalCartPrice = cart.reduce((sum, item) => sum + (item.totalItemPrice * item.quantity), 0);
@@ -487,7 +509,7 @@ function RestaurantAppContent() {
       <div className="max-w-md mx-auto bg-[#FFFBF5] min-h-screen pb-40 relative">
         <header className="bg-[#41281A] text-white p-6 pt-10 flex items-center gap-4">
           <button onClick={() => setView('menu')}><ArrowLeft size={24} /></button>
-          <div><h1 className="text-xl font-bold">รายการที่สั่ง</h1><p className="text-[10px] opacity-60">โต๊ะ 5 • {orders.length} ออเดอร์</p></div>
+          <div><h1 className="text-xl font-bold">รายการที่สั่ง</h1><p className="text-[10px] opacity-60">โต๊ะ {tableNo} • {orders.length} ออเดอร์</p></div>
         </header>
         <main className="p-4 space-y-6">
           <div className="grid grid-cols-2 gap-4">
@@ -546,14 +568,14 @@ function RestaurantAppContent() {
       <div className="max-w-md mx-auto bg-[#FFFBF5] min-h-screen pb-10 relative font-sans text-[#41281A]">
         <header className="bg-[#41281A] text-white p-6 pt-10 flex items-center gap-4">
           <button onClick={() => setView('orders')}><ArrowLeft size={24} /></button>
-          <div><h1 className="text-xl font-bold">เช็คบิล</h1><p className="text-[10px] opacity-60">โต๊ะ 5 • ร้านป้ากุ้ง</p></div>
+          <div><h1 className="text-xl font-bold">เช็คบิล</h1><p className="text-[10px] opacity-60">โต๊ะ {tableNo} • ร้านป้ากุ้ง</p></div>
         </header>
         <main className="p-6">
           <div className="bg-white rounded-[32px] overflow-hidden shadow-sm border border-gray-100">
             <div className="bg-[#5C3D2E] p-4 text-white flex justify-center items-center gap-2"><Receipt size={20} /><span className="font-bold">ใบเสร็จชั่วคราว</span></div>
             <div className="p-8 text-center border-b border-dashed border-gray-200">
               <h2 className="text-xl font-black mb-1 text-[#41281A]">ร้านป้ากุ้ง</h2>
-              <p className="text-xs text-gray-400">โต๊ะ 5</p>
+              <p className="text-xs text-gray-400">โต๊ะ {tableNo}</p>
             </div>
             <div className="p-6 space-y-4">
               {orders.length === 0 ? (
