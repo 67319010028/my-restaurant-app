@@ -299,6 +299,13 @@ function RestaurantAppContent() {
     }
   };
 
+  const formatTime = (date: string) => {
+    if (!date) return '(เพิ่งสั่ง)';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '(เพิ่งสั่ง)';
+    return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
+  };
+
   const openProductDetail = (product: Product) => {
     if (!product.is_available) return;
     setActiveProduct(product);
@@ -554,7 +561,7 @@ function RestaurantAppContent() {
                     <div className="flex-1">
                       <h3 className="font-bold text-sm mb-0.5">{item.name} {item.isSpecial && <span className="text-red-500 text-[10px]">(พิเศษ)</span>}</h3>
                       <p className="text-[10px] text-gray-400 font-medium">
-                        {item.selectedNoodle && `${item.selectedNoodle} • `}จำนวน x{item.quantity}
+                        {item.selectedNoodle && `${item.selectedNoodle} • `}จำนวน x{item.quantity} • {formatTime(order.created_at)}
                       </p>
                     </div>
                     <div className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-colors ${order.status === 'เสร็จแล้ว' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-orange-50 border-orange-100 text-orange-400'

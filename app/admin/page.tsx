@@ -287,9 +287,11 @@ export default function AdminApp() {
   };
 
   /* --- Helper Functions --- */
-  const getTimeAgo = (date: string) => {
-    const minutes = Math.floor((new Date().getTime() - new Date(date).getTime()) / 60000);
-    return minutes > 0 ? `${minutes} นาทีที่แล้ว` : 'เมื่อสักครู่';
+  const formatOrderTime = (date: string) => {
+    if (!date) return '(เพิ่งสั่ง)';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '(เพิ่งสั่ง)';
+    return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
   };
 
   const handleAddCustomNoodle = () => {
@@ -617,7 +619,9 @@ export default function AdminApp() {
                       <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black text-white ${order.status === 'เรียกเช็คบิล' ? 'bg-red-500' : 'bg-blue-500'}`}>{order.table_no}</div>
                       <div>
                         <h3 className="font-black text-lg">โต๊ะ {order.table_no}</h3>
-                        <p className="text-[10px] text-gray-400 font-bold">{getTimeAgo(order.created_at)}</p>
+                        <p className="text-[10px] text-gray-400 font-bold flex items-center gap-1">
+                          <Clock size={10} /> {formatOrderTime(order.created_at)}
+                        </p>
                       </div>
                     </div>
                     <button onClick={() => deleteOrder(order.id)} className="p-2 text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
@@ -696,7 +700,7 @@ export default function AdminApp() {
                           <span className="font-black text-lg">โต๊ะ {tableNo}</span>
                         </div>
                         <div className="bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1.5 border border-white/20">
-                          <Clock size={12} className="text-orange-300" /> เรียกเช็คบิลแล้ว
+                          <Clock size={12} className="text-orange-300" /> เรียกเช็คบิลเมื่อ {formatOrderTime(tableOrders[0]?.updated_at || tableOrders[0]?.created_at)}
                         </div>
                       </div>
 
@@ -704,6 +708,9 @@ export default function AdminApp() {
                         <div className="space-y-4 mb-6">
                           {tableOrders.map((order, idx) => (
                             <div key={order.id} className="space-y-2 border-b border-gray-50 pb-4 last:border-0 last:pb-0">
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-[9px] font-bold text-[#8B5E3C]/30 uppercase tracking-wider">สั่งเมื่อ {formatOrderTime(order.created_at)}</span>
+                              </div>
                               {order.items?.map((item: any, i: number) => (
                                 <div key={i} className="flex justify-between text-sm">
                                   <span className="text-gray-500 font-medium">{item.quantity}x {item.name} {item.isSpecial && '(พิเศษ)'}</span>
