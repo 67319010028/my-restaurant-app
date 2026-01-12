@@ -17,6 +17,7 @@ export default function AdminApp() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('ทั้งหมด');
   const [isSaving, setIsSaving] = useState(false);
+  const [realtimeStatus, setRealtimeStatus] = useState<'DISCONNECTED' | 'CONNECTING' | 'SUBSCRIBED' | 'ERROR'>('DISCONNECTED');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ✅ จัดการเรื่องวันที่ให้เป็นปัจจุบันตามเวลาไทย
@@ -79,6 +80,7 @@ export default function AdminApp() {
       schema: 'public',
       table: 'orders'
     }, (payload: any) => {
+      console.log('Real-time order change received:', payload);
       // 1. Play sound on NEW order or BILL request
       if (payload.eventType === 'INSERT') {
         playNotificationSound();
@@ -89,7 +91,12 @@ export default function AdminApp() {
       }
       // 2. Refresh orders after any DB change
       fetchOrders();
-    }).subscribe();
+    }).subscribe((status) => {
+      console.log('Real-time Status:', status);
+      if (status === 'SUBSCRIBED') setRealtimeStatus('SUBSCRIBED');
+      else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') setRealtimeStatus('ERROR');
+      else setRealtimeStatus('CONNECTING');
+    });
 
     return () => {
       supabase.removeChannel(menuSub);
@@ -498,7 +505,16 @@ export default function AdminApp() {
           <header className="mb-6 flex justify-between items-start">
             <div>
               <h1 className="text-3xl font-black tracking-tight">จัดการเมนู</h1>
-              <p className="text-gray-400 font-bold text-sm">{menus.length} รายการ</p>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-gray-400 font-bold text-sm">{menus.length} รายการ</p>
+                <div className="flex items-center gap-1.5 ml-2 bg-white px-2 py-0.5 rounded-full border border-gray-100 shadow-sm">
+                  <div className={`w-1.5 h-1.5 rounded-full ${realtimeStatus === 'SUBSCRIBED' ? 'bg-green-500 animate-pulse' : realtimeStatus === 'CONNECTING' ? 'bg-yellow-400' : 'bg-red-400'}`} />
+                  <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">{realtimeStatus}</span>
+                </div>
+                <button onClick={playNotificationSound} className="text-[8px] bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full font-black border border-blue-100 flex items-center gap-1 active:scale-95 transition-transform">
+                  <BellRing size={8} /> ทดสอบเสียง
+                </button>
+              </div>
             </div>
             <button
               onClick={handleLogout}

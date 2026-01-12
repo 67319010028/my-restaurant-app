@@ -35,19 +35,8 @@ interface Order { id: number; total_price: number; status: string; table_no: str
 // แยกคอมโพเนนต์หลักออกมาเพื่อใช้ Suspense หุ้ม
 function RestaurantAppContent() {
   const searchParams = useSearchParams();
-  const [tableNo, setTableNo] = useState('5');
-
-  useEffect(() => {
-    const table = searchParams.get('table');
-    if (table) {
-      setTableNo(table);
-    } else if (typeof window !== 'undefined') {
-      // Fallback: Check window.location directly if useSearchParams fails
-      const params = new URLSearchParams(window.location.search);
-      const t = params.get('table') || params.get('t');
-      if (t) setTableNo(t);
-    }
-  }, [searchParams]);
+  // Derive tableNo directly to prevent "Table 5" flash
+  const tableNo = searchParams.get('table') || searchParams.get('t') || '5';
 
   // --- States ---
   const [categories, setCategories] = useState<Category[]>([]);
