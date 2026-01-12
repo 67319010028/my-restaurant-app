@@ -417,11 +417,14 @@ function RestaurantAppContent() {
     });
 
     try {
-      const { error } = await supabase
+      console.log('Sending callForBill for table:', tableNo);
+      const { data, error, count } = await supabase
         .from('orders')
         .update({ status: 'เรียกเช็คบิล' })
         .eq('table_no', tableNo)
         .neq('status', 'เสร็จสิ้น');
+
+      console.log('CallForBill Supabase Response:', { data, error, count });
 
       if (error) console.warn("Supabase call bill failed (Demo Mode)", error);
     } catch (e) {
