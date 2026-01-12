@@ -6,7 +6,7 @@ import {
   Search, Edit3, Trash2, X, Image as ImageIcon,
   Check, UploadCloud, Clock, ChefHat, CheckCircle2,
   Loader2, Calendar, DollarSign, ListFilter, ListChecks,
-  PlusCircle, Timer, BellRing, Wallet
+  PlusCircle, Timer, BellRing, Wallet, Eye, EyeOff
 } from 'lucide-react';
 
 export default function AdminApp() {
@@ -46,20 +46,26 @@ export default function AdminApp() {
     fetchMenus();
     fetchOrders();
 
-    // BroadcastChannel for Realtime Demo (Listen for "Call Bill" from Customer)
     const channel = new BroadcastChannel('restaurant_demo_channel');
     channel.onmessage = (event) => {
-      const { type, id, status, table_no } = event.data;
+      const { type, id, status, table_no, total_price, items } = event.data;
       if (type === 'ORDER_UPDATE') {
         setOrders(prev => {
-          // Check if order exists
           const exists = prev.find(o => o.id === id);
           if (exists) {
             return prev.map(o => o.id === id ? { ...o, status } : o);
           } else {
             // New order incoming - play notification sound
             playNotificationSound();
-            return [{ id, table_no, status, total_price: 150, created_at: new Date().toISOString(), items: [] }, ...prev];
+            const newOrder = {
+              id,
+              table_no,
+              status,
+              total_price: total_price || 0,
+              created_at: new Date().toISOString(),
+              items: items || []
+            };
+            return [newOrder, ...prev];
           }
         });
       }
@@ -329,6 +335,7 @@ export default function AdminApp() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginEmail, setLoginEmail] = useState(''); // เปลี่ยนจาก Username เป็น Email ตามมาตรฐาน Supabase
   const [loginPassword, setLoginPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
@@ -395,15 +402,22 @@ export default function AdminApp() {
                 required
               />
             </div>
-            <div className="group">
+            <div className="group relative">
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="รหัสผ่าน"
-                className={`w-full bg-white p-5 rounded-[1.8rem] font-bold outline-none border-2 transition-all shadow-sm ${loginError ? 'border-red-400 bg-red-50 text-red-500' : 'border-pink-50 focus:border-[#FFB7B2] group-hover:border-pink-100'}`}
+                className={`w-full bg-white p-5 rounded-[1.8rem] font-bold outline-none border-2 transition-all shadow-sm pr-14 ${loginError ? 'border-red-400 bg-red-50 text-red-500' : 'border-pink-50 focus:border-[#FFB7B2] group-hover:border-pink-100'}`}
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-6 top-1/2 -translate-y-1/2 text-pink-300 hover:text-pink-400 transition-colors"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
               {loginError && (
                 <p className="text-red-400 text-[10px] font-bold mt-3 flex items-center justify-center gap-1 animate-pulse">
                   <X size={12} /> อีเมลหรือรหัสผ่านไม่ถูกต้อง
@@ -727,7 +741,10 @@ export default function AdminApp() {
               }
             });
 
-            const totalRevenue = filteredSales.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
+            const totalRevenue = filteredSales.reduce((sum, o) => {
+              const price = Number(o.total_price);
+              return sum + (isNaN(price) ? 0 : price);
+            }, 0);
             const totalOrders = filteredSales.length;
             const avgTicket = totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(0) : 0;
 

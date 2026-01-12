@@ -33,6 +33,29 @@ export default function KitchenPage() {
 
   useEffect(() => {
     fetchOrders();
+
+    // BroadcastChannel for Realtime Sync (Listen for updates from Admin)
+    const broadcastChannel = new BroadcastChannel('restaurant_demo_channel');
+    broadcastChannel.onmessage = (event) => {
+      const { type, action, id, status, item } = event.data;
+
+      if (type === 'ORDER_UPDATE') {
+        setOrders(prev => {
+          const exists = prev.find(o => o.id === id);
+          if (exists) {
+            const updated = prev.map(o => o.id === id ? { ...o, status } : o);
+            if (typeof window !== 'undefined') localStorage.setItem('demo_admin_orders', JSON.stringify(updated));
+            return updated;
+          } else {
+            // If new order (though usually 'รอ' status first), add it
+            const newOrders = [item, ...prev];
+            if (typeof window !== 'undefined') localStorage.setItem('demo_admin_orders', JSON.stringify(newOrders));
+            return newOrders;
+          }
+        });
+      }
+    };
+
     const channel = supabase
       .channel('kitchen_updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchOrders())
@@ -40,6 +63,7 @@ export default function KitchenPage() {
 
     return () => {
       supabase.removeChannel(channel);
+      broadcastChannel.close();
     };
   }, []);
 
@@ -80,17 +104,38 @@ export default function KitchenPage() {
 
   const fetchOrders = async () => {
     try {
+      // 1. Fetch from Real Database
       const { data, error } = await supabase
         .from('orders')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error) {
-        // ถ้า query สำเร็จ ให้ใช้ข้อมูลจริงเสมอ
-        setOrders(data || []);
+      let baseOrders = data || [];
+
+      if (typeof window !== 'undefined') {
+        // 2. Sync with LocalStorage (Demo Mode / Offline)
+        const savedOrdersStr = localStorage.getItem('demo_admin_orders');
+        let savedOrders = savedOrdersStr ? JSON.parse(savedOrdersStr) : [];
+
+        // Merge logic similar to Admin page: prioritize DB if exists, otherwise use local
+        const combined = [...baseOrders];
+        savedOrders.forEach((s: any) => {
+          const isMock = s.id >= 991 && s.id <= 993; // Local kitchen mocks
+          const isAdminMock = s.id >= 101 && s.id <= 104; // Admin mocks
+          if (!isMock && !isAdminMock && !combined.some(c => c.id === s.id)) {
+            combined.push(s);
+          }
+        });
+
+        setOrders(combined);
+        localStorage.setItem('demo_admin_orders', JSON.stringify(combined));
       } else {
-        console.warn('Supabase fetch failed, using Mock Data instead:', error);
-        setOrders(MOCK_ORDERS);
+        setOrders(baseOrders);
+      }
+
+      if (error) {
+        console.warn('Supabase fetch failed, using Local/Mock Data:', error);
+        if (orders.length === 0) setOrders(MOCK_ORDERS);
       }
     } catch (e) {
       console.error("Unexpected error fetching orders:", e);
@@ -100,7 +145,20 @@ export default function KitchenPage() {
 
   const updateStatus = async (id: number, newStatus: string) => {
     // Optimistic Update: Update local state immediately for smooth experience (Demo Mode)
-    setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
+    const updated = orders.map(o => o.id === id ? { ...o, status: newStatus } : o);
+    setOrders(updated);
+
+    // Sync LocalStorage
+    if (typeof window !== 'undefined') localStorage.setItem('demo_admin_orders', JSON.stringify(updated));
+
+    // Broadcast update to Admin tab
+    const broadcastChannel = new BroadcastChannel('restaurant_demo_channel');
+    broadcastChannel.postMessage({
+      type: 'ORDER_UPDATE',
+      id,
+      status: newStatus,
+      table_no: orders.find(o => o.id === id)?.table_no
+    });
 
     try {
       const { error } = await supabase
@@ -117,13 +175,16 @@ export default function KitchenPage() {
   };
 
   const filteredOrders = orders.filter(order => {
+    // กรองออเดอร์ที่เช็คบิลเสร็จสิ้นแล้ว (เสร็จสิ้น) ออกจากทุกหน้าในครัว
+    if (order.status === 'เสร็จสิ้น' || order.status === 'ยกเลิก' || order.status === 'ออร์เดอร์ยกเลิก') return false;
+
     // ไม่แสดงออเดอร์ที่ยังไม่ได้รับจากแอดมิน (สถานะ "รอ")
     if (order.status === 'รอ') return false;
 
     if (activeTab === 'รอ') return order.status === 'กำลังเตรียม';
     if (activeTab === 'กำลังทำ') return order.status === 'กำลังทำ';
     if (activeTab === 'เสร็จแล้ว') return isFinished(order.status);
-    if (activeTab === 'ทั้งหมด') return order.status !== 'เสร็จสิ้น' && order.status !== 'รอ';
+    if (activeTab === 'ทั้งหมด') return true; // กรองเสร็จสิ้นไปแล้วข้างบน
     return true;
   });
 
@@ -219,96 +280,99 @@ export default function KitchenPage() {
             {filteredOrders.map((order, index) => (
               <div
                 key={order.id}
-                className="bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] border border-gray-100 animate-in fade-in slide-in-from-bottom duration-500"
+                className="bg-[#F8F9FB] rounded-[2.5rem] overflow-hidden shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom duration-500"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 {/* Header */}
-                <div className="p-5 flex justify-between items-center bg-gradient-to-r from-gray-50 to-blue-50 border-b border-gray-100">
+                <div className="p-6 flex justify-between items-center bg-white">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-md">
+                    <div className="w-16 h-16 bg-blue-500 rounded-3xl flex items-center justify-center text-3xl font-black text-white shadow-lg">
                       {order.table_no}
                     </div>
                     <div>
-                      <h3 className="text-gray-800 font-black text-lg">โต๊ะ {order.table_no}</h3>
-                      <p className="text-gray-500 text-[11px] font-bold flex items-center gap-1.5">
-                        <Clock size={12} />
+                      <h3 className="text-gray-900 font-black text-xl">โต๊ะ {order.table_no}</h3>
+                      <p className="text-gray-400 text-sm font-bold flex items-center gap-1.5">
+                        <Clock size={14} />
                         {new Date(order.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                   </div>
 
-                  <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase ${isFinished(order.status)
-                    ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                  <div className={`px-4 py-2 rounded-full text-xs font-black ${isFinished(order.status)
+                    ? 'bg-emerald-100 text-emerald-600'
                     : order.status === 'กำลังทำ'
-                      ? 'bg-amber-100 text-amber-700 border border-amber-200'
-                      : 'bg-orange-100 text-orange-700 border border-orange-200'
+                      ? 'bg-amber-100 text-amber-600'
+                      : 'bg-orange-100 text-orange-600'
                     }`}>
                     {isFinished(order.status) ? '✓ เสร็จแล้ว' : order.status}
                   </div>
                 </div>
 
                 {/* Items List */}
-                <div className="p-5 space-y-3 bg-white">
+                <div className="p-4 space-y-3 bg-white mx-4 my-2 rounded-3xl border border-gray-50 shadow-sm">
                   {order.items?.map((item, idx) => (
-                    <div key={idx} className="flex flex-col bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <div key={idx} className="flex flex-col bg-white p-4 rounded-3xl">
                       <div className="flex justify-between items-start">
-                        <span className="flex-1 font-bold text-gray-800 text-base">
-                          {item.name}
-                          {item.isSpecial && (
-                            <span className="ml-2 text-orange-600 font-black text-xs uppercase bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">⭐ พิเศษ</span>
+                        <div className="flex-1">
+                          <span className="font-black text-gray-900 text-xl block">
+                            {item.name}
+                          </span>
+                          <div className="flex flex-wrap gap-2 items-center mt-2">
+                            {item.isSpecial && (
+                              <span className="text-orange-600 font-black text-[10px] uppercase bg-orange-50 px-3 py-1 rounded-full border border-orange-100 flex items-center gap-1">
+                                <span className="text-sm">⭐</span> พิเศษ
+                              </span>
+                            )}
+                            {item.selectedNoodle && (
+                              <span className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-black flex items-center gap-1 border border-blue-50">
+                                <Utensils size={12} strokeWidth={3} /> {item.selectedNoodle}
+                              </span>
+                            )}
+                          </div>
+                          {item.note && (
+                            <p className="text-[10px] text-amber-600 font-bold mt-2 bg-amber-50/50 p-2 rounded-xl border border-amber-50">
+                              💬 {item.note}
+                            </p>
                           )}
-                        </span>
-                        <span className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm font-bold ml-2 shrink-0">
+                        </div>
+                        <span className="bg-blue-500 text-white px-4 py-1.5 rounded-xl text-sm font-black ml-4 shrink-0 shadow-md">
                           ×{item.quantity}
                         </span>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 items-center mt-2">
-                        {item.selectedNoodle && (
-                          <span className="text-[11px] bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-bold flex items-center gap-1.5 border border-blue-100">
-                            <Utensils size={12} /> {item.selectedNoodle}
-                          </span>
-                        )}
-                        {item.note && (
-                          <span className="text-[11px] text-amber-700 font-bold bg-amber-50 px-3 py-1 rounded-full flex items-center gap-1 border border-amber-100">
-                            💬 {item.note}
-                          </span>
-                        )}
                       </div>
                     </div>
                   ))}
                 </div>
 
                 {/* Action Buttons */}
-                <div className="p-5 bg-gray-50 border-t border-gray-100">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-xs text-gray-500 font-bold uppercase">ยอดรวม</span>
-                    <span className="text-2xl font-black text-gray-800">
+                <div className="p-6 bg-white">
+                  <div className="flex justify-between items-center mb-6">
+                    <span className="text-xs text-gray-400 font-black uppercase tracking-widest">ยอดรวม</span>
+                    <span className="text-3xl font-black text-gray-900">
                       ฿{Number(order.total_price || 0).toLocaleString()}
                     </span>
                   </div>
 
                   {isFinished(order.status) ? (
-                    <div className="bg-emerald-500 text-white py-4 rounded-xl text-center font-bold uppercase text-sm flex items-center justify-center gap-2 shadow-md">
-                      <CheckCircle2 size={18} /> เสิร์ฟเรียบร้อย
+                    <div className="bg-[#10B981] text-white py-5 rounded-[1.8rem] text-center font-black text-lg flex items-center justify-center gap-2 shadow-lg shadow-green-100">
+                      <CheckCircle2 size={24} strokeWidth={3} /> เสิร์ฟเรียบร้อย
                     </div>
                   ) : (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-3">
                       <button
                         onClick={() => updateStatus(order.id, 'กำลังเตรียม')}
-                        className="bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-bold text-[11px] active:scale-95 transition-all shadow-sm"
+                        className="bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-md"
                       >
                         รอ
                       </button>
                       <button
                         onClick={() => updateStatus(order.id, 'กำลังทำ')}
-                        className="bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-bold text-[11px] active:scale-95 transition-all shadow-sm"
+                        className="bg-amber-500 hover:bg-amber-600 text-white py-4 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-md"
                       >
                         กำลังทำ
                       </button>
                       <button
                         onClick={() => updateStatus(order.id, 'เสร็จแล้ว')}
-                        className="bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-xl font-bold text-[11px] active:scale-95 transition-all shadow-sm"
+                        className="bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-md"
                       >
                         ✓ เสร็จ
                       </button>

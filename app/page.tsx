@@ -356,6 +356,26 @@ function RestaurantAppContent() {
     // Optimistic update
     setOrders(prev => [newOrder, ...prev]);
 
+    // ✅ Sync LocalStorage for Demo Mode (So Admin page sees it immediately)
+    if (typeof window !== 'undefined') {
+      const savedOrdersStr = localStorage.getItem('demo_admin_orders');
+      let savedOrders = savedOrdersStr ? JSON.parse(savedOrdersStr) : [];
+      savedOrders = [newOrder, ...savedOrders];
+      localStorage.setItem('demo_admin_orders', JSON.stringify(savedOrders));
+
+      // Broadcast to Admin & Kitchen
+      const channel = new BroadcastChannel('restaurant_demo_channel');
+      channel.postMessage({
+        type: 'ORDER_UPDATE',
+        id: newOrder.id,
+        status: newOrder.status,
+        table_no: newOrder.table_no,
+        total_price: newOrder.total_price,
+        items: newOrder.items,
+        item: newOrder // For Kitchen compatibility
+      });
+    }
+
     // Try real submit
     try {
       const { error } = await supabase.from('orders').insert([{
