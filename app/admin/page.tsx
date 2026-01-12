@@ -805,10 +805,9 @@ export default function AdminApp() {
               const filteredSales = orders.filter(o => {
                 // ในหน้า "ยอดขาย" ให้นับเฉพาะที่ 'เสร็จสิ้น' (ชำระเงินแล้ว) เท่านั้น
                 if (o.status !== 'เสร็จสิ้น') return false;
-                // ถ้าไม่มีวันที่ ให้ข้ามไปก่อน หรือใช้เวลาปัจจุบันแทน (ป้องกัน Error)
-                if (!o.created_at) return false;
+                // ถ้าไม่มีวันที่ (NULL) ให้ตีว่าเป็นวันที่ปัจจุบันเพื่อให้แสดงผลในรายงานได้ทันที
+                const d = o.created_at ? new Date(o.created_at) : new Date();
 
-                const d = new Date(o.created_at);
                 if (isNaN(d.getTime())) return false; // ข้ามถ้าเป็นวันที่ที่ผิดพลาด
 
                 // ใช้ ToDateString เพื่อความแน่นอนในการเปรียบเทียบวัน
