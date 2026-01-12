@@ -61,6 +61,7 @@ function RestaurantAppContent() {
   const isCurrentlyBilling = orders.some(o => o.status === 'เรียกเช็คบิล');
   const preparingCount = orders.filter(o => o.status === 'รอ' || o.status === 'กำลังทำ').length;
   const servedCount = orders.filter(o => o.status === 'เสร็จแล้ว').length;
+  const filteredProducts = selectedCat ? products.filter(p => p.category === selectedCat) : products;
 
   // --- Effects ---
   useEffect(() => {
@@ -696,21 +697,21 @@ function RestaurantAppContent() {
         <div className="fixed inset-0 bg-black/60 z-50 flex items-end">
           <div className="bg-white w-full max-w-md mx-auto rounded-t-[40px] p-6 animate-in slide-in-from-bottom duration-300 max-h-[90vh] overflow-y-auto">
             <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
-            <div className="rounded-[32px] overflow-hidden mb-4 h-48 shadow-sm"><img src={activeProduct.image_url} className="w-full h-full object-cover" /></div>
+            <div className="rounded-[32px] overflow-hidden mb-4 h-48 shadow-sm"><img src={activeProduct?.image_url} className="w-full h-full object-cover" /></div>
 
             <div className="flex justify-between items-start mb-2">
-              <h2 className="text-2xl font-bold">{activeProduct.name}</h2>
-              <p className="text-2xl font-black text-[#F97316]">฿{activeProduct.price}</p>
+              <h2 className="text-2xl font-bold">{activeProduct?.name}</h2>
+              <p className="text-2xl font-black text-[#F97316]">฿{activeProduct?.price}</p>
             </div>
-            <p className="text-sm text-gray-400 mb-6">{activeProduct.description}</p>
+            <p className="text-sm text-gray-400 mb-6">{activeProduct?.description}</p>
 
             {/* --- ส่วนที่แก้ไข: โชว์เฉพาะเส้นที่คุณเลือกใน Admin --- */}
-            {activeProduct.has_noodle && activeProduct.noodle_options && activeProduct.noodle_options.length > 0 && (
+            {activeProduct?.has_noodle && activeProduct?.noodle_options && activeProduct?.noodle_options.length > 0 && (
               <div className="mb-6">
                 <p className="text-sm font-bold mb-3 flex items-center gap-2"><Utensils size={16} className="text-orange-400" /> เลือกเส้น</p>
                 <div className="grid grid-cols-2 gap-2">
                   {/* เปลี่ยนจาก Array คงที่ เป็น activeProduct.noodle_options */}
-                  {activeProduct.noodle_options.map((noodle: string) => (
+                  {activeProduct?.noodle_options.map((noodle: string) => (
                     <button
                       key={noodle}
                       onClick={() => setSelectedNoodle(noodle)}
@@ -754,7 +755,7 @@ function RestaurantAppContent() {
               </div>
               <div className="text-right">
                 <p className="text-[10px] text-gray-400 font-bold uppercase">ราคารวม</p>
-                <p className="text-2xl font-black text-[#41281A]">฿{(activeProduct.price + (isSpecial ? 10 : 0)) * tempQty}</p>
+                <p className="text-2xl font-black text-[#41281A]">฿{((activeProduct?.price || 0) + (isSpecial ? 10 : 0)) * tempQty}</p>
               </div>
             </div>
 
@@ -762,13 +763,13 @@ function RestaurantAppContent() {
               <button onClick={() => setActiveProduct(null)} className="flex-1 py-4 font-bold text-gray-400">ยกเลิก</button>
               <button
                 onClick={confirmAddToCart}
-                disabled={activeProduct.has_noodle && !selectedNoodle}
-                className={`flex-[2] py-4 rounded-2xl font-black text-lg shadow-lg transition-all ${(activeProduct.has_noodle && !selectedNoodle)
+                disabled={activeProduct?.has_noodle && !selectedNoodle}
+                className={`flex-[2] py-4 rounded-2xl font-black text-lg shadow-lg transition-all ${(activeProduct?.has_noodle && !selectedNoodle)
                   ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   : 'bg-[#F97316] text-white'
                   }`}
               >
-                {activeProduct.has_noodle && !selectedNoodle ? 'กรุณาเลือกเส้น' : 'เพิ่มลงตะกร้า'}
+                {activeProduct?.has_noodle && !selectedNoodle ? 'กรุณาเลือกเส้น' : 'เพิ่มลงตะกร้า'}
               </button>
             </div>
           </div>
