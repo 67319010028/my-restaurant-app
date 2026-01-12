@@ -103,6 +103,19 @@ function RestaurantAppContent() {
         { event: '*', schema: 'public', table: 'orders', filter: `table_no=eq.${tableNo}` },
         (payload) => {
           fetchOrders();
+
+          // หากแอดมินกดรับเงินเรียบร้อย (เสร็จสิ้น) ให้รีเซ็ตหน้าจอทุกเครื่องในโต๊ะนี้
+          if (payload.new && (payload.new as any).status === 'เสร็จสิ้น') {
+            alert("ขอบคุณที่ใช้บริการ! การชำระเงินเสร็จสิ้นแล้วค่ะ");
+            setOrders([]);
+            setCart([]);
+            setView('menu');
+
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem(`table_billing_${tableNo}`);
+              localStorage.setItem(`demo_session_clear_${tableNo}`, 'true');
+            }
+          }
         }
       )
       .subscribe();
@@ -334,6 +347,10 @@ function RestaurantAppContent() {
   };
 
   const submitOrder = async () => {
+    if (isCurrentlyBilling) {
+      alert("ไม่สามารถสั่งอาหารเพิ่มได้ในขณะนี้ เนื่องจากคุณได้เรียกเช็คบิลไปแล้วค่ะ");
+      return;
+    }
     const totalPrice = cart.reduce((sum, item) => sum + (item.totalItemPrice * item.quantity), 0);
 
     // Demo Mode Logic
@@ -426,17 +443,22 @@ function RestaurantAppContent() {
 
       console.log('CallForBill Supabase Response:', { data, error, count });
 
-      if (error) console.warn("Supabase call bill failed (Demo Mode)", error);
+      if (error) {
+        console.warn("Supabase call bill failed", error);
+        alert("ขออภัย! ระบบส่งสัญญาณเช็คบิลไม่ได้: " + (error.message || "Unknown error"));
+      }
     } catch (e) {
       console.warn("Supabase exception in call bill:", e);
     }
 
     alert('แจ้งพนักงานเรียบร้อยค่ะ กำลังเตรียมใบเสร็จให้คุณลูกค้า');
+    setView('orders');
   };
 
   const totalCartPrice = cart.reduce((sum, item) => sum + (item.totalItemPrice * item.quantity), 0);
   const totalBillAmount = orders.reduce((sum, order) => sum + order.total_price, 0);
   const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const isCurrentlyBilling = orders.some(o => o.status === 'เรียกเช็คบิล');
 
   const filteredProducts = selectedCat ? products.filter(p => p.category === selectedCat) : products;
   const preparingCount = orders.filter(o => o.status === 'รอ' || o.status === 'กำลังทำ').length;
@@ -489,7 +511,13 @@ function RestaurantAppContent() {
               <span className="text-gray-400">รวมทั้งหมด</span>
               <span className="text-2xl font-black">฿{totalCartPrice}</span>
             </div>
-            <button onClick={submitOrder} className="w-full bg-[#F97316] text-white py-4 rounded-2xl font-black text-lg shadow-lg">สั่งอาหาร ({totalItemsCount} รายการ)</button>
+            <button
+              onClick={submitOrder}
+              disabled={isCurrentlyBilling}
+              className={`w-full py-4 rounded-2xl font-black text-lg shadow-lg ${isCurrentlyBilling ? 'bg-gray-300' : 'bg-[#F97316] text-white'}`}
+            >
+              {isCurrentlyBilling ? 'งดสั่งอาหาร (กำลังเช็คบิล)' : `สั่งอาหาร (${totalItemsCount} รายการ)`}
+            </button>
           </div>
         )}
       </div>
@@ -547,7 +575,12 @@ function RestaurantAppContent() {
             <span className="text-2xl font-black">฿{totalBillAmount}</span>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => setView('menu')} className="flex-1 border-2 border-[#F97316] text-[#F97316] py-4 rounded-2xl font-black">สั่งเพิ่ม</button>
+            <button
+              onClick={() => !isCurrentlyBilling && setView('menu')}
+              className={`flex-1 border-2 py-4 rounded-2xl font-black ${isCurrentlyBilling ? 'border-gray-200 text-gray-300' : 'border-[#F97316] text-[#F97316]'}`}
+            >
+              สั่งเพิ่ม
+            </button>
             <button onClick={() => setView('bill')} className="flex-1 bg-[#F97316] text-white py-4 rounded-2xl font-black shadow-lg">ดูบิล</button>
           </div>
         </div>

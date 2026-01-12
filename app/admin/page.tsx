@@ -666,8 +666,8 @@ export default function AdminApp() {
                 <h1 className="text-3xl font-black tracking-tight">รายการเช็คบิล</h1>
                 <p className="text-red-500 font-bold text-sm">รอดำเนินการ {billingOrdersCount} โต๊ะ</p>
               </div>
-              <div className="bg-red-50 p-3 rounded-2xl text-red-500">
-                <Wallet size={24} strokeWidth={3} />
+              <div onClick={() => fetchOrders()} className="bg-red-50 p-3 rounded-2xl text-red-500 cursor-pointer hover:bg-red-100 transition-colors">
+                <ClipboardList size={24} strokeWidth={3} />
               </div>
             </header>
 
@@ -968,6 +968,6 @@ export default function AdminApp() {
         </button>
         <button onClick={() => setActiveTab('sales')} className={`flex flex-col items-center gap-1 ${activeTab === 'sales' ? 'text-orange-500' : 'text-gray-300'}`}><TrendingUp size={24} /><span className="text-[9px] font-black">ยอดขาย</span></button>
       </nav>
-    </div >
+    </div>
   );
 }
