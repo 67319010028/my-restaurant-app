@@ -18,6 +18,7 @@ export default function AdminApp() {
   const [selectedCategory, setSelectedCategory] = useState('ทั้งหมด');
   const [isSaving, setIsSaving] = useState(false);
   const [realtimeStatus, setRealtimeStatus] = useState<'DISCONNECTED' | 'CONNECTING' | 'SUBSCRIBED' | 'ERROR'>('DISCONNECTED');
+  const [lastEventTime, setLastEventTime] = useState<string>('ยังไม่มีข้อมูล');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ✅ จัดการเรื่องวันที่ให้เป็นปัจจุบันตามเวลาไทย
@@ -74,18 +75,20 @@ export default function AdminApp() {
 
     const menuSub = supabase.channel('menu_change').on('postgres_changes', { event: '*', schema: 'public', table: 'menus' }, () => fetchMenus()).subscribe();
 
-    // ✅ Improved Realtime Listener for Orders (Cross-Device Support)
     const orderSub = supabase.channel('order_change').on('postgres_changes', {
       event: '*',
       schema: 'public',
       table: 'orders'
     }, (payload: any) => {
       console.log('Real-time order change received:', payload);
+      setLastEventTime(new Date().toLocaleTimeString('th-TH'));
+
       // 1. Play sound on NEW order or BILL request
       if (payload.eventType === 'INSERT') {
         playNotificationSound();
       } else if (payload.eventType === 'UPDATE') {
-        if (payload.new.status === 'เรียกเช็คบิล' && payload.old.status !== 'เรียกเช็คบิล') {
+        // ให้เด้งเสียงถ้าสถานะใหม่เป็น 'เรียกเช็คบิล'
+        if (payload.new.status === 'เรียกเช็คบิล') {
           playNotificationSound();
         }
       }
@@ -502,9 +505,12 @@ export default function AdminApp() {
       {/* Global Realtime Monitor & Test Sound */}
       <div className="max-w-md mx-auto px-6 pt-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-full border border-gray-100 shadow-sm">
-            <div className={`w-2 h-2 rounded-full ${realtimeStatus === 'SUBSCRIBED' ? 'bg-green-500 animate-pulse' : realtimeStatus === 'CONNECTING' ? 'bg-yellow-400' : 'bg-red-400'}`} />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Realtime: {realtimeStatus}</span>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-full border border-gray-100 shadow-sm">
+              <div className={`w-2 h-2 rounded-full ${realtimeStatus === 'SUBSCRIBED' ? 'bg-green-500 animate-pulse' : realtimeStatus === 'CONNECTING' ? 'bg-yellow-400' : 'bg-red-400'}`} />
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Realtime: {realtimeStatus}</span>
+            </div>
+            <p className="text-[8px] text-gray-400 ml-2 font-bold">อัปเดตล่าสุด: {lastEventTime}</p>
           </div>
           <button onClick={playNotificationSound} className="text-[10px] bg-blue-50 text-blue-500 px-3 py-1 rounded-full font-black border border-blue-100 flex items-center gap-1 active:scale-95 transition-transform">
             <BellRing size={12} /> ทดสอบเสียง

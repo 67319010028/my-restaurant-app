@@ -54,6 +54,14 @@ function RestaurantAppContent() {
   const [selectedNoodle, setSelectedNoodle] = useState<string>('');
   const [isSpecial, setIsSpecial] = useState<boolean>(false);
 
+  // --- Derived State ---
+  const totalCartPrice = cart.reduce((sum, item) => sum + (item.totalItemPrice * item.quantity), 0);
+  const totalBillAmount = orders.reduce((sum, order) => sum + (Number(order.total_price) || 0), 0);
+  const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const isCurrentlyBilling = orders.some(o => o.status === 'เรียกเช็คบิล');
+  const preparingCount = orders.filter(o => o.status === 'รอ' || o.status === 'กำลังทำ').length;
+  const servedCount = orders.filter(o => o.status === 'เสร็จแล้ว').length;
+
   // --- Effects ---
   useEffect(() => {
     fetchData();
@@ -446,23 +454,14 @@ function RestaurantAppContent() {
       if (error) {
         console.warn("Supabase call bill failed", error);
         alert("ขออภัย! ระบบส่งสัญญาณเช็คบิลไม่ได้: " + (error.message || "Unknown error"));
+      } else {
+        alert('แจ้งพนักงานเรียบร้อยค่ะ กำลังเตรียมใบเสร็จให้คุณลูกค้า');
+        setView('orders');
       }
     } catch (e) {
       console.warn("Supabase exception in call bill:", e);
     }
-
-    alert('แจ้งพนักงานเรียบร้อยค่ะ กำลังเตรียมใบเสร็จให้คุณลูกค้า');
-    setView('orders');
   };
-
-  const totalCartPrice = cart.reduce((sum, item) => sum + (item.totalItemPrice * item.quantity), 0);
-  const totalBillAmount = orders.reduce((sum, order) => sum + order.total_price, 0);
-  const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const isCurrentlyBilling = orders.some(o => o.status === 'เรียกเช็คบิล');
-
-  const filteredProducts = selectedCat ? products.filter(p => p.category === selectedCat) : products;
-  const preparingCount = orders.filter(o => o.status === 'รอ' || o.status === 'กำลังทำ').length;
-  const servedCount = orders.filter(o => o.status === 'เสร็จแล้ว').length;
 
   // --- Render Views ---
   if (view === 'cart') {
