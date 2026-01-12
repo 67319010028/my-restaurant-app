@@ -429,6 +429,19 @@ function RestaurantAppContent() {
     }, 2000);
   };
   const callForBill = async () => {
+    // Check if there are any unfinished orders (not 'เสร็จแล้ว')
+    const unfinishedOrders = orders.filter(o => o.status === 'รอ' || o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ');
+
+    if (unfinishedOrders.length > 0) {
+      alert("ไม่สามารถเช็คบิลได้ เนื่องจากยังมีรายการอาหารที่ยังไม่เสร็จสิ้น\nกรุณารอรับอาหารให้ครบก่อนนะคะ 🦐✨");
+      return;
+    }
+
+    if (orders.length === 0) {
+      alert("ไม่พบรายการอาหารที่สั่งค่ะ");
+      return;
+    }
+
     // 1. Calculate Summary for the total bill
     const billPrice = orders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
     const billItems = orders.flatMap(o => o.items || []);
