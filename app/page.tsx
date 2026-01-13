@@ -406,7 +406,8 @@ function RestaurantAppContent() {
         table_no: newOrder.table_no,
         total_price: newOrder.total_price,
         items: newOrder.items,
-        item: newOrder // For Kitchen compatibility
+        item: newOrder, // For Kitchen compatibility
+        created_at: newOrder.created_at
       });
     }
 
@@ -416,7 +417,8 @@ function RestaurantAppContent() {
         items: cart,
         total_price: totalPrice,
         status: 'รอ',
-        table_no: tableNo
+        table_no: tableNo,
+        created_at: new Date().toISOString()
       }]);
       if (error) console.warn("Supabase submit failed (Demo Mode Active)", error);
     } catch (e) { console.warn("Submit Exception", e); }
@@ -487,7 +489,7 @@ function RestaurantAppContent() {
   // --- Render Views ---
   if (view === 'cart') {
     return (
-      <div className="max-w-md mx-auto bg-[#FFFBF5] min-h-screen pb-40 relative">
+      <div className="w-full max-w-md md:max-w-2xl mx-auto bg-[#FFFBF5] min-h-screen pb-40 relative">
         <header className="bg-[#41281A] text-white p-6 pt-10 flex items-center gap-4">
           <button onClick={() => setView('menu')}><ArrowLeft size={24} /></button>
           <div>
@@ -526,7 +528,7 @@ function RestaurantAppContent() {
           )}
         </main>
         {cart.length > 0 && !orderSuccess && (
-          <div className="fixed bottom-0 left-0 right-0 bg-white p-6 max-w-md mx-auto rounded-t-[40px] shadow-2xl">
+          <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md md:max-w-2xl bg-white p-6 rounded-t-[40px] shadow-2xl z-30">
             <div className="flex justify-between items-center mb-4 px-2">
               <span className="text-gray-400">รวมทั้งหมด</span>
               <span className="text-2xl font-black">฿{totalCartPrice}</span>
@@ -546,7 +548,7 @@ function RestaurantAppContent() {
 
   if (view === 'orders') {
     return (
-      <div className="max-w-md mx-auto bg-[#FFFBF5] min-h-screen pb-40 relative">
+      <div className="w-full max-w-md md:max-w-2xl mx-auto bg-[#FFFBF5] min-h-screen pb-40 relative">
         <header className="bg-[#41281A] text-white p-6 pt-10 flex items-center gap-4">
           <button onClick={() => setView('menu')}><ArrowLeft size={24} /></button>
           <div><h1 className="text-xl font-bold">รายการที่สั่ง</h1><p className="text-[10px] opacity-60">โต๊ะ {tableNo} • {orders.length} ออเดอร์</p></div>
@@ -589,7 +591,7 @@ function RestaurantAppContent() {
             </div>
           </div>
         </main>
-        <div className="fixed bottom-0 left-0 right-0 bg-white p-6 max-w-md mx-auto rounded-t-[40px] shadow-2xl border-t border-gray-50">
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md md:max-w-2xl bg-white p-6 rounded-t-[40px] shadow-2xl border-t border-gray-50 z-30">
           <div className="flex justify-between items-center mb-5 px-2">
             <span className="text-gray-400 font-medium">ยอดรวมทั้งหมด</span>
             <span className="text-2xl font-black">฿{totalBillAmount}</span>
@@ -610,7 +612,7 @@ function RestaurantAppContent() {
 
   if (view === 'bill') {
     return (
-      <div className="max-w-md mx-auto bg-[#FFFBF5] min-h-screen pb-10 relative font-sans text-[#41281A]">
+      <div className="w-full max-w-md md:max-w-2xl mx-auto bg-[#FFFBF5] min-h-screen pb-10 relative font-sans text-[#41281A]">
         <header className="bg-[#41281A] text-white p-6 pt-10 flex items-center gap-4">
           <button onClick={() => setView('orders')}><ArrowLeft size={24} /></button>
           <div><h1 className="text-xl font-bold">เช็คบิล</h1><p className="text-[10px] opacity-60">โต๊ะ {tableNo} • ร้านป้ากุ้ง</p></div>
@@ -657,7 +659,7 @@ function RestaurantAppContent() {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-[#FFFBF5] min-h-screen pb-24 font-sans text-[#41281A]">
+    <div className="w-full max-w-md md:max-w-2xl mx-auto bg-[#FFFBF5] min-h-screen pb-24 font-sans text-[#41281A]">
       <header className="bg-[#41281A] text-white p-6 pt-10 rounded-b-[40px] shadow-lg">
         <div className="flex justify-between items-start mb-6">
           <div><p className="text-[10px] opacity-70">โต๊ะ {tableNo}</p><h1 className="text-2xl font-black">ร้านป้ากุ้ง</h1></div>
@@ -796,7 +798,7 @@ function RestaurantAppContent() {
         </div>
       )}
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white p-4 flex justify-around max-w-md mx-auto rounded-t-[32px] shadow-2xl border-t border-gray-50">
+      <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md md:max-w-2xl bg-white p-4 flex justify-around rounded-t-[32px] shadow-2xl border-t border-gray-50 z-30">
         <button onClick={() => setView('cart')} className="flex flex-col items-center text-[#8B5E3C]/40 relative">
           <div className="p-2 rounded-xl"><ShoppingCart size={24} /></div>
           <span className="text-[10px] font-bold mt-1">ตะกร้า</span>

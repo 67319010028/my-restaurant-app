@@ -11,7 +11,7 @@ import {
 
 export default function AdminApp() {
   const [activeTab, setActiveTab] = useState<'menu' | 'order' | 'billing' | 'sales'>('menu');
-  const [orderSubTab, setOrderSubTab] = useState('กำลังดำเนินการ');
+  const [orderSubTab, setOrderSubTab] = useState('รอรับออเดอร์');
   const [menus, setMenus] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -505,7 +505,7 @@ export default function AdminApp() {
       )}
 
       {/* Global Realtime Monitor & Test Sound */}
-      <div className="max-w-md mx-auto px-6 pt-4 flex items-center justify-between gap-2">
+      <div className="max-w-4xl mx-auto px-6 pt-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-full border border-gray-100 shadow-sm">
@@ -528,13 +528,13 @@ export default function AdminApp() {
 
       {/* TAB: MENU */}
       {activeTab === 'menu' && (
-        <main className="p-6 max-w-md mx-auto animate-in fade-in duration-500">
+        <main className="p-6 max-w-4xl mx-auto animate-in fade-in duration-500">
           <header className="mb-6">
             <h1 className="text-3xl font-black tracking-tight">จัดการเมนู</h1>
             <p className="text-gray-400 font-bold text-sm">{menus.length} รายการ</p>
           </header>
 
-          <div className="flex gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             <div className="bg-[#EFFFF6] p-5 rounded-[2rem] flex-1 border border-green-100 shadow-sm">
               <p className="text-[#10B981] text-[10px] font-black uppercase mb-1">พร้อมขาย</p>
               <p className="text-3xl font-black text-[#065F46]">{menus.filter(m => m.is_available).length}</p>
@@ -551,7 +551,7 @@ export default function AdminApp() {
             ))}
           </div>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {menus.filter(m => selectedCategory === 'ทั้งหมด' || m.category === selectedCategory).map((item) => (
               <div key={item.id} className="bg-white p-4 rounded-[2rem] shadow-sm flex items-center gap-4 border border-gray-50">
                 <div className={`w-20 h-20 rounded-[1.5rem] overflow-hidden bg-gray-100 flex-shrink-0 ${!item.is_available && 'grayscale opacity-50'}`}>
@@ -595,21 +595,22 @@ export default function AdminApp() {
       {/* TAB: ORDER */}
       {
         activeTab === 'order' && (
-          <main className="p-6 max-w-md mx-auto animate-in slide-in-from-bottom duration-500 pb-40">
-            <header className="mb-6">
+          <main className="p-6 max-w-4xl mx-auto animate-in slide-in-from-bottom duration-500 pb-40">
+            <header className="mb-6 text-center md:text-left">
               <h1 className="text-3xl font-black tracking-tight">ออเดอร์</h1>
             </header>
 
-            <div className="flex bg-gray-100 p-1 rounded-2xl mb-6">
-              {['กำลังดำเนินการ', 'เสร็จแล้ว', 'ยกเลิก'].map((tab) => (
-                <button key={tab} onClick={() => setOrderSubTab(tab)} className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all ${orderSubTab === tab ? 'bg-[#1E293B] text-white shadow-md' : 'text-gray-400'}`}>{tab}</button>
+            <div className="flex bg-gray-100 p-1 rounded-2xl mb-6 max-w-md mx-auto md:mx-0">
+              {['รอรับออเดอร์', 'กำลังทำ', 'เสร็จแล้ว', 'ยกเลิก'].map((tab) => (
+                <button key={tab} onClick={() => setOrderSubTab(tab)} className={`flex-1 py-2.5 rounded-xl font-bold text-[10px] transition-all ${orderSubTab === tab ? 'bg-[#1E293B] text-white shadow-md' : 'text-gray-400'}`}>{tab}</button>
               ))}
             </div>
 
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {orders.filter(o => {
-                if (orderSubTab === 'กำลังดำเนินการ') return ['รอ', 'กำลังเตรียม', 'กำลังทำ', 'เรียกเช็คบิล'].includes(o.status);
-                if (orderSubTab === 'เสร็จแล้ว') return ['เสร็จแล้ว', 'เสร็จสิ้น'].includes(o.status);
+                if (orderSubTab === 'รอรับออเดอร์') return o.status === 'รอ';
+                if (orderSubTab === 'กำลังทำ') return ['กำลังเตรียม', 'กำลังทำ', 'เสร็จแล้ว', 'เรียกเช็คบิล'].includes(o.status);
+                if (orderSubTab === 'เสร็จแล้ว') return o.status === 'เสร็จสิ้น';
                 if (orderSubTab === 'ยกเลิก') return o.status === 'ออร์เดอร์ยกเลิก' || o.status === 'ยกเลิก';
                 return true;
               }).map((order) => (
@@ -639,25 +640,34 @@ export default function AdminApp() {
                   <div className="flex gap-2">
                     {order.status === 'เรียกเช็คบิล' ? (
                       <button onClick={() => setActiveTab('billing')} className="w-full bg-red-500 text-white py-4 rounded-3xl font-black text-sm flex items-center justify-center gap-2 animate-pulse"><Wallet size={18} /> ไปที่หน้าชำระเงิน</button>
-                    ) : orderSubTab === 'กำลังดำเนินการ' ? (
+                    ) : orderSubTab === 'รอรับออเดอร์' ? (
                       <>
                         <button onClick={() => updateOrderStatus(order.id, 'ยกเลิก')} className="flex-1 bg-gray-50 text-gray-400 py-3.5 rounded-3xl font-black text-sm">ยกเลิก</button>
-                        {order.status === 'รอ' ? (
-                          <button
-                            onClick={() => {
-                              // แอดมินกดรับออเดอร์ → เปลี่ยนสถานะเป็น "กำลังเตรียม" เพื่อให้หน้าครัวเห็น
-                              updateOrderStatus(order.id, 'กำลังเตรียม');
-                            }}
-                            className="flex-[2] bg-blue-600 text-white py-3.5 rounded-3xl font-black text-sm"
-                          >
-                            รับออเดอร์
-                          </button>
-                        ) : (
-                          <div className="flex-[2] bg-green-50 text-green-600 py-3.5 rounded-3xl font-black text-sm flex items-center justify-center gap-2">
-                            <CheckCircle2 size={18} /> ส่งไปครัวแล้ว
+                        <button
+                          onClick={() => updateOrderStatus(order.id, 'กำลังเตรียม')}
+                          className="flex-[2] bg-blue-600 text-white py-3.5 rounded-3xl font-black text-sm"
+                        >
+                          รับออเดอร์
+                        </button>
+                      </>
+                    ) : orderSubTab === 'กำลังทำ' ? (
+                      <div className="w-full space-y-2">
+                        {order.status === 'กำลังเตรียม' && (
+                          <div className="bg-orange-50 text-orange-600 py-3.5 rounded-3xl font-black text-sm flex items-center justify-center gap-2 border border-orange-100">
+                            <Timer size={18} /> 🕒 รอคิวปรุง...
                           </div>
                         )}
-                      </>
+                        {order.status === 'กำลังทำ' && (
+                          <div className="bg-amber-50 text-amber-600 py-3.5 rounded-3xl font-black text-sm flex items-center justify-center gap-2 border border-amber-100">
+                            <ChefHat size={18} /> 👨‍🍳 กำลังปรุงอาหาร...
+                          </div>
+                        )}
+                        {order.status === 'เสร็จแล้ว' && (
+                          <div className="bg-green-50 text-green-600 py-3.5 rounded-3xl font-black text-sm flex items-center justify-center gap-2 border border-green-100">
+                            <CheckCircle2 size={18} /> ✅ ปรุงเสร็จแล้ว (พร้อมเสิร์ฟ)
+                          </div>
+                        )}
+                      </div>
                     ) : null}
                   </div>
                 </div>
@@ -670,7 +680,7 @@ export default function AdminApp() {
       {/* TAB: BILLING */}
       {
         activeTab === 'billing' && (
-          <main className="p-6 max-w-md mx-auto animate-in slide-in-from-right duration-500 pb-40">
+          <main className="p-6 max-w-4xl mx-auto animate-in slide-in-from-right duration-500 pb-40">
             <header className="mb-6 flex justify-between items-end">
               <div>
                 <h1 className="text-3xl font-black tracking-tight">รายการเช็คบิล</h1>
@@ -681,7 +691,7 @@ export default function AdminApp() {
               </div>
             </header>
 
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* --- Aggregated Billing View: Group by Table --- */}
               {Array.from(new Set(orders.filter(o => o.status === 'เรียกเช็คบิล').map(o => o.table_no))).length === 0 ? (
                 <div className="p-12 text-center text-gray-400 bg-white rounded-3xl border-2 border-dashed border-gray-100 italic">
@@ -753,7 +763,7 @@ export default function AdminApp() {
       {/* ✅ TAB: SALES (แก้ไขตรรกะให้ยอดขึ้น 100%) */}
       {
         activeTab === 'sales' && (
-          <main className="p-6 max-w-md mx-auto animate-in fade-in duration-500 pb-40">
+          <main className="p-6 max-w-4xl mx-auto animate-in fade-in duration-500 pb-40">
             <header className="mb-6">
               <h1 className="text-3xl font-black tracking-tight">รายงานยอดขาย</h1>
               <p className="text-gray-400 font-bold text-sm">ตรวจสอบรายได้ของคุณ</p>
@@ -842,7 +852,7 @@ export default function AdminApp() {
 
               return (
                 <>
-                  <div className="grid grid-cols-2 gap-4 mb-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     <div className="bg-white p-5 rounded-[2.5rem] border border-gray-50 shadow-sm">
                       <div className="bg-green-50 w-10 h-10 rounded-2xl flex items-center justify-center text-green-500 mb-3">
                         <TrendingUp size={20} />
@@ -873,12 +883,9 @@ export default function AdminApp() {
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <h3 className="font-black text-lg px-2 flex items-center gap-2">
-                      <ListFilter size={18} /> ประวัติการขาย
-                    </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {filteredSales.length === 0 ? (
-                      <div className="text-center py-10 text-gray-400 font-bold bg-white rounded-[2rem] border border-dashed border-gray-100">
+                      <div className="col-span-full text-center py-10 text-gray-400 font-bold bg-white rounded-[2rem] border border-dashed border-gray-100">
                         ไม่มีรายการขายในช่วงเวลานี้
                       </div>
                     ) : (
@@ -891,7 +898,7 @@ export default function AdminApp() {
                             <div>
                               <p className="font-black text-sm">โต๊ะ {order.table_no}</p>
                               <p className="text-[10px] text-gray-400 font-bold">
-                                {new Date(order.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
+                                {formatOrderTime(order.created_at)}
                               </p>
                             </div>
                           </div>

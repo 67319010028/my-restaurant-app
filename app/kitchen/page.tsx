@@ -280,14 +280,14 @@ export default function KitchenPage() {
       <main className="px-6 space-y-5 max-w-7xl mx-auto">
         {filteredOrders.length === 0 ? (
           <div className="py-32 text-center">
-            <div className="bg-white rounded-3xl p-12 border-2 border-dashed border-gray-200 shadow-sm">
+            <div className="bg-white rounded-3xl p-12 border-2 border-dashed border-gray-100 shadow-sm max-w-md mx-auto">
               <ClipboardList size={64} className="text-gray-300 mx-auto mb-4" />
               <p className="text-gray-600 font-bold text-lg">ไม่พบรายการสั่งอาหาร</p>
               <p className="text-gray-400 text-sm mt-2">รอออเดอร์จากแอดมิน...</p>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5">
             {filteredOrders.map((order, index) => (
               <div
                 key={order.id}
