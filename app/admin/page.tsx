@@ -11,7 +11,7 @@ import {
 
 export default function AdminApp() {
   const [activeTab, setActiveTab] = useState<'menu' | 'order' | 'billing' | 'sales'>('menu');
-  const [orderSubTab, setOrderSubTab] = useState('รอรับออเดอร์');
+  const [orderSubTab, setOrderSubTab] = useState('กำลังทำ');
   const [menus, setMenus] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -50,25 +50,17 @@ export default function AdminApp() {
 
     const channel = new BroadcastChannel('restaurant_demo_channel');
     channel.onmessage = (event) => {
-      const { type, id, status, table_no, total_price, items } = event.data;
+      const { type, id, status } = event.data;
       if (type === 'ORDER_UPDATE') {
+        // Only update status of existing orders, don't add new ones
+        // (Supabase realtime will handle new orders via fetchOrders)
         setOrders(prev => {
           const exists = prev.find(o => o.id === id);
           if (exists) {
             return prev.map(o => o.id === id ? { ...o, status } : o);
-          } else {
-            // New order incoming - play notification sound
-            playNotificationSound();
-            const newOrder = {
-              id,
-              table_no,
-              status,
-              total_price: total_price || 0,
-              created_at: new Date().toISOString(),
-              items: items || []
-            };
-            return [newOrder, ...prev];
           }
+          // Don't add new orders here - let Supabase realtime handle it
+          return prev;
         });
       }
     };
@@ -601,14 +593,13 @@ export default function AdminApp() {
             </header>
 
             <div className="flex bg-gray-100 p-1 rounded-2xl mb-6 max-w-md mx-auto md:mx-0">
-              {['รอรับออเดอร์', 'กำลังทำ', 'เสร็จแล้ว', 'ยกเลิก'].map((tab) => (
+              {['กำลังทำ', 'เสร็จแล้ว', 'ยกเลิก'].map((tab) => (
                 <button key={tab} onClick={() => setOrderSubTab(tab)} className={`flex-1 py-2.5 rounded-xl font-bold text-[10px] transition-all ${orderSubTab === tab ? 'bg-[#1E293B] text-white shadow-md' : 'text-gray-400'}`}>{tab}</button>
               ))}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {orders.filter(o => {
-                if (orderSubTab === 'รอรับออเดอร์') return o.status === 'รอ';
                 if (orderSubTab === 'กำลังทำ') return ['กำลังเตรียม', 'กำลังทำ', 'เสร็จแล้ว', 'เรียกเช็คบิล'].includes(o.status);
                 if (orderSubTab === 'เสร็จแล้ว') return o.status === 'เสร็จสิ้น';
                 if (orderSubTab === 'ยกเลิก') return o.status === 'ออร์เดอร์ยกเลิก' || o.status === 'ยกเลิก';
@@ -640,16 +631,6 @@ export default function AdminApp() {
                   <div className="flex gap-2">
                     {order.status === 'เรียกเช็คบิล' ? (
                       <button onClick={() => setActiveTab('billing')} className="w-full bg-red-500 text-white py-4 rounded-3xl font-black text-sm flex items-center justify-center gap-2 animate-pulse"><Wallet size={18} /> ไปที่หน้าชำระเงิน</button>
-                    ) : orderSubTab === 'รอรับออเดอร์' ? (
-                      <>
-                        <button onClick={() => updateOrderStatus(order.id, 'ยกเลิก')} className="flex-1 bg-gray-50 text-gray-400 py-3.5 rounded-3xl font-black text-sm">ยกเลิก</button>
-                        <button
-                          onClick={() => updateOrderStatus(order.id, 'กำลังเตรียม')}
-                          className="flex-[2] bg-blue-600 text-white py-3.5 rounded-3xl font-black text-sm"
-                        >
-                          รับออเดอร์
-                        </button>
-                      </>
                     ) : orderSubTab === 'กำลังทำ' ? (
                       <div className="w-full space-y-2">
                         {order.status === 'กำลังเตรียม' && (
@@ -776,6 +757,12 @@ export default function AdminApp() {
               >
                 รายวัน
               </button>
+              <button
+                onClick={() => setSalesViewMode('monthly')}
+                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all ${salesViewMode === 'monthly' ? 'bg-white text-[#1E293B] shadow-sm' : 'text-gray-400'}`}
+              >
+                รายเดือน
+              </button>
             </div>
 
             <div className="flex justify-between items-center mb-4 px-2">
@@ -798,21 +785,42 @@ export default function AdminApp() {
                 <Calendar size={20} />
               </div>
               <div className="flex-1">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">เลือกช่วงเวลา</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">
+                  {salesViewMode === 'daily' ? 'เลือกวันที่' : 'เลือกเดือน'}
+                </p>
                 {salesViewMode === 'daily' ? (
-                  <input
-                    type="date"
-                    className="w-full font-bold text-[#1E293B] outline-none bg-transparent"
-                    value={selectedSalesDate}
-                    onChange={(e) => setSelectedSalesDate(e.target.value)}
-                  />
+                  <div>
+                    <input
+                      type="date"
+                      className="w-full font-bold text-[#1E293B] outline-none bg-transparent"
+                      value={selectedSalesDate}
+                      onChange={(e) => setSelectedSalesDate(e.target.value)}
+                    />
+                    <p className="text-[9px] text-gray-400 mt-1">
+                      {new Date(selectedSalesDate).toLocaleDateString('th-TH', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        timeZone: 'Asia/Bangkok'
+                      })}
+                    </p>
+                  </div>
                 ) : (
-                  <input
-                    type="month"
-                    className="w-full font-bold text-[#1E293B] outline-none bg-transparent"
-                    value={selectedSalesMonth}
-                    onChange={(e) => setSelectedSalesMonth(e.target.value)}
-                  />
+                  <div>
+                    <input
+                      type="month"
+                      className="w-full font-bold text-[#1E293B] outline-none bg-transparent"
+                      value={selectedSalesMonth}
+                      onChange={(e) => setSelectedSalesMonth(e.target.value)}
+                    />
+                    <p className="text-[9px] text-gray-400 mt-1">
+                      {new Date(selectedSalesMonth + '-01').toLocaleDateString('th-TH', {
+                        year: 'numeric',
+                        month: 'long',
+                        timeZone: 'Asia/Bangkok'
+                      })}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>

@@ -37,7 +37,7 @@ export default function KitchenPage() {
     // BroadcastChannel for Realtime Sync (Listen for updates from Admin)
     const broadcastChannel = new BroadcastChannel('restaurant_demo_channel');
     broadcastChannel.onmessage = (event) => {
-      const { type, action, id, status, item, table_no } = event.data;
+      const { type, id, status, table_no } = event.data;
 
       if (type === 'ORDER_UPDATE') {
         if (status === 'เสร็จสิ้น' && table_no) {
@@ -50,18 +50,16 @@ export default function KitchenPage() {
           return;
         }
 
+        // Only update status of existing orders, don't add new ones
+        // (Supabase realtime will handle new orders via fetchOrders)
         setOrders(prev => {
           const exists = prev.find(o => o.id === id);
           if (exists) {
             const updated = prev.map(o => o.id === id ? { ...o, status } : o);
             if (typeof window !== 'undefined') localStorage.setItem('demo_admin_orders', JSON.stringify(updated));
             return updated;
-          } else if (item) {
-            // If new order
-            const newOrders = [item, ...prev];
-            if (typeof window !== 'undefined') localStorage.setItem('demo_admin_orders', JSON.stringify(newOrders));
-            return newOrders;
           }
+          // Don't add new orders here - let Supabase realtime handle it
           return prev;
         });
       }
@@ -84,7 +82,7 @@ export default function KitchenPage() {
       id: 991,
       table_no: "5",
       created_at: new Date().toISOString(),
-      status: "รอ",
+      status: "กำลังเตรียม",
       total_price: 350,
       items: [
         { name: "ข้าวกะเพราหมูสับ", quantity: 2, isSpecial: true, note: "ไม่ใส่ถั่วฝักยาว" },

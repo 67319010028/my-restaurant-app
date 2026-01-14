@@ -59,7 +59,7 @@ function RestaurantAppContent() {
   const totalBillAmount = orders.reduce((sum, order) => sum + (Number(order.total_price) || 0), 0);
   const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const isCurrentlyBilling = orders.some(o => o.status === 'เรียกเช็คบิล');
-  const preparingCount = orders.filter(o => o.status === 'รอ' || o.status === 'กำลังทำ').length;
+  const preparingCount = orders.filter(o => o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ').length;
   const servedCount = orders.filter(o => o.status === 'เสร็จแล้ว').length;
   const filteredProducts = selectedCat ? products.filter(p => p.category === selectedCat) : products;
 
@@ -381,7 +381,7 @@ function RestaurantAppContent() {
     const newOrder: Order = {
       id: Math.floor(Math.random() * 10000),
       total_price: totalPrice,
-      status: 'รอ',
+      status: 'กำลังเตรียม',
       table_no: tableNo,
       created_at: new Date().toISOString(),
       items: cart
@@ -416,7 +416,7 @@ function RestaurantAppContent() {
       const { error } = await supabase.from('orders').insert([{
         items: cart,
         total_price: totalPrice,
-        status: 'รอ',
+        status: 'กำลังเตรียม',
         table_no: tableNo,
         created_at: new Date().toISOString()
       }]);
@@ -582,7 +582,7 @@ function RestaurantAppContent() {
                     <div className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-colors ${order.status === 'เสร็จแล้ว' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-orange-50 border-orange-100 text-orange-400'
                       }`}>
                       {order.status === 'เสร็จแล้ว' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
-                      <span className="text-[10px] font-bold">{order.status === 'รอ' ? 'รอยืนยัน' : order.status}</span>
+                      <span className="text-[10px] font-bold">{order.status === 'กำลังเตรียม' ? 'กำลังเตรียม' : order.status}</span>
                     </div>
                     <div className={`absolute left-0 top-0 bottom-0 w-1 transition-colors ${order.status === 'เสร็จแล้ว' ? 'bg-green-500' : 'bg-orange-400'}`}></div>
                   </div>
