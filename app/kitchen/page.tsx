@@ -198,12 +198,12 @@ export default function KitchenPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-gray-100 text-gray-800 pb-10 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-pink-100 text-[#411E24] pb-10 font-sans">
 
       {/* Header & Status Summary Row */}
       <header className="p-6 bg-white/80 backdrop-blur-xl sticky top-0 z-10 shadow-lg border-b border-gray-200">
         <div className="flex items-center gap-4 mb-6">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-2xl shadow-md">
+          <div className="bg-gradient-to-br from-[#FF85A1] to-[#FF9AA2] p-3 rounded-2xl shadow-md">
             <ChefHat size={32} className="text-white" />
           </div>
           <div>
@@ -216,26 +216,26 @@ export default function KitchenPage() {
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white p-4 rounded-2xl border-2 border-orange-200 shadow-sm hover:shadow-md transition-all">
+          <div className="bg-white p-4 rounded-2xl border-2 border-pink-200 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between mb-2">
-              <Timer size={20} className="text-orange-500" />
-              <div className="text-3xl font-black text-orange-600">{orders.filter(o => o.status === 'กำลังเตรียม').length}</div>
+              <Timer size={20} className="text-[#FF85A1]" />
+              <div className="text-3xl font-black text-black">{orders.filter(o => o.status === 'กำลังเตรียม').length}</div>
             </div>
-            <div className="text-orange-600 text-[11px] font-bold uppercase tracking-wider">รอดำเนินการ</div>
+            <div className="text-pink-400 text-[11px] font-bold uppercase tracking-wider">รอดำเนินการ</div>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border-2 border-amber-200 shadow-sm hover:shadow-md transition-all">
+          <div className="bg-white p-4 rounded-2xl border-2 border-pink-100 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between mb-2">
-              <ChefHat size={20} className="text-amber-500" />
-              <div className="text-3xl font-black text-amber-600">{orders.filter(o => o.status === 'กำลังทำ').length}</div>
+              <ChefHat size={20} className="text-pink-400" />
+              <div className="text-3xl font-black text-black">{orders.filter(o => o.status === 'กำลังทำ').length}</div>
             </div>
-            <div className="text-amber-600 text-[11px] font-bold uppercase tracking-wider">กำลังทำ</div>
+            <div className="text-pink-400 text-[11px] font-bold uppercase tracking-wider">กำลังทำ</div>
           </div>
 
           <div className="bg-white p-4 rounded-2xl border-2 border-emerald-200 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between mb-2">
               <CheckCircle2 size={20} className="text-emerald-500" />
-              <div className="text-3xl font-black text-emerald-600">{orders.filter(o => isFinished(o.status)).length}</div>
+              <div className="text-3xl font-black text-black">{orders.filter(o => isFinished(o.status)).length}</div>
             </div>
             <div className="text-emerald-600 text-[11px] font-bold uppercase tracking-wider">เสร็จแล้ว</div>
           </div>
@@ -258,8 +258,8 @@ export default function KitchenPage() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === tab
-                ? 'bg-blue-500 text-white shadow-md'
-                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                ? 'bg-[#FF85A1] text-white shadow-md'
+                : 'bg-white text-pink-300 hover:bg-pink-50 border border-pink-100'
                 }`}
             >
               {tab}
@@ -295,7 +295,7 @@ export default function KitchenPage() {
                 {/* Header */}
                 <div className="p-6 flex justify-between items-center bg-white">
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-blue-500 rounded-3xl flex items-center justify-center text-3xl font-black text-white shadow-lg">
+                    <div className="w-16 h-16 bg-[#FF85A1] rounded-3xl flex items-center justify-center text-3xl font-black text-white shadow-lg">
                       {order.table_no}
                     </div>
                     <div>
@@ -310,8 +310,8 @@ export default function KitchenPage() {
                   <div className={`px-4 py-2 rounded-full text-xs font-black ${isFinished(order.status)
                     ? 'bg-emerald-100 text-emerald-600'
                     : order.status === 'กำลังทำ'
-                      ? 'bg-amber-100 text-amber-600'
-                      : 'bg-orange-100 text-orange-600'
+                      ? 'bg-pink-100 text-pink-500'
+                      : 'bg-pink-50 text-pink-400'
                     }`}>
                     {isFinished(order.status) ? '✓ เสร็จแล้ว' : order.status}
                   </div>
@@ -328,23 +328,23 @@ export default function KitchenPage() {
                           </span>
                           <div className="flex flex-wrap gap-2 items-center mt-2">
                             {item.isSpecial && (
-                              <span className="text-orange-600 font-black text-[10px] uppercase bg-orange-50 px-3 py-1 rounded-full border border-orange-100 flex items-center gap-1">
+                              <span className="text-pink-500 font-black text-[10px] uppercase bg-pink-50 px-3 py-1 rounded-full border border-pink-100 flex items-center gap-1">
                                 <span className="text-sm">⭐</span> พิเศษ
                               </span>
                             )}
                             {item.selectedNoodle && (
                               <span className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-black flex items-center gap-1 border border-blue-50">
-                                <Utensils size={12} strokeWidth={3} /> {item.selectedNoodle}
+                                <Utensils size={12} strokeWidth={3} className="text-pink-400" /> {item.selectedNoodle}
                               </span>
                             )}
                           </div>
                           {item.note && (
-                            <p className="text-[10px] text-amber-600 font-bold mt-2 bg-amber-50/50 p-2 rounded-xl border border-amber-50">
+                            <p className="text-[10px] text-pink-400 font-bold mt-2 bg-pink-50/50 p-2 rounded-xl border border-pink-50">
                               💬 {item.note}
                             </p>
                           )}
                         </div>
-                        <span className="bg-blue-500 text-white px-4 py-1.5 rounded-xl text-sm font-black ml-4 shrink-0 shadow-md">
+                        <span className="bg-[#FF85A1] text-white px-4 py-1.5 rounded-xl text-sm font-black ml-4 shrink-0 shadow-md">
                           ×{item.quantity}
                         </span>
                       </div>
@@ -356,7 +356,7 @@ export default function KitchenPage() {
                 <div className="p-6 bg-white">
                   <div className="flex justify-between items-center mb-6">
                     <span className="text-xs text-gray-400 font-black uppercase tracking-widest">ยอดรวม</span>
-                    <span className="text-3xl font-black text-gray-900">
+                    <span className="text-3xl font-black text-black">
                       ฿{Number(order.total_price || 0).toLocaleString()}
                     </span>
                   </div>
@@ -369,19 +369,19 @@ export default function KitchenPage() {
                     <div className="grid grid-cols-3 gap-3">
                       <button
                         onClick={() => updateStatus(order.id, 'กำลังเตรียม')}
-                        className="bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-md"
+                        className="bg-pink-100 hover:bg-pink-200 text-pink-500 py-4 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-sm"
                       >
                         รอ
                       </button>
                       <button
                         onClick={() => updateStatus(order.id, 'กำลังทำ')}
-                        className="bg-amber-500 hover:bg-amber-600 text-white py-4 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-md"
+                        className="bg-pink-200 hover:bg-pink-300 text-pink-600 py-4 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-md"
                       >
                         กำลังทำ
                       </button>
                       <button
                         onClick={() => updateStatus(order.id, 'เสร็จแล้ว')}
-                        className="bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-md"
+                        className="bg-[#FF85A1] hover:bg-[#FF69B4] text-white py-4 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-md"
                       >
                         ✓ เสร็จ
                       </button>

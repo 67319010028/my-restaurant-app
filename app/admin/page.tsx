@@ -425,11 +425,11 @@ export default function AdminApp() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-pink-50 rounded-full -mr-16 -mt-16 blur-3xl opacity-50"></div>
 
           <div className="relative mb-10">
-            <div className="w-24 h-24 bg-gradient-to-br from-[#FFD1DC] to-[#FF9AA2] rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-pink-100/50 transform rotate-6 hover:rotate-0 transition-transform duration-500">
+            <div className="w-24 h-24 bg-gradient-to-br from-[#FF85A1] to-[#FF9AA2] rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-pink-100/50 transform rotate-6 hover:rotate-0 transition-transform duration-500">
               <span className="text-6xl drop-shadow-lg">🦐</span>
             </div>
             <h1 className="text-3xl font-black text-[#FF85A1] tracking-tight">Pa Kung Shop</h1>
-            <p className="text-[10px] text-pink-300 font-black uppercase tracking-[0.2em] mt-2">Admin Dashboard Login</p>
+            <p className="text-[10px] text-[#FF85A1] font-black uppercase tracking-[0.2em] mt-2">Admin Dashboard Login</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4 relative">
@@ -437,7 +437,7 @@ export default function AdminApp() {
               <input
                 type="email"
                 placeholder="อีเมลแอดมิน"
-                className={`w-full bg-white p-5 rounded-[1.8rem] font-bold outline-none border-2 transition-all shadow-sm ${loginError ? 'border-red-400 bg-red-50 text-red-500' : 'border-pink-50 focus:border-[#FFB7B2] group-hover:border-pink-100'}`}
+                className={`w-full bg-white p-5 rounded-[1.8rem] font-bold outline-none border-2 transition-all shadow-sm text-[#411E24] ${loginError ? 'border-red-400 bg-red-50 text-red-500' : 'border-pink-50 focus:border-[#FFB7B2] group-hover:border-pink-100'}`}
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
                 required
@@ -447,7 +447,7 @@ export default function AdminApp() {
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="รหัสผ่าน"
-                className={`w-full bg-white p-5 rounded-[1.8rem] font-bold outline-none border-2 transition-all shadow-sm pr-14 ${loginError ? 'border-red-400 bg-red-50 text-red-500' : 'border-pink-50 focus:border-[#FFB7B2] group-hover:border-pink-100'}`}
+                className={`w-full bg-white p-5 rounded-[1.8rem] font-bold outline-none border-2 transition-all shadow-sm pr-14 text-[#411E24] ${loginError ? 'border-red-400 bg-red-50 text-red-500' : 'border-pink-50 focus:border-[#FFB7B2] group-hover:border-pink-100'}`}
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
                 required
@@ -455,7 +455,7 @@ export default function AdminApp() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-6 top-1/2 -translate-y-1/2 text-pink-300 hover:text-pink-400 transition-colors"
+                className="absolute right-6 top-1/2 -translate-y-1/2 text-[#FF85A1] hover:text-pink-400 transition-colors"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -474,14 +474,14 @@ export default function AdminApp() {
             </button>
           </form>
 
-          <p className="text-[9px] text-pink-300 mt-10 font-bold uppercase tracking-widest">© 2026 Admin Portal v2.0</p>
+          <p className="text-[9px] text-[#FF85A1] mt-10 font-bold uppercase tracking-widest">© 2026 Admin Portal v2.0</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] text-[#1E293B] font-sans pb-32 relative">
+    <div className="min-h-screen bg-[#FFF5F8] text-[#411E24] font-sans pb-32 relative">
 
       {/* แจ้งเตือนเช็คบิล */}
       {billingOrdersCount > 0 && (
@@ -529,37 +529,37 @@ export default function AdminApp() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             <div className="bg-[#EFFFF6] p-5 rounded-[2rem] flex-1 border border-green-100 shadow-sm">
               <p className="text-[#10B981] text-[10px] font-black uppercase mb-1">พร้อมขาย</p>
-              <p className="text-3xl font-black text-[#065F46]">{menus.filter(m => m.is_available).length}</p>
+              <p className="text-3xl font-black text-black">{menus.filter(m => m.is_available).length}</p>
             </div>
             <div className="bg-[#FFF1F1] p-5 rounded-[2rem] flex-1 border border-red-100 shadow-sm">
               <p className="text-[#F43F5E] text-[10px] font-black uppercase mb-1">สินค้าหมด</p>
-              <p className="text-3xl font-black text-[#991B1B]">{menus.filter(m => !m.is_available).length}</p>
+              <p className="text-3xl font-black text-black">{menus.filter(m => !m.is_available).length}</p>
             </div>
           </div>
 
           <div className="flex gap-2 overflow-x-auto no-scrollbar mb-6">
             {['ทั้งหมด', 'เมนูข้าว', 'เมนูเส้น', 'กับข้าว'].map(cat => (
-              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-6 py-2.5 rounded-full text-xs font-black transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-[#1E293B] text-white shadow-lg' : 'bg-white text-gray-400'}`}>{cat}</button>
+              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-6 py-2.5 rounded-full text-xs font-black transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-[#FF85A1] text-white shadow-lg' : 'bg-white text-[#FF85A1]'}`}>{cat}</button>
             ))}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {menus.filter(m => selectedCategory === 'ทั้งหมด' || m.category === selectedCategory).map((item) => (
-              <div key={item.id} className="bg-white p-4 rounded-[2rem] shadow-sm flex items-center gap-4 border border-gray-50">
+              <div key={item.id} className="bg-white p-4 rounded-[2rem] shadow-sm flex items-center gap-4 border border-pink-50">
                 <div className={`w-20 h-20 rounded-[1.5rem] overflow-hidden bg-gray-100 flex-shrink-0 ${!item.is_available && 'grayscale opacity-50'}`}>
                   <img src={item.image_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className={`font-black text-md ${!item.is_available ? 'text-gray-400 line-through' : 'text-[#1E293B]'}`}>{item.name}</h3>
+                      <h3 className={`font-black text-md ${!item.is_available ? 'text-pink-200 line-through' : 'text-[#FF85A1]'}`}>{item.name}</h3>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {item.noodle_options?.map((n: string) => (
                           <span key={n} className="bg-blue-50 text-blue-500 text-[8px] px-1.5 py-0.5 rounded-md font-black">#{n}</span>
                         ))}
                       </div>
                     </div>
-                    <p className="text-lg font-black text-blue-600">฿{item.price}</p>
+                    <p className="text-lg font-black text-black">฿{item.price}</p>
                   </div>
                   <div className="flex items-center justify-between mt-2">
                     <div className="flex items-center gap-2">
@@ -572,7 +572,7 @@ export default function AdminApp() {
                       <span className="text-[9px] font-black text-gray-400 uppercase">{item.is_available ? 'พร้อมขาย' : 'ของหมด'}</span>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => handleEditClick(item)} className="p-2 bg-blue-50 rounded-full text-blue-400"><Edit3 size={14} /></button>
+                      <button onClick={() => handleEditClick(item)} className="p-2 bg-pink-50 rounded-full text-pink-400"><Edit3 size={14} /></button>
                       <button onClick={() => deleteMenu(item.id)} className="p-2 bg-red-50 rounded-full text-red-400"><Trash2 size={14} /></button>
                     </div>
                   </div>
@@ -594,7 +594,7 @@ export default function AdminApp() {
 
             <div className="flex bg-gray-100 p-1 rounded-2xl mb-6 max-w-md mx-auto md:mx-0">
               {['กำลังทำ', 'เสร็จแล้ว', 'ยกเลิก'].map((tab) => (
-                <button key={tab} onClick={() => setOrderSubTab(tab)} className={`flex-1 py-2.5 rounded-xl font-bold text-[10px] transition-all ${orderSubTab === tab ? 'bg-[#1E293B] text-white shadow-md' : 'text-gray-400'}`}>{tab}</button>
+                <button key={tab} onClick={() => setOrderSubTab(tab)} className={`flex-1 py-2.5 rounded-xl font-bold text-[10px] transition-all ${orderSubTab === tab ? 'bg-[#FF85A1] text-white shadow-md' : 'text-[#FF85A1]'}`}>{tab}</button>
               ))}
             </div>
 
@@ -605,10 +605,10 @@ export default function AdminApp() {
                 if (orderSubTab === 'ยกเลิก') return o.status === 'ออร์เดอร์ยกเลิก' || o.status === 'ยกเลิก';
                 return true;
               }).map((order) => (
-                <div key={order.id} className={`bg-white p-6 rounded-[2.5rem] shadow-sm border-2 transition-all ${order.status === 'เรียกเช็คบิล' ? 'border-red-500 ring-4 ring-red-50' : 'border-gray-50'}`}>
+                <div key={order.id} className={`bg-white p-6 rounded-[2.5rem] shadow-sm border-2 transition-all ${order.status === 'เรียกเช็คบิล' ? 'border-pink-500 ring-4 ring-pink-50' : 'border-pink-50'}`}>
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black text-white ${order.status === 'เรียกเช็คบิล' ? 'bg-red-500' : 'bg-blue-500'}`}>{order.table_no}</div>
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black text-white ${order.status === 'เรียกเช็คบิล' ? 'bg-pink-500' : 'bg-pink-400'}`}>{order.table_no}</div>
                       <div>
                         <h3 className="font-black text-lg">โต๊ะ {order.table_no}</h3>
                         <p className="text-[10px] text-gray-400 font-bold flex items-center gap-1">
@@ -623,7 +623,7 @@ export default function AdminApp() {
                     {order.items?.map((item: any, idx: number) => (
                       <div key={idx} className="flex justify-between font-bold text-sm">
                         <span className="flex-1"><span className="text-gray-400">{item.quantity}x</span> {item.name} <span className="text-blue-500 text-[10px]">{item.selectedNoodle}</span></span>
-                        <span className="font-black">฿{item.price * item.quantity}</span>
+                        <span className="font-black text-black">฿{item.price * item.quantity}</span>
                       </div>
                     ))}
                   </div>
@@ -685,7 +685,7 @@ export default function AdminApp() {
 
                   return (
                     <div key={tableNo} className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-2">
-                      <div className="bg-[#41281A] p-4 text-white flex justify-between items-center">
+                      <div className="bg-[#FF85A1] p-4 text-white flex justify-between items-center">
                         <div className="flex items-center gap-2">
                           <div className="bg-orange-500 p-2 rounded-xl"><Utensils size={18} /></div>
                           <span className="font-black text-lg">โต๊ะ {tableNo}</span>
@@ -704,8 +704,8 @@ export default function AdminApp() {
                               </div>
                               {order.items?.map((item: any, i: number) => (
                                 <div key={i} className="flex justify-between text-sm">
-                                  <span className="text-gray-500 font-medium">{item.quantity}x {item.name} {item.isSpecial && '(พิเศษ)'}</span>
-                                  <span className="font-bold">฿{(item.totalItemPrice || item.price) * item.quantity}</span>
+                                  <span className="text-black font-medium">{item.quantity}x {item.name} {item.isSpecial && '(พิเศษ)'}</span>
+                                  <span className="font-black text-black">฿{(item.totalItemPrice || item.price) * item.quantity}</span>
                                 </div>
                               ))}
                             </div>
@@ -714,7 +714,7 @@ export default function AdminApp() {
 
                         <div className="flex justify-between items-center pt-4 border-t border-gray-100 mb-6">
                           <span className="text-gray-400 font-medium">รวมยอดชำระทั้งสิ้น</span>
-                          <span className="text-2xl font-black text-[#F97316]">฿{totalAmount}</span>
+                          <span className="text-2xl font-black text-black">฿{totalAmount}</span>
                         </div>
 
                         <div className="flex gap-3">
@@ -753,20 +753,20 @@ export default function AdminApp() {
             <div className="flex bg-gray-100 p-1 rounded-2xl mb-6">
               <button
                 onClick={() => setSalesViewMode('daily')}
-                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all ${salesViewMode === 'daily' ? 'bg-white text-[#1E293B] shadow-sm' : 'text-gray-400'}`}
+                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all ${salesViewMode === 'daily' ? 'bg-white text-[#FF85A1] shadow-sm' : 'text-[#FF85A1]'}`}
               >
                 รายวัน
               </button>
               <button
                 onClick={() => setSalesViewMode('monthly')}
-                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all ${salesViewMode === 'monthly' ? 'bg-white text-[#1E293B] shadow-sm' : 'text-gray-400'}`}
+                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all ${salesViewMode === 'monthly' ? 'bg-white text-[#FF85A1] shadow-sm' : 'text-[#FF85A1]'}`}
               >
                 รายเดือน
               </button>
             </div>
 
             <div className="flex justify-between items-center mb-4 px-2">
-              <h2 className="text-xl font-black text-[#1E293B]">สรุปยอดขาย</h2>
+              <h2 className="text-xl font-black text-[#FF85A1]">สรุปยอดขาย</h2>
               <button
                 onClick={() => {
                   if (confirm("ต้องการรีเซ็ตข้อมูลทดสอบกลับไปค่าเริ่มต้นใช่หรือไม่? (ข้อมูลที่บันทึกในเครื่องจะถูกล้าง)")) {
@@ -792,7 +792,7 @@ export default function AdminApp() {
                   <div>
                     <input
                       type="date"
-                      className="w-full font-bold text-[#1E293B] outline-none bg-transparent"
+                      className="w-full font-bold text-[#411E24] outline-none bg-transparent"
                       value={selectedSalesDate}
                       onChange={(e) => setSelectedSalesDate(e.target.value)}
                     />
@@ -809,7 +809,7 @@ export default function AdminApp() {
                   <div>
                     <input
                       type="month"
-                      className="w-full font-bold text-[#1E293B] outline-none bg-transparent"
+                      className="w-full font-bold text-[#411E24] outline-none bg-transparent"
                       value={selectedSalesMonth}
                       onChange={(e) => setSelectedSalesMonth(e.target.value)}
                     />
@@ -865,24 +865,24 @@ export default function AdminApp() {
                       <div className="bg-green-50 w-10 h-10 rounded-2xl flex items-center justify-center text-green-500 mb-3">
                         <TrendingUp size={20} />
                       </div>
-                      <p className="text-2xl font-black text-[#1E293B]">฿{totalRevenue.toLocaleString()}</p>
+                      <p className="text-2xl font-black text-black">฿{totalRevenue.toLocaleString()}</p>
                       <p className="text-[10px] font-bold text-gray-400 uppercase">รายได้รวม</p>
                     </div>
                     <div className="bg-white p-5 rounded-[2.5rem] border border-gray-50 shadow-sm">
                       <div className="bg-blue-50 w-10 h-10 rounded-2xl flex items-center justify-center text-blue-500 mb-3">
                         <ListChecks size={20} />
                       </div>
-                      <p className="text-2xl font-black text-[#1E293B]">{totalOrders}</p>
+                      <p className="text-2xl font-black text-black">{totalOrders}</p>
                       <p className="text-[10px] font-bold text-gray-400 uppercase">ออเดอร์</p>
                     </div>
                     <div className="bg-white p-5 rounded-[2.5rem] border border-gray-50 shadow-sm">
                       <div className="bg-orange-50 w-10 h-10 rounded-2xl flex items-center justify-center text-orange-500 mb-3">
                         <DollarSign size={20} />
                       </div>
-                      <p className="text-2xl font-black text-[#1E293B]">฿{avgTicket}</p>
+                      <p className="text-2xl font-black text-black">฿{avgTicket}</p>
                       <p className="text-[10px] font-bold text-gray-400 uppercase">เฉลี่ย/บิล</p>
                     </div>
-                    <div className="bg-[#1E293B] p-5 rounded-[2.5rem] shadow-lg">
+                    <div className="bg-[#FF85A1] p-5 rounded-[2.5rem] shadow-lg">
                       <div className="bg-white/10 w-10 h-10 rounded-2xl flex items-center justify-center text-white mb-3">
                         <Clock size={20} />
                       </div>
@@ -900,7 +900,7 @@ export default function AdminApp() {
                       filteredSales.map((order) => (
                         <div key={order.id} className="bg-white p-5 rounded-[2.2rem] border border-gray-50 flex justify-between items-center shadow-sm">
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-[#1E293B] font-black border border-gray-100">
+                            <div className="w-12 h-12 rounded-2xl bg-pink-100 flex items-center justify-center text-black font-black border border-pink-200">
                               {order.table_no}
                             </div>
                             <div>
@@ -911,8 +911,8 @@ export default function AdminApp() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-black text-[#10B981]">฿{order.total_price}</p>
-                            <p className="text-[10px] text-gray-400 font-bold">{order.items?.length || 0} รายการ</p>
+                            <p className="font-black text-black">฿{order.total_price}</p>
+                            <p className="text-[10px] text-black font-bold">{order.items?.length || 0} รายการ</p>
                           </div>
                         </div>
                       ))
@@ -939,35 +939,35 @@ export default function AdminApp() {
                   {formData.image_url ? <img src={formData.image_url} className="w-full h-full object-cover" /> : <ImageIcon size={30} className="text-gray-300" />}
                   <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
                 </div>
-                <input type="text" placeholder="ชื่อเมนู" required className="w-full bg-gray-50 rounded-[1.5rem] p-5 font-bold outline-none" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
-                <input type="number" placeholder="ราคา" required className="w-full bg-gray-50 rounded-[1.5rem] p-5 font-bold outline-none" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} />
+                <input type="text" placeholder="ชื่อเมนู" required className="w-full bg-gray-50 rounded-[1.5rem] p-5 font-bold outline-none text-[#411E24]" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                <input type="number" placeholder="ราคา" required className="w-full bg-gray-50 rounded-[1.5rem] p-5 font-bold outline-none text-[#411E24]" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} />
 
                 <div>
                   <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">หมวดหมู่</label>
                   <div className="flex gap-2 overflow-x-auto no-scrollbar">
                     {['เมนูข้าว', 'เมนูเส้น', 'กับข้าว'].map(cat => (
-                      <button key={cat} type="button" onClick={() => setFormData({ ...formData, category: cat })} className={`px-5 py-2.5 rounded-full text-[10px] font-black whitespace-nowrap ${formData.category === cat ? 'bg-[#1E293B] text-white' : 'bg-gray-100 text-gray-400'}`}>{cat}</button>
+                      <button key={cat} type="button" onClick={() => setFormData({ ...formData, category: cat })} className={`px-5 py-2.5 rounded-full text-[10px] font-black whitespace-nowrap ${formData.category === cat ? 'bg-[#FF85A1] text-white' : 'bg-pink-100 text-[#FF85A1]'}`}>{cat}</button>
                     ))}
                   </div>
                 </div>
 
-                <div className="bg-blue-50/50 p-6 rounded-[2.5rem] border border-blue-100 space-y-4">
-                  <label className="text-[10px] font-black uppercase text-blue-500 flex items-center gap-2"><ListChecks size={14} /> ตัวเลือกเส้นสำหรับลูกค้า</label>
+                <div className="bg-pink-50 p-6 rounded-[2.5rem] border border-pink-100 space-y-4">
+                  <label className="text-[10px] font-black uppercase text-pink-500 flex items-center gap-2"><ListChecks size={14} /> ตัวเลือกเส้นสำหรับลูกค้า</label>
                   <div className="flex gap-2">
-                    <input type="text" placeholder="เพิ่มเส้น..." className="flex-1 bg-white rounded-full px-4 py-2 text-xs font-bold outline-none" value={customNoodle} onChange={(e) => setCustomNoodle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCustomNoodle())} />
-                    <button type="button" onClick={handleAddCustomNoodle} className="bg-blue-500 text-white p-2 rounded-full"><PlusCircle size={20} /></button>
+                    <input type="text" placeholder="เพิ่มเส้น..." className="flex-1 bg-white rounded-full px-4 py-2 text-xs font-bold outline-none text-[#411E24]" value={customNoodle} onChange={(e) => setCustomNoodle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCustomNoodle())} />
+                    <button type="button" onClick={handleAddCustomNoodle} className="bg-pink-500 text-white p-2 rounded-full"><PlusCircle size={20} /></button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {noodleTypes.map(noodle => (
                       <div key={noodle} className="relative group">
-                        <button type="button" onClick={() => toggleNoodle(noodle)} className={`w-full py-3 rounded-xl text-[10px] font-black border-2 ${formData.noodle_options.includes(noodle) ? 'bg-blue-500 border-blue-500 text-white' : 'bg-white border-transparent text-gray-400'}`}>{noodle}</button>
+                        <button type="button" onClick={() => toggleNoodle(noodle)} className={`w-full py-3 rounded-xl text-[10px] font-black border-2 ${formData.noodle_options.includes(noodle) ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-transparent text-[#FF85A1]'}`}>{noodle}</button>
                         <button type="button" onClick={(e) => { e.stopPropagation(); handleDeleteNoodleType(noodle); }} className="absolute -top-1 -right-1 bg-red-100 text-red-500 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"><X size={10} /></button>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <button type="submit" disabled={isSaving} className={`w-full py-5 rounded-[2rem] font-black text-lg text-white shadow-xl ${isSaving ? 'bg-gray-400' : 'bg-[#1E293B]'}`}>
+                <button type="submit" disabled={isSaving} className={`w-full py-5 rounded-[2rem] font-black text-lg text-white shadow-xl ${isSaving ? 'bg-pink-200' : 'bg-[#FF85A1]'}`}>
                   {isSaving ? 'กำลังบันทึก...' : 'บันทึกเมนู'}
                 </button>
               </form>
@@ -978,8 +978,8 @@ export default function AdminApp() {
 
       {/* NAV BAR (คงเดิม) */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t p-5 flex justify-around items-center z-50">
-        <button onClick={() => setActiveTab('menu')} className={`flex flex-col items-center gap-1 ${activeTab === 'menu' ? 'text-[#1E293B]' : 'text-gray-300'}`}><Utensils size={24} /><span className="text-[9px] font-black">เมนู</span></button>
-        <button onClick={() => setActiveTab('order')} className={`flex flex-col items-center gap-1 relative ${activeTab === 'order' ? 'text-[#1E293B]' : 'text-gray-300'}`}>
+        <button onClick={() => setActiveTab('menu')} className={`flex flex-col items-center gap-1 ${activeTab === 'menu' ? 'text-[#FF85A1]' : 'text-pink-200'}`}><Utensils size={24} /><span className="text-[9px] font-black">เมนู</span></button>
+        <button onClick={() => setActiveTab('order')} className={`flex flex-col items-center gap-1 relative ${activeTab === 'order' ? 'text-[#FF85A1]' : 'text-pink-200'}`}>
           <ClipboardList size={24} />
           <span className="text-[9px] font-black">ออเดอร์</span>
           {orders.filter(o => o.status === 'รอ').length > 0 && (
@@ -997,7 +997,7 @@ export default function AdminApp() {
             </span>
           )}
         </button>
-        <button onClick={() => setActiveTab('sales')} className={`flex flex-col items-center gap-1 ${activeTab === 'sales' ? 'text-orange-500' : 'text-gray-300'}`}><TrendingUp size={24} /><span className="text-[9px] font-black">ยอดขาย</span></button>
+        <button onClick={() => setActiveTab('sales')} className={`flex flex-col items-center gap-1 ${activeTab === 'sales' ? 'text-[#FF69B4]' : 'text-pink-200'}`}><TrendingUp size={24} /><span className="text-[9px] font-black">ยอดขาย</span></button>
       </nav>
     </div>
   );
