@@ -665,9 +665,9 @@ function RestaurantAppContent() {
           <div><p className="text-[10px] text-black/60 font-black uppercase tracking-widest">โต๊ะ {tableNo}</p><h1 className="text-3xl font-black">ร้านป้ากุ้ง</h1></div>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-          <button onClick={() => setSelectedCat(null)} className={`px-6 py-3 rounded-full text-xs font-black transition-all ${!selectedCat ? 'bg-white text-[#FF85A1] shadow-md ring-2 ring-[#FF85A1]/20' : 'bg-white/20 text-white'}`}>ทั้งหมด</button>
+          <button onClick={() => setSelectedCat(null)} className={`px-6 py-3 rounded-full text-sm font-black transition-all whitespace-nowrap ${!selectedCat ? 'bg-white text-[#FF85A1] shadow-md ring-2 ring-[#FF85A1]/20' : 'bg-white/20 text-white'}`}>ทั้งหมด</button>
           {['เมนูข้าว', 'เมนูเส้น', 'กับข้าว'].map((cat) => (
-            <button key={cat} onClick={() => setSelectedCat(cat)} className={`px-6 py-3 rounded-full text-xs font-black transition-all ${selectedCat === cat ? 'bg-white text-[#FF85A1] shadow-md ring-2 ring-[#FF85A1]/20' : 'bg-white/20 text-white'}`}>{cat}</button>
+            <button key={cat} onClick={() => setSelectedCat(cat)} className={`px-6 py-3 rounded-full text-sm font-black transition-all whitespace-nowrap ${selectedCat === cat ? 'bg-white text-[#FF85A1] shadow-md ring-2 ring-[#FF85A1]/20' : 'bg-white/20 text-white'}`}>{cat}</button>
           ))}
         </div>
       </header>

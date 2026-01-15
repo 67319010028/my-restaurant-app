@@ -539,7 +539,7 @@ export default function AdminApp() {
 
           <div className="flex gap-2 overflow-x-auto no-scrollbar mb-6">
             {['ทั้งหมด', 'เมนูข้าว', 'เมนูเส้น', 'กับข้าว'].map(cat => (
-              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-6 py-2.5 rounded-full text-xs font-black transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-[#FF85A1] text-white shadow-lg' : 'bg-white text-[#FF85A1]'}`}>{cat}</button>
+              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-6 py-2.5 rounded-full text-sm font-black transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-[#FF85A1] text-white shadow-lg' : 'bg-white text-[#FF85A1]'}`}>{cat}</button>
             ))}
           </div>
 
