@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
   Clock, CheckCircle2, Timer,
-  ChefHat, Utensils, ClipboardList
+  ChefHat, Utensils, ClipboardList, BellRing
 } from 'lucide-react';
 
 // กำหนด Interface เพื่อความปลอดภัยของข้อมูล
@@ -27,6 +27,19 @@ interface Order {
 export default function KitchenPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState('ทั้งหมด');
+  const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
+
+  // Notification sound function
+  const playNotificationSound = () => {
+    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGWi78OScTgwOUKzn77RgGwU7k9r0y3kpBSh+zPLaizsKElyx6OyrWBUIQ6Hn8r1nHwUqgc3y2Ik3CBlouvDknE4MDlCs5++0YBsFO5Pa9Mt5KQUofszy2os7ChJcsevsq1gVCEOh5/K9Zx8FKoHN8tiJNwgZaLrw5JxODA5QrOfvtGAbBTuT2vTLeSkFKH7M8tqLOwoSXLHo7KtYFQhDoe');
+    audio.play().then(() => {
+      if (!isAudioUnlocked) setIsAudioUnlocked(true);
+    }).catch(e => console.log('Audio play failed:', e));
+  };
+
+  const unlockAudio = () => {
+    playNotificationSound();
+  };
 
   // ฟังก์ชันเช็คว่าสถานะนี้ถือว่า "ทำเสร็จแล้ว" ในมุมมองของห้องครัวหรือไม่
   const isFinished = (status: string) => status === 'เสร็จแล้ว' || status === 'เรียกเช็คบิล';
@@ -67,7 +80,12 @@ export default function KitchenPage() {
 
     const channel = supabase
       .channel('kitchen_updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchOrders())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload: any) => {
+        if (payload.eventType === 'INSERT') {
+          playNotificationSound();
+        }
+        fetchOrders();
+      })
       .subscribe();
 
     return () => {
@@ -214,6 +232,27 @@ export default function KitchenPage() {
             </p>
           </div>
         </div>
+
+        {/* Audio Unlock Banner */}
+        {!isAudioUnlocked && (
+          <div className="mb-6 bg-amber-50 border border-amber-200 p-4 rounded-3xl flex items-center justify-between animate-pulse shadow-sm">
+            <div className="flex items-center gap-3 text-amber-700">
+              <div className="bg-amber-100 p-2 rounded-full">
+                <BellRing size={20} className="animate-bounce" />
+              </div>
+              <div>
+                <p className="text-sm font-black">ปิดเสียงอยู่!</p>
+                <p className="text-[10px] font-bold opacity-80">กรุณากดเปิดเสียงเพื่อรับแจ้งเตือนออเดอร์ใหม่</p>
+              </div>
+            </div>
+            <button
+              onClick={unlockAudio}
+              className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2 rounded-2xl text-xs font-black uppercase shadow-md active:scale-95 transition-all"
+            >
+              เปิดเสียงแจ้งเตือน
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-white p-4 rounded-2xl border-2 border-pink-200 shadow-sm hover:shadow-md transition-all">
