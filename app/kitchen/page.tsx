@@ -71,6 +71,7 @@ export default function KitchenPage() {
         audioContextRef.current = ctx;
         playNotificationSound(); // Play test sound
         setIsAudioUnlocked(true);
+        localStorage.setItem('audio_unlocked', 'true');
         console.log('Kitchen Web Audio Unlocked');
       }).catch((e: any) => {
         alert('Kitchen Unlock error: ' + e.message);
@@ -88,6 +89,33 @@ export default function KitchenPage() {
 
   useEffect(() => {
     fetchOrders();
+
+    // 1. ตรวจสอบว่าเคยอนุญาตเสียงไว้หรือยัง
+    const savedAudioPref = localStorage.getItem('audio_unlocked');
+    if (savedAudioPref === 'true') {
+      setIsAudioUnlocked(true);
+    }
+
+    // 2. ฟังก์ชันแอบปลดล็อก (ถ้าเคยอนุญาตไว้แล้ว)
+    const handleFirstInteraction = () => {
+      if (localStorage.getItem('audio_unlocked') === 'true' && !audioContextRef.current) {
+        try {
+          const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+          const ctx = new AudioContextClass();
+          ctx.resume().then(() => {
+            audioContextRef.current = ctx;
+            console.log('Kitchen Audio auto-resumed');
+          });
+        } catch (e) {
+          console.error('Kitchen Auto-resume failed', e);
+        }
+      }
+      window.removeEventListener('click', handleFirstInteraction);
+      window.removeEventListener('touchstart', handleFirstInteraction);
+    };
+
+    window.addEventListener('click', handleFirstInteraction);
+    window.addEventListener('touchstart', handleFirstInteraction);
 
     // BroadcastChannel for Realtime Sync (Listen for updates from Admin)
     const broadcastChannel = new BroadcastChannel('restaurant_demo_channel');
