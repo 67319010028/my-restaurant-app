@@ -20,6 +20,7 @@ export default function AdminApp() {
   const [realtimeStatus, setRealtimeStatus] = useState<'DISCONNECTED' | 'CONNECTING' | 'SUBSCRIBED' | 'ERROR'>('DISCONNECTED');
   const [lastEventTime, setLastEventTime] = useState<string>('ยังไม่มีข้อมูล');
   const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ✅ จัดการเรื่องวันที่ให้เป็นปัจจุบันตามเวลาไทย
@@ -39,16 +40,32 @@ export default function AdminApp() {
     name: '', price: '', category: 'เมนูข้าว', image_url: '', imageFile: null as File | null, noodle_options: [] as string[]
   });
 
+  const [isUnlocking, setIsUnlocking] = useState(false);
+
   // Notification sound function
   const playNotificationSound = () => {
-    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGWi78OScTgwOUKzn77RgGwU7k9r0y3kpBSh+zPLaizsKElyx6OyrWBUIQ6Hn8r1nHwUqgc3y2Ik3CBlouvDknE4MDlCs5++0YBsFO5Pa9Mt5KQUofszy2os7ChJcsevsq1gVCEOh5/K9Zx8FKoHN8tiJNwgZaLrw5JxODA5QrOfvtGAbBTuT2vTLeSkFKH7M8tqLOwoSXLHo7KtYFQhDoe');
-    audio.play().then(() => {
-      if (!isAudioUnlocked) setIsAudioUnlocked(true);
-    }).catch(e => console.log('Audio play failed:', e));
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+    }
   };
 
   const unlockAudio = () => {
-    playNotificationSound();
+    setIsUnlocking(true);
+    // 1. Create audio object DIRECTLY in the click handler
+    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGWi78OScTgwOUKzn77RgGwU7k9r0y3kpBSh+zPLaizsKElyx6OyrWBUIQ6Hn8r1nHwUqgc3y2Ik3CBlouvDknE4MDlCs5++0YBsFO5Pa9Mt5KQUofszy2os7ChJcsevsq1gVCEOh5/K9Zx8FKoHN8tiJNwgZaLrw5JxODA5QrOfvtGAbBTuT2vTLeSkFKH7M8tqLOwoSXLHo7KtYFQhDoe');
+
+    // 2. Play immediately
+    audio.play().then(() => {
+      audioRef.current = audio;
+      setIsAudioUnlocked(true);
+      console.log('Audio unlocked successfully');
+    }).catch(e => {
+      console.error('Audio unlock failed:', e);
+      alert('ไม่สามารถเปิดเสียงได้: ' + e.message);
+    }).finally(() => {
+      setIsUnlocking(false);
+    });
   };
 
   useEffect(() => {
@@ -504,26 +521,39 @@ export default function AdminApp() {
       )}
 
       {/* Global Realtime Monitor & Test Sound */}
-      <div className="max-w-4xl mx-auto px-6 pt-4 space-y-2">
-        {!isAudioUnlocked && (
-          <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl flex items-center justify-between animate-pulse">
-            <div className="flex items-center gap-2 text-amber-700">
-              <BellRing size={16} />
-              <span className="text-xs font-bold">กรุณากดเปิดเสียงเพื่อรับการแจ้งเตือน</span>
+      {/* Global Audio Unlock Overlay */}
+      {!isAudioUnlocked && (
+        <div className="fixed inset-0 z-[999] bg-white flex items-center justify-center p-6 sm:p-10">
+          <div className="w-full max-w-sm text-center">
+            <div className="w-24 h-24 bg-pink-100 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
+              <BellRing size={48} className={`text-[#FF85A1] ${isUnlocking ? 'animate-spin' : 'animate-bounce'}`} />
             </div>
-            <button onClick={unlockAudio} className="bg-amber-500 text-white px-4 py-1 rounded-full text-[10px] font-black uppercase shadow-sm">
-              เปิดเสียง
+            <h2 className="text-3xl font-black text-[#411E24] mb-4">เปิดเสียงแจ้งเตือน</h2>
+            <p className="text-gray-500 font-bold mb-10 leading-relaxed px-4">
+              คลิกปุ่มด้านล่างเพื่อเริ่มระบบเสียงแจ้งเตือน<br />
+              ออเดอร์ใหม่และลูกค้าเรียกเช็คบิล<br />
+              (เพื่อให้ทำงานได้บนมือถือ)
+            </p>
+            <button
+              onClick={unlockAudio}
+              disabled={isUnlocking}
+              className={`w-full py-6 rounded-[2rem] font-black text-xl shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 ${isUnlocking ? 'bg-gray-200 text-gray-400' : 'bg-[#FF85A1] text-white shadow-pink-200 hover:scale-[1.02]'}`}
+            >
+              {isUnlocking ? 'กำลังเปิดเสียง...' : 'ตกลง เปิดเสียง ✨'}
             </button>
           </div>
-        )}
-        <div className="flex items-center justify-between gap-2">
+        </div>
+      )}
+
+      <div className="max-w-4xl mx-auto px-6 pt-4 space-y-2 text-center sm:text-left">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 items-center sm:items-start">
               <div className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-full border border-gray-100 shadow-sm">
                 <div className={`w-2 h-2 rounded-full ${realtimeStatus === 'SUBSCRIBED' ? 'bg-green-500 animate-pulse' : realtimeStatus === 'CONNECTING' ? 'bg-yellow-400' : 'bg-red-400'}`} />
                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Realtime: {realtimeStatus}</span>
               </div>
-              <p className="text-[8px] text-gray-400 ml-2 font-bold">อัปเดตล่าสุด: {lastEventTime}</p>
+              <p className="text-[8px] text-gray-400 ml-2 font-bold font-sans">อัปเดตล่าสุด: {lastEventTime}</p>
             </div>
             <button onClick={playNotificationSound} className={`text-[10px] px-3 py-1 rounded-full font-black border flex items-center gap-1 active:scale-95 transition-transform ${isAudioUnlocked ? 'bg-blue-50 text-blue-500 border-blue-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
               <BellRing size={12} /> ทดสอบเสียง
@@ -531,7 +561,7 @@ export default function AdminApp() {
           </div>
           <button
             onClick={handleLogout}
-            className="text-red-400 font-black text-[10px] uppercase tracking-wider"
+            className="text-red-400 font-black text-[10px] uppercase tracking-wider bg-red-50/50 px-4 py-1.5 rounded-full"
           >
             Logout
           </button>
