@@ -29,30 +29,58 @@ export default function KitchenPage() {
   const [activeTab, setActiveTab] = useState('ทั้งหมด');
   const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
-  // Notification sound function
+  // Notification sound function (Pure Web Audio API - iOS Friendly)
   const playNotificationSound = () => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch((e: any) => console.log('Audio play failed:', e));
+    if (!audioContextRef.current) return;
+
+    try {
+      const ctx = audioContextRef.current;
+      if (ctx.state === 'suspended') ctx.resume();
+
+      const playTone = (freq: number, time: number, duration: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, time);
+        gain.gain.setValueAtTime(0, time);
+        gain.gain.linearRampToValueAtTime(0.3, time + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.01, time + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(time);
+        osc.stop(time + duration);
+      };
+
+      const now = ctx.currentTime;
+      playTone(880, now, 0.3); // High ping
+      playTone(880, now + 0.15, 0.3); // Second high ping
+    } catch (e) {
+      console.error('Kitchen Web Audio Play Error:', e);
     }
   };
 
   const unlockAudio = () => {
     setIsUnlocking(true);
-    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGWi78OScTgwOUKzn77RgGwU7k9r0y3kpBSh+zPLaizsKElyx6OyrWBUIQ6Hn8r1nHwUqgc3y2Ik3CBlouvDknE4MDlCs5++0YBsFO5Pa9Mt5KQUofszy2os7ChJcsevsq1gVCEOh5/K9Zx8FKoHN8tiJNwgZaLrw5JxODA5QrOfvtGAbBTuT2vTLeSkFKH7M8tqLOwoSXLHo7KtYFQhDoe');
+    try {
+      const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AudioContextClass();
 
-    audio.play().then(() => {
-      audioRef.current = audio;
-      setIsAudioUnlocked(true);
-      console.log('Kitchen Audio unlocked');
-    }).catch((e: any) => {
-      console.error('Kitchen Audio unlock failed:', e);
-      alert('ไม่สามารถเปิดเสียงห้องครัวได้: ' + e.message);
-    }).finally(() => {
+      ctx.resume().then(() => {
+        audioContextRef.current = ctx;
+        playNotificationSound(); // Play test sound
+        setIsAudioUnlocked(true);
+        console.log('Kitchen Web Audio Unlocked');
+      }).catch((e: any) => {
+        alert('Kitchen Unlock error: ' + e.message);
+      }).finally(() => {
+        setIsUnlocking(false);
+      });
+    } catch (e: any) {
+      alert('Kitchen Browser not compatible: ' + e.message);
       setIsUnlocking(false);
-    });
+    }
   };
 
   // ฟังก์ชันเช็คว่าสถานะนี้ถือว่า "ทำเสร็จแล้ว" ในมุมมองของห้องครัวหรือไม่
