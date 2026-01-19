@@ -235,17 +235,9 @@ export default function AdminApp() {
         const savedOrdersStr = localStorage.getItem('demo_admin_orders');
         let savedOrders = savedOrdersStr ? JSON.parse(savedOrdersStr) : [];
 
-        // ผสานข้อมูล: ใช้ข้อมูลจริงจาก Database เป็นหลัก
-        // และเอาข้อมูลที่ระบบจำไว้ (เฉพาะที่เป็นของจริง) มารวม
-        const combined = [...baseOrders];
-        savedOrders.forEach((s: any) => {
-          // กรองเอาเฉพาะข้อมูลจริง (ID > 1000 หรือ ID ที่ไม่มีใน Mock เดิม)
-          // หรือเอาเฉพาะที่ไม่อยู่ใน MOCK_ORDERS ดั้งเดิม (ID 101-104)
-          const isMock = s.id >= 101 && s.id <= 104;
-          if (!isMock && !combined.some(c => c.id === s.id)) {
-            combined.push(s);
-          }
-        });
+        // ✅ Only merge localStorage if DB fetch returned nothing 
+        // to prevent "shadow" duplicate orders when using real Supabase.
+        const combined = baseOrders.length > 0 ? baseOrders : savedOrders;
 
         setOrders(combined);
         localStorage.setItem('demo_admin_orders', JSON.stringify(combined));
@@ -803,6 +795,36 @@ export default function AdminApp() {
                       </div>
 
                       <div className="p-6">
+                        {/* ✅ Unserved Items Warning */}
+                        {(() => {
+                          const allTableOrders = orders.filter(o => o.table_no === tableNo && o.status !== 'เสร็จสิ้น');
+                          const unservedOrders = allTableOrders.filter(o => o.status === 'รอ' || o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ');
+
+                          if (unservedOrders.length > 0) {
+                            return (
+                              <div className="mb-6 bg-red-50 border-2 border-red-500 rounded-3xl p-5 animate-pulse">
+                                <p className="text-red-600 font-black text-sm flex items-center gap-2 mb-3">
+                                  <BellRing size={18} /> ⚠️ แจ้งเตือน: มีรายการที่ยังไม่เสร็จสิ้น!
+                                </p>
+                                <div className="space-y-2">
+                                  {unservedOrders.map(o => (
+                                    <div key={o.id} className="bg-white/60 p-3 rounded-2xl">
+                                      {o.items?.map((item: any, i: number) => (
+                                        <div key={i} className="flex justify-between text-[11px] font-bold text-red-400">
+                                          <span>• {item.quantity}x {item.name} {item.selectedNoodle && `(${item.selectedNoodle})`}</span>
+                                          <span className="bg-red-100 px-2 py-0.5 rounded-full uppercase text-[8px]">{o.status}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ))}
+                                </div>
+                                <p className="text-[10px] text-red-400 mt-3 font-bold">* กรุณาแจ้งครัวหรือตรวจสอบก่อนรับเงิน</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+
                         <div className="space-y-4 mb-6">
                           {tableOrders.map((order, idx) => (
                             <div key={order.id} className="space-y-2 border-b border-gray-50 pb-4 last:border-0 last:pb-0">

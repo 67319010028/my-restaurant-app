@@ -210,19 +210,12 @@ export default function KitchenPage() {
       let baseOrders = data || [];
 
       if (typeof window !== 'undefined') {
-        // 2. Sync with LocalStorage (Demo Mode / Offline)
         const savedOrdersStr = localStorage.getItem('demo_admin_orders');
         let savedOrders = savedOrdersStr ? JSON.parse(savedOrdersStr) : [];
 
-        // Merge logic similar to Admin page: prioritize DB if exists, otherwise use local
-        const combined = [...baseOrders];
-        savedOrders.forEach((s: any) => {
-          const isMock = s.id >= 991 && s.id <= 993; // Local kitchen mocks
-          const isAdminMock = s.id >= 101 && s.id <= 104; // Admin mocks
-          if (!isMock && !isAdminMock && !combined.some(c => c.id === s.id)) {
-            combined.push(s);
-          }
-        });
+        // ✅ Only merge localStorage if DB fetch returned nothing 
+        // to prevent "shadow" duplicate orders.
+        const combined = baseOrders.length > 0 ? baseOrders : savedOrders;
 
         setOrders(combined);
         localStorage.setItem('demo_admin_orders', JSON.stringify(combined));
@@ -481,19 +474,28 @@ export default function KitchenPage() {
                     <div className="grid grid-cols-3 gap-3">
                       <button
                         onClick={() => updateStatus(order.id, 'กำลังเตรียม')}
-                        className="bg-pink-100 hover:bg-pink-200 text-pink-500 py-4 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-sm"
+                        className={`py-4 rounded-2xl font-black text-sm active:scale-95 transition-all ${order.status === 'กำลังเตรียม'
+                            ? 'bg-pink-500 text-white shadow-lg shadow-pink-200'
+                            : 'bg-white text-pink-300 border border-pink-50'
+                          }`}
                       >
                         รอ
                       </button>
                       <button
                         onClick={() => updateStatus(order.id, 'กำลังทำ')}
-                        className="bg-pink-200 hover:bg-pink-300 text-pink-600 py-4 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-md"
+                        className={`py-4 rounded-2xl font-black text-sm active:scale-95 transition-all ${order.status === 'กำลังทำ'
+                            ? 'bg-pink-600 text-white shadow-lg shadow-pink-300'
+                            : 'bg-white text-pink-300 border border-pink-50'
+                          }`}
                       >
                         กำลังทำ
                       </button>
                       <button
                         onClick={() => updateStatus(order.id, 'เสร็จแล้ว')}
-                        className="bg-[#FF85A1] hover:bg-[#FF69B4] text-white py-4 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-md"
+                        className={`py-4 rounded-2xl font-black text-sm active:scale-95 transition-all ${order.status === 'เสร็จแล้ว'
+                            ? 'bg-[#FF1493] text-white shadow-lg shadow-pink-200'
+                            : 'bg-white text-pink-300 border border-pink-50'
+                          }`}
                       >
                         ✓ เสร็จ
                       </button>

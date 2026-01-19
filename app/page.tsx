@@ -390,26 +390,8 @@ function RestaurantAppContent() {
     // Optimistic update
     setOrders(prev => [newOrder, ...prev]);
 
-    // ✅ Sync LocalStorage for Demo Mode (So Admin page sees it immediately)
-    if (typeof window !== 'undefined') {
-      const savedOrdersStr = localStorage.getItem('demo_admin_orders');
-      let savedOrders = savedOrdersStr ? JSON.parse(savedOrdersStr) : [];
-      savedOrders = [newOrder, ...savedOrders];
-      localStorage.setItem('demo_admin_orders', JSON.stringify(savedOrders));
-
-      // Broadcast to Admin & Kitchen
-      const channel = new BroadcastChannel('restaurant_demo_channel');
-      channel.postMessage({
-        type: 'ORDER_UPDATE',
-        id: newOrder.id,
-        status: newOrder.status,
-        table_no: newOrder.table_no,
-        total_price: newOrder.total_price,
-        items: newOrder.items,
-        item: newOrder, // For Kitchen compatibility
-        created_at: newOrder.created_at
-      });
-    }
+    // ✅ Removed redundant optimistic local storage update to prevent duplication
+    // We rely on Supabase Realtime to update Admin/Kitchen pages.
 
     // Try real submit
     try {
@@ -431,13 +413,7 @@ function RestaurantAppContent() {
     }, 2000);
   };
   const callForBill = async () => {
-    // Check if there are any unfinished orders (not 'เสร็จแล้ว')
-    const unfinishedOrders = orders.filter(o => o.status === 'รอ' || o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ');
-
-    if (unfinishedOrders.length > 0) {
-      alert("ไม่สามารถเช็คบิลได้ เนื่องจากยังมีรายการอาหารที่ยังไม่เสร็จสิ้น\nกรุณารอรับอาหารให้ครบก่อนนะคะ 🦐✨");
-      return;
-    }
+    // Allow bill request regardless of unfinished orders as per user request
 
     if (orders.length === 0) {
       alert("ไม่พบรายการอาหารที่สั่งค่ะ");
