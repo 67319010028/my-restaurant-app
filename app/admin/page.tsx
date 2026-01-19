@@ -620,9 +620,21 @@ export default function AdminApp() {
       {/* TAB: MENU */}
       {activeTab === 'menu' && (
         <main className="p-6 max-w-4xl mx-auto animate-in fade-in duration-500">
-          <header className="mb-6">
-            <h1 className="text-3xl font-black tracking-tight">จัดการเมนู</h1>
-            <p className="text-gray-400 font-bold text-sm">{menus.length} รายการ</p>
+          <header className="mb-6 flex justify-between items-end">
+            <div>
+              <h1 className="text-3xl font-black tracking-tight">จัดการเมนู</h1>
+              <p className="text-gray-400 font-bold text-sm">{menus.length} รายการ</p>
+            </div>
+            <button
+              onClick={() => {
+                setEditingId(null);
+                setFormData({ name: '', price: '', category: 'เมนูข้าว', image_url: '', imageFile: null, noodle_options: [] });
+                setIsModalOpen(true);
+              }}
+              className="bg-[#FF85A1] text-white px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 shadow-lg shadow-pink-100 hover:scale-[1.02] active:scale-95 transition-all"
+            >
+              <Plus size={18} strokeWidth={3} /> เพิ่มเมนูใหม่
+            </button>
           </header>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
