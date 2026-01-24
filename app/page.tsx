@@ -46,6 +46,9 @@ function RestaurantAppContent() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [view, setView] = useState<'menu' | 'cart' | 'orders' | 'bill'>('menu');
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [isValidTable, setIsValidTable] = useState<boolean | null>(null);
+  const [isLoadingTable, setIsLoadingTable] = useState(true);
 
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const [tempQty, setTempQty] = useState(1);
@@ -65,8 +68,15 @@ function RestaurantAppContent() {
 
   // --- Effects ---
   useEffect(() => {
+    checkTableValidity();
     fetchData();
     fetchOrders();
+
+    // Check if previously checked in for this table
+    const sessionKey = `checkin_done_${tableNo}`;
+    if (localStorage.getItem(sessionKey) === 'true') {
+      setIsCheckedIn(true);
+    }
 
     // BroadcastChannel for Demo Realtime Sync
     const channel = new BroadcastChannel('restaurant_demo_channel');
@@ -296,6 +306,37 @@ function RestaurantAppContent() {
       } else {
         setOrders(MOCK_CUSTOMER_ORDERS);
       }
+    }
+  };
+
+  const checkTableValidity = async () => {
+    setIsLoadingTable(true);
+    try {
+      const { data, error } = await supabase
+        .from('tables')
+        .select('*')
+        .eq('table_number', tableNo)
+        .single();
+
+      if (error || !data) {
+        setIsValidTable(false);
+      } else {
+        setIsValidTable(true);
+      }
+    } catch (e) {
+      setIsValidTable(false);
+    } finally {
+      setIsLoadingTable(false);
+    }
+  };
+
+  const handleCheckIn = async () => {
+    setIsCheckedIn(true);
+    localStorage.setItem(`checkin_done_${tableNo}`, 'true');
+    try {
+      await supabase.from('tables').update({ status: 'occupied' }).eq('table_number', tableNo);
+    } catch (e) {
+      console.warn("Update table status failed:", e);
     }
   };
 
@@ -630,6 +671,55 @@ function RestaurantAppContent() {
             <button onClick={() => setView('menu')} className="w-full text-center font-black text-pink-400">กลับไปหน้าเมนู</button>
           </div>
         </main>
+      </div>
+    );
+  }
+
+  if (isLoadingTable) {
+    return (
+      <div className="min-h-screen bg-[#FFFBF5] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#FF85A1]"></div>
+      </div>
+    );
+  }
+
+  if (isValidTable === false) {
+    return (
+      <div className="min-h-screen bg-[#FFFBF5] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-6">
+          <Trash2 size={48} className="text-red-500" />
+        </div>
+        <h1 className="text-2xl font-black text-black mb-2">ไม่พบข้อมูลโต๊ะ</h1>
+        <p className="text-gray-500 mb-8 font-bold">ขออภัยค่ะ เลขโต๊ะนี้ไม่ถูกต้องหรือไม่อยู่ในระบบ กรุณาสแกน QR Code ใหม่อีกครั้ง</p>
+      </div>
+    );
+  }
+
+  if (!isCheckedIn) {
+    return (
+      <div className="min-h-screen bg-[#FFFBF5] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-[#FF85A1]/20 to-transparent"></div>
+        <div className="relative z-10 text-center animate-in zoom-in duration-500">
+          <div className="w-28 h-28 bg-white rounded-3xl shadow-xl flex items-center justify-center mx-auto mb-8 border-4 border-[#FF85A1]">
+            <Utensils size={56} className="text-[#FF85A1]" />
+          </div>
+          <h1 className="text-3xl font-black text-black mb-2">ยินดีต้อนรับสู่ร้านป้ากุ้ง</h1>
+          <div className="bg-[#FF85A1] text-white px-6 py-2 rounded-full inline-block font-black text-xl mb-10 shadow-lg">
+            โต๊ะ {tableNo}
+          </div>
+          <p className="text-gray-500 font-bold mb-12 max-w-[280px] mx-auto leading-relaxed">
+            กรุณากดปุ่มด้านล่างเพื่อเริ่มสั่งอาหาร<br />ขอให้มีความสุขกับการรับประทานนะคะ ✨
+          </p>
+          <button
+            onClick={handleCheckIn}
+            className="w-full max-w-xs bg-[#FF85A1] text-black py-5 rounded-2xl font-black text-xl shadow-xl hover:scale-[1.05] transition-transform active:scale-95"
+          >
+            เริ่มสั่งอาหาร 🦐
+          </button>
+        </div>
+        <div className="absolute bottom-10 text-[10px] text-gray-300 font-black tracking-widest uppercase">
+          Powered by Pa Kung System v2.0
+        </div>
       </div>
     );
   }

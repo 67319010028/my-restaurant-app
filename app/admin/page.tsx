@@ -6,14 +6,16 @@ import {
   Search, Edit3, Trash2, X, Image as ImageIcon,
   Check, UploadCloud, Clock, ChefHat, CheckCircle2,
   Loader2, Calendar, DollarSign, ListFilter, ListChecks,
-  PlusCircle, Timer, BellRing, Wallet, Eye, EyeOff
+  PlusCircle, Timer, BellRing, Wallet, Eye, EyeOff, LayoutGrid
 } from 'lucide-react';
 
 export default function AdminApp() {
-  const [activeTab, setActiveTab] = useState<'menu' | 'order' | 'billing' | 'sales'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'order' | 'billing' | 'sales' | 'floor'>('floor');
   const [orderSubTab, setOrderSubTab] = useState('กำลังทำ');
   const [menus, setMenus] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [tables, setTables] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('ทั้งหมด');
   const [isSaving, setIsSaving] = useState(false);
@@ -100,6 +102,8 @@ export default function AdminApp() {
   useEffect(() => {
     fetchMenus();
     fetchOrders();
+    fetchTables();
+    fetchPayments();
 
     // 1. ตรวจสอบว่าเคยอนุญาตเสียงไว้หรือยัง
     const savedAudioPref = localStorage.getItem('audio_unlocked');
@@ -148,6 +152,10 @@ export default function AdminApp() {
 
     const menuSub = supabase.channel('menu_change').on('postgres_changes', { event: '*', schema: 'public', table: 'menus' }, () => fetchMenus()).subscribe();
 
+    const tableSub = supabase.channel('table_change').on('postgres_changes', { event: '*', schema: 'public', table: 'tables' }, () => fetchTables()).subscribe();
+
+    const paymentSub = supabase.channel('payment_change').on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => fetchPayments()).subscribe();
+
     const orderSub = supabase.channel('order_change').on('postgres_changes', {
       event: '*',
       schema: 'public',
@@ -176,6 +184,8 @@ export default function AdminApp() {
 
     return () => {
       supabase.removeChannel(menuSub);
+      supabase.removeChannel(tableSub);
+      supabase.removeChannel(paymentSub);
       supabase.removeChannel(orderSub);
       channel.close();
     };
@@ -221,6 +231,24 @@ export default function AdminApp() {
     } catch (e) {
       console.warn("Fetch Exception", e);
       setMenus(MOCK_MENUS);
+    }
+  };
+
+  const fetchTables = async () => {
+    try {
+      const { data, error } = await supabase.from('tables').select('*').order('table_number', { ascending: true });
+      if (!error) setTables(data || []);
+    } catch (e) {
+      console.warn("Fetch Tables Exception", e);
+    }
+  };
+
+  const fetchPayments = async () => {
+    try {
+      const { data, error } = await supabase.from('payments').select('*').order('created_at', { ascending: false });
+      if (!error) setPayments(data || []);
+    } catch (e) {
+      console.warn("Fetch Payments Exception", e);
     }
   };
 
@@ -279,12 +307,36 @@ export default function AdminApp() {
     // 4. Supabase Update
     try {
       if (newStatus === 'เสร็จสิ้น' && tableNo) {
+        // Calculate Total Amount for Payment Record
+        const tableOrders = orders.filter(o => o.table_no === tableNo && o.status !== 'เสร็จสิ้น');
+        const totalAmount = tableOrders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
+
+        // 4.1 Update all orders for this table to 'เสร็จสิ้น'
         await supabase.from('orders').update({ status: newStatus }).eq('table_no', tableNo).neq('status', 'เสร็จสิ้น');
+
+        // 4.2 Record Payment
+        if (totalAmount > 0) {
+          await supabase.from('payments').insert([{
+            order_id: id, // Record one of the IDs as reference
+            amount: totalAmount,
+            payment_method: 'cash' // Default for demo, can be expanded
+          }]);
+        }
+
+        // 4.3 Reset Table Status to 'available'
+        await supabase.from('tables').update({ status: 'available' }).eq('table_number', tableNo);
+        fetchTables(); // Refresh floor plan
       } else {
         await supabase.from('orders').update({ status: newStatus }).eq('id', id);
+
+        // If status is 'กำลังทำ' or 'เสร็จแล้ว', ensure table is 'occupied'
+        if (['กำลังเตรียม', 'กำลังทำ', 'เสร็จแล้ว', 'เรียกเช็คบิล'].includes(newStatus)) {
+          const tNo = tableNo || orders.find(o => o.id === id)?.table_no;
+          if (tNo) await supabase.from('tables').update({ status: 'occupied' }).eq('table_number', tNo);
+        }
       }
     } catch (e) {
-      console.warn('Supabase update failed (Demo Mode active):', e);
+      console.warn('Supabase update failed:', e);
     }
   };
 
@@ -617,82 +669,153 @@ export default function AdminApp() {
         </div>
       </div>
 
-      {/* TAB: MENU */}
-      {activeTab === 'menu' && (
-        <main className="p-6 max-w-4xl mx-auto animate-in fade-in duration-500">
-          <header className="mb-6 flex justify-between items-end">
-            <div>
-              <h1 className="text-3xl font-black tracking-tight">จัดการเมนู</h1>
-              <p className="text-gray-400 font-bold text-sm">{menus.length} รายการ</p>
-            </div>
-            <button
-              onClick={() => {
-                setEditingId(null);
-                setFormData({ name: '', price: '', category: 'เมนูข้าว', image_url: '', imageFile: null, noodle_options: [] });
-                setIsModalOpen(true);
-              }}
-              className="bg-[#FF85A1] text-white px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 shadow-lg shadow-pink-100 hover:scale-[1.02] active:scale-95 transition-all"
-            >
-              <Plus size={18} strokeWidth={3} /> เพิ่มเมนูใหม่
-            </button>
+      {/* TAB: FLOOR PLAN */}
+      {activeTab === 'floor' && (
+        <main className="p-6 max-w-4xl mx-auto animate-in fade-in duration-500 pb-40">
+          <header className="mb-8 text-center md:text-left">
+            <h1 className="text-3xl font-black tracking-tight">แผนผังร้าน (Floor Plan)</h1>
+            <p className="text-gray-400 font-bold text-sm">ตรวจสอบสถานะโต๊ะแบบ Real-time</p>
           </header>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <div className="bg-[#EFFFF6] p-5 rounded-[2rem] flex-1 border border-green-100 shadow-sm">
-              <p className="text-[#10B981] text-[10px] font-black uppercase mb-1">พร้อมขาย</p>
-              <p className="text-3xl font-black text-black">{menus.filter(m => m.is_available).length}</p>
-            </div>
-            <div className="bg-[#FFF1F1] p-5 rounded-[2rem] flex-1 border border-red-100 shadow-sm">
-              <p className="text-[#F43F5E] text-[10px] font-black uppercase mb-1">สินค้าหมด</p>
-              <p className="text-3xl font-black text-black">{menus.filter(m => !m.is_available).length}</p>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {tables.length === 0 ? (
+              <div className="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-pink-100 text-pink-300 font-bold">
+                ยังไม่มีข้อมูลโต๊ะในระบบ<br />
+                (กรุณากดเพิ่มข้อมูลในฐานข้อมูล)
+              </div>
+            ) : (
+              tables.map((table) => {
+                const isOccupied = orders.some(o => o.table_no === table.table_number && (o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ' || o.status === 'เสร็จแล้ว'));
+                const isBilling = orders.some(o => o.table_no === table.table_number && o.status === 'เรียกเช็คบิล');
+
+                let statusColor = 'bg-white border-pink-100 text-pink-400';
+                let statusText = 'ว่าง';
+
+                if (isBilling) {
+                  statusColor = 'bg-yellow-400 border-yellow-500 text-white animate-pulse';
+                  statusText = 'รอเช็คบิล';
+                } else if (isOccupied) {
+                  statusColor = 'bg-[#FF85A1] border-pink-400 text-white';
+                  statusText = 'มีลูกค้า';
+                }
+
+                return (
+                  <div
+                    key={table.id}
+                    onClick={() => {
+                      if (isBilling || isOccupied) {
+                        setActiveTab('order');
+                        setOrderSubTab('กำลังทำ');
+                      }
+                    }}
+                    className={`aspect-square rounded-[2.5rem] border-4 flex flex-col items-center justify-center gap-2 shadow-sm transition-all hover:scale-[1.05] cursor-pointer ${statusColor}`}
+                  >
+                    <span className="text-3xl font-black">{table.table_number}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-80">{statusText}</span>
+                    <div className="flex items-center gap-1 mt-1 opacity-60">
+                      <Utensils size={10} />
+                      <span className="text-[10px] font-bold">{table.capacity} ที่นั่ง</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
 
-          <div className="flex gap-2 overflow-x-auto no-scrollbar mb-6">
-            {['ทั้งหมด', 'เมนูข้าว', 'เมนูเส้น', 'กับข้าว'].map(cat => (
-              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-6 py-2.5 rounded-full text-sm font-black transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-[#FF85A1] text-white shadow-lg' : 'bg-white text-[#FF85A1]'}`}>{cat}</button>
-            ))}
+          <div className="mt-12 flex flex-wrap gap-4 justify-center md:justify-start">
+            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-pink-50 shadow-sm">
+              <div className="w-3 h-3 bg-white border-2 border-pink-100 rounded-full"></div>
+              <span className="text-[10px] font-black text-gray-400">โต๊ะว่าง</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-pink-50 shadow-sm">
+              <div className="w-3 h-3 bg-[#FF85A1] rounded-full"></div>
+              <span className="text-[10px] font-black text-gray-400">มีลูกค้า</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-pink-50 shadow-sm">
+              <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
+              <span className="text-[10px] font-black text-gray-400">เรียกเช็คบิล</span>
+            </div>
           </div>
+        </main>
+      )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {menus.filter(m => selectedCategory === 'ทั้งหมด' || m.category === selectedCategory).map((item) => (
-              <div key={item.id} className="bg-white p-4 rounded-[2rem] shadow-sm flex items-center gap-4 border border-pink-50">
-                <div className={`w-20 h-20 rounded-[1.5rem] overflow-hidden bg-gray-100 flex-shrink-0 ${!item.is_available && 'grayscale opacity-50'}`}>
-                  <img src={item.image_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className={`font-black text-md ${!item.is_available ? 'text-pink-200 line-through' : 'text-[#FF85A1]'}`}>{item.name}</h3>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {item.noodle_options?.map((n: string) => (
-                          <span key={n} className="bg-blue-50 text-blue-500 text-[8px] px-1.5 py-0.5 rounded-md font-black">#{n}</span>
-                        ))}
+      {/* TAB: MENU */}
+      {
+        activeTab === 'menu' && (
+          <main className="p-6 max-w-4xl mx-auto animate-in fade-in duration-500">
+            <header className="mb-6 flex justify-between items-end">
+              <div>
+                <h1 className="text-3xl font-black tracking-tight">จัดการเมนู</h1>
+                <p className="text-gray-400 font-bold text-sm">{menus.length} รายการ</p>
+              </div>
+              <button
+                onClick={() => {
+                  setEditingId(null);
+                  setFormData({ name: '', price: '', category: 'เมนูข้าว', image_url: '', imageFile: null, noodle_options: [] });
+                  setIsModalOpen(true);
+                }}
+                className="bg-[#FF85A1] text-white px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 shadow-lg shadow-pink-100 hover:scale-[1.02] active:scale-95 transition-all"
+              >
+                <Plus size={18} strokeWidth={3} /> เพิ่มเมนูใหม่
+              </button>
+            </header>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              <div className="bg-[#EFFFF6] p-5 rounded-[2rem] flex-1 border border-green-100 shadow-sm">
+                <p className="text-[#10B981] text-[10px] font-black uppercase mb-1">พร้อมขาย</p>
+                <p className="text-3xl font-black text-black">{menus.filter(m => m.is_available).length}</p>
+              </div>
+              <div className="bg-[#FFF1F1] p-5 rounded-[2rem] flex-1 border border-red-100 shadow-sm">
+                <p className="text-[#F43F5E] text-[10px] font-black uppercase mb-1">สินค้าหมด</p>
+                <p className="text-3xl font-black text-black">{menus.filter(m => !m.is_available).length}</p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 overflow-x-auto no-scrollbar mb-6">
+              {['ทั้งหมด', 'เมนูข้าว', 'เมนูเส้น', 'กับข้าว'].map(cat => (
+                <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-6 py-2.5 rounded-full text-sm font-black transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-[#FF85A1] text-white shadow-lg' : 'bg-white text-[#FF85A1]'}`}>{cat}</button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {menus.filter(m => selectedCategory === 'ทั้งหมด' || m.category === selectedCategory).map((item) => (
+                <div key={item.id} className="bg-white p-4 rounded-[2rem] shadow-sm flex items-center gap-4 border border-pink-50">
+                  <div className={`w-20 h-20 rounded-[1.5rem] overflow-hidden bg-gray-100 flex-shrink-0 ${!item.is_available && 'grayscale opacity-50'}`}>
+                    <img src={item.image_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className={`font-black text-md ${!item.is_available ? 'text-pink-200 line-through' : 'text-[#FF85A1]'}`}>{item.name}</h3>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {item.noodle_options?.map((n: string) => (
+                            <span key={n} className="bg-blue-50 text-blue-500 text-[8px] px-1.5 py-0.5 rounded-md font-black">#{n}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-lg font-black text-black">฿{item.price}</p>
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => toggleMenuAvailability(item.id, item.is_available)}
+                          className={`w-10 h-5 rounded-full relative transition-all ${item.is_available ? 'bg-[#34D399]' : 'bg-gray-300'}`}
+                        >
+                          <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${item.is_available ? 'right-0.5' : 'left-0.5'}`} />
+                        </button>
+                        <span className="text-[9px] font-black text-gray-400 uppercase">{item.is_available ? 'พร้อมขาย' : 'ของหมด'}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleEditClick(item)} className="p-2 bg-pink-50 rounded-full text-pink-400"><Edit3 size={14} /></button>
+                        <button onClick={() => deleteMenu(item.id)} className="p-2 bg-red-50 rounded-full text-red-400"><Trash2 size={14} /></button>
                       </div>
                     </div>
-                    <p className="text-lg font-black text-black">฿{item.price}</p>
-                  </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => toggleMenuAvailability(item.id, item.is_available)}
-                        className={`w-10 h-5 rounded-full relative transition-all ${item.is_available ? 'bg-[#34D399]' : 'bg-gray-300'}`}
-                      >
-                        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${item.is_available ? 'right-0.5' : 'left-0.5'}`} />
-                      </button>
-                      <span className="text-[9px] font-black text-gray-400 uppercase">{item.is_available ? 'พร้อมขาย' : 'ของหมด'}</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => handleEditClick(item)} className="p-2 bg-pink-50 rounded-full text-pink-400"><Edit3 size={14} /></button>
-                      <button onClick={() => deleteMenu(item.id)} className="p-2 bg-red-50 rounded-full text-red-400"><Trash2 size={14} /></button>
-                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </main >
-      )
+              ))}
+            </div>
+          </main >
+        )
       }
 
       {/* TAB: ORDER */}
@@ -1059,6 +1182,41 @@ export default function AdminApp() {
                       ))
                     )}
                   </div>
+
+                  {/* Payment History Section */}
+                  <div className="mt-12">
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-xl font-black text-[#FF85A1]">รายละเอียดการชำระเงิน (Payments)</h2>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{payments.length} รายการ</p>
+                    </div>
+                    <div className="space-y-3">
+                      {payments.length === 0 ? (
+                        <div className="text-center py-10 text-gray-300 italic bg-white rounded-3xl border border-dashed border-gray-100">
+                          ยังไม่มีประวัติการชำระเงิน
+                        </div>
+                      ) : (
+                        payments.map((payment) => (
+                          <div key={payment.id} className="bg-white p-5 rounded-[2rem] border border-gray-50 flex justify-between items-center shadow-sm hover:border-pink-100 transition-colors">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center text-green-500">
+                                <Wallet size={24} />
+                              </div>
+                              <div>
+                                <p className="font-black text-sm">เลขที่ออเดอร์ #{payment.id}</p>
+                                <p className="text-[10px] text-gray-400 font-bold flex items-center gap-1">
+                                  <Clock size={10} /> {formatOrderTime(payment.created_at)} • {payment.payment_method === 'cash' ? 'เงินสด' : 'โอนเงิน'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-black text-green-600">+ ฿{payment.amount.toLocaleString()}</p>
+                              <span className="text-[8px] font-black uppercase tracking-tighter text-gray-300">Transaction Verified</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 </>
               );
             })()}
@@ -1119,7 +1277,14 @@ export default function AdminApp() {
 
       {/* NAV BAR (คงเดิม) */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t p-5 flex justify-around items-center z-50">
-        <button onClick={() => setActiveTab('menu')} className={`flex flex-col items-center gap-1 ${activeTab === 'menu' ? 'text-[#FF85A1]' : 'text-pink-200'}`}><Utensils size={24} /><span className="text-[9px] font-black">เมนู</span></button>
+        <button onClick={() => setActiveTab('floor')} className={`flex flex-col items-center gap-1 ${activeTab === 'floor' ? 'text-[#FF85A1]' : 'text-pink-200'}`}>
+          <LayoutGrid size={24} />
+          <span className="text-[9px] font-black">แผนผังโต๊ะ</span>
+        </button>
+        <button onClick={() => setActiveTab('menu')} className={`flex flex-col items-center gap-1 ${activeTab === 'menu' ? 'text-[#FF85A1]' : 'text-pink-200'}`}>
+          <Utensils size={24} />
+          <span className="text-[9px] font-black">เมนู</span>
+        </button>
         <button onClick={() => setActiveTab('order')} className={`flex flex-col items-center gap-1 relative ${activeTab === 'order' ? 'text-[#FF85A1]' : 'text-pink-200'}`}>
           <ClipboardList size={24} />
           <span className="text-[9px] font-black">ออเดอร์</span>
@@ -1140,6 +1305,6 @@ export default function AdminApp() {
         </button>
         <button onClick={() => setActiveTab('sales')} className={`flex flex-col items-center gap-1 ${activeTab === 'sales' ? 'text-[#FF69B4]' : 'text-pink-200'}`}><TrendingUp size={24} /><span className="text-[9px] font-black">ยอดขาย</span></button>
       </nav>
-    </div>
+    </div >
   );
 }
