@@ -329,10 +329,13 @@ export default function AdminApp() {
       } else {
         await supabase.from('orders').update({ status: newStatus }).eq('id', id);
 
-        // If status is 'กำลังทำ' or 'เสร็จแล้ว', ensure table is 'occupied'
-        if (['กำลังเตรียม', 'กำลังทำ', 'เสร็จแล้ว', 'เรียกเช็คบิล'].includes(newStatus)) {
-          const tNo = tableNo || orders.find(o => o.id === id)?.table_no;
-          if (tNo) await supabase.from('tables').update({ status: 'occupied' }).eq('table_number', tNo);
+        // Update table status based on newStatus
+        const tNo = tableNo || orders.find(o => o.id === id)?.table_no;
+        if (tNo) {
+          const dbStatus = newStatus === 'เรียกเช็คบิล' ? 'billing' : 'occupied';
+          if (['กำลังเตรียม', 'กำลังทำ', 'เสร็จแล้ว', 'เรียกเช็คบิล'].includes(newStatus)) {
+            await supabase.from('tables').update({ status: dbStatus }).eq('table_number', tNo);
+          }
         }
       }
     } catch (e) {
@@ -685,8 +688,8 @@ export default function AdminApp() {
               </div>
             ) : (
               tables.map((table) => {
-                const isOccupied = orders.some(o => o.table_no === table.table_number && (o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ' || o.status === 'เสร็จแล้ว'));
-                const isBilling = orders.some(o => o.table_no === table.table_number && o.status === 'เรียกเช็คบิล');
+                const isOccupied = table.status === 'occupied' || orders.some(o => o.table_no === table.table_number && (o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ' || o.status === 'เสร็จแล้ว'));
+                const isBilling = table.status === 'billing' || table.status === 'เรียกเช็คบิล' || orders.some(o => o.table_no === table.table_number && o.status === 'เรียกเช็คบิล');
 
                 let statusColor = 'bg-white border-pink-100 text-pink-400';
                 let statusText = 'ว่าง';

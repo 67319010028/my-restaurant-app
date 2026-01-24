@@ -62,7 +62,7 @@ function RestaurantAppContent() {
   const totalBillAmount = orders.reduce((sum, order) => sum + (Number(order.total_price) || 0), 0);
   const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const isCurrentlyBilling = orders.some(o => o.status === 'เรียกเช็คบิล');
-  const preparingCount = orders.filter(o => o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ').length;
+  const preparingCount = orders.filter(o => o.status === 'รอ' || o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ').length;
   const servedCount = orders.filter(o => o.status === 'เสร็จแล้ว').length;
   const filteredProducts = selectedCat ? products.filter(p => p.category === selectedCat) : products;
 
@@ -76,6 +76,8 @@ function RestaurantAppContent() {
     const sessionKey = `checkin_done_${tableNo}`;
     if (localStorage.getItem(sessionKey) === 'true') {
       setIsCheckedIn(true);
+      // Ensure DB still knows this table is occupied
+      supabase.from('tables').update({ status: 'occupied' }).eq('table_number', tableNo).then();
     }
 
     // BroadcastChannel for Demo Realtime Sync
@@ -444,6 +446,9 @@ function RestaurantAppContent() {
         created_at: new Date().toISOString()
       }]);
       if (error) console.warn("Supabase submit failed (Demo Mode Active)", error);
+
+      // Ensure table is occupied in DB
+      await supabase.from('tables').update({ status: 'occupied' }).eq('table_number', tableNo);
     } catch (e) { console.warn("Submit Exception", e); }
 
     setCart([]);
@@ -454,7 +459,11 @@ function RestaurantAppContent() {
     }, 2000);
   };
   const callForBill = async () => {
-    // Allow bill request regardless of unfinished orders as per user request
+    // Prevent billing if there are unfinished orders
+    if (preparingCount > 0) {
+      alert(`ยังเช็คบิลไม่ได้คะ กรุณารออาหารอีก ${preparingCount} รายการเสิร์ฟให้ครบก่อนนะคะ ✨`);
+      return;
+    }
 
     if (orders.length === 0) {
       alert("ไม่พบรายการอาหารที่สั่งค่ะ");
@@ -488,6 +497,9 @@ function RestaurantAppContent() {
         .update({ status: 'เรียกเช็คบิล' })
         .eq('table_no', tableNo)
         .neq('status', 'เสร็จสิ้น');
+
+      // Sync to tables table
+      await supabase.from('tables').update({ status: 'billing' }).eq('table_number', tableNo);
 
       console.log('CallForBill Supabase Response:', { data, error, count });
 
