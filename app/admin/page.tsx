@@ -10,7 +10,8 @@ import {
 } from 'lucide-react';
 
 export default function AdminApp() {
-  const [activeTab, setActiveTab] = useState<'menu' | 'order' | 'billing' | 'sales' | 'floor' | 'tables_manage'>('floor');
+  const [activeTab, setActiveTab] = useState<'menu' | 'billing' | 'sales' | 'floor'>('floor');
+  const [isTableManageMode, setIsTableManageMode] = useState(false);
   const [orderSubTab, setOrderSubTab] = useState('กำลังทำ');
   const [menus, setMenus] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
@@ -49,6 +50,12 @@ export default function AdminApp() {
   const [newTableCapacity, setNewTableCapacity] = useState('4');
   const [showQrModal, setShowQrModal] = useState<string | null>(null);
   const [isAddingTable, setIsAddingTable] = useState(false);
+
+  // State for Interactive Floor Plan Popup
+  const [selectedTableDetail, setSelectedTableDetail] = useState<any | null>(null);
+
+  // Minimalist State: Hide/Show Payment History
+  const [showPaymentHistory, setShowPaymentHistory] = useState(false);
 
   // Notification sound function (Pure Web Audio API - iOS Friendly)
   const playNotificationSound = () => {
@@ -252,10 +259,18 @@ export default function AdminApp() {
   const handleAddTable = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTableNo) return;
+
+    // ✅ ป้องกันการเพิ่มเลขโต๊ะซ้ำ
+    const isDuplicate = tables.some(t => t.table_number.toString() === newTableNo.trim());
+    if (isDuplicate) {
+      alert(`มีเลขโต๊ะ ${newTableNo} ในระบบอยู่แล้ว ไม่สามารถเพิ่มซ้ำได้`);
+      return;
+    }
+
     setIsAddingTable(true);
     try {
       const { error } = await supabase.from('tables').insert([{
-        table_number: newTableNo,
+        table_number: newTableNo.trim(),
         capacity: parseInt(newTableCapacity),
         status: 'available'
       }]);
@@ -714,303 +729,229 @@ export default function AdminApp() {
       {/* TAB: FLOOR PLAN */}
       {activeTab === 'floor' && (
         <main className="p-6 max-w-4xl mx-auto animate-in fade-in duration-500 pb-40">
-          <header className="mb-8 text-center md:text-left">
-            <h1 className="text-3xl font-black tracking-tight">แผนผังร้าน (Floor Plan)</h1>
-            <p className="text-gray-400 font-bold text-sm">ตรวจสอบสถานะโต๊ะแบบ Real-time</p>
+          <header className="mb-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="text-center md:text-left">
+              <h1 className="text-3xl font-black tracking-tight">แผนผังร้าน (Floor Plan)</h1>
+              <p className="text-gray-400 font-bold text-sm">ตรวจสอบสถานะโต๊ะแบบ Real-time</p>
+            </div>
+            <button
+              onClick={() => setIsTableManageMode(!isTableManageMode)}
+              className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-sm transition-all shadow-lg ${isTableManageMode ? 'bg-[#411E24] text-white shadow-gray-200' : 'bg-white text-[#FF85A1] border-2 border-pink-50 shadow-pink-50'}`}
+            >
+              {isTableManageMode ? <LayoutGrid size={18} /> : <PlusCircle size={18} />}
+              {isTableManageMode ? 'ดูแผนผังโต๊ะ' : 'จัดการโต๊ะ'}
+            </button>
           </header>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {tables.length === 0 ? (
-              <div className="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-pink-100 text-pink-300 font-bold">
-                ยังไม่มีข้อมูลโต๊ะในระบบ<br />
-                (กรุณากดเพิ่มข้อมูลในฐานข้อมูล)
-              </div>
-            ) : (
-              tables.map((table) => {
-                const isOccupied = table.status === 'occupied' || orders.some(o => o.table_no === table.table_number && (o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ' || o.status === 'เสร็จแล้ว'));
-                const isBilling = table.status === 'billing' || table.status === 'เรียกเช็คบิล' || orders.some(o => o.table_no === table.table_number && o.status === 'เรียกเช็คบิล');
-
-                let statusColor = 'bg-white border-pink-100 text-pink-400';
-                let statusText = 'ว่าง';
-
-                if (isBilling) {
-                  statusColor = 'bg-yellow-400 border-yellow-500 text-white animate-pulse';
-                  statusText = 'รอเช็คบิล';
-                } else if (isOccupied) {
-                  statusColor = 'bg-[#FF85A1] border-pink-400 text-white';
-                  statusText = 'มีลูกค้า';
-                }
-
-                return (
-                  <div
-                    key={table.id}
-                    onClick={() => {
-                      if (isBilling || isOccupied) {
-                        setActiveTab('order');
-                        setOrderSubTab('กำลังทำ');
-                      }
-                    }}
-                    className={`aspect-square rounded-[2.5rem] border-4 flex flex-col items-center justify-center gap-2 shadow-sm transition-all hover:scale-[1.05] cursor-pointer ${statusColor}`}
+          {isTableManageMode ? (
+            <div className="animate-in slide-in-from-top duration-500">
+              <form onSubmit={handleAddTable} className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm mb-8 flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">เลขโต๊ะ (Table No.)</label>
+                  <input
+                    type="text"
+                    placeholder="เช่น 5, 6, A1"
+                    required
+                    className="w-full bg-gray-50 rounded-2xl px-5 py-3 font-bold outline-none border border-transparent focus:border-pink-200"
+                    value={newTableNo}
+                    onChange={(e) => setNewTableNo(e.target.value)}
+                  />
+                </div>
+                <div className="md:w-40">
+                  <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">ที่นั่ง (Capacity)</label>
+                  <select
+                    className="w-full bg-gray-50 rounded-2xl px-5 py-3 font-bold outline-none border border-transparent focus:border-pink-200"
+                    value={newTableCapacity}
+                    onChange={(e) => setNewTableCapacity(e.target.value)}
                   >
-                    <span className="text-3xl font-black">{table.table_number}</span>
-                    <span className="text-[10px] font-black uppercase tracking-widest opacity-80">{statusText}</span>
-                    <div className="flex items-center gap-1 mt-1 opacity-60">
-                      <Utensils size={10} />
-                      <span className="text-[10px] font-bold">{table.capacity} ที่นั่ง</span>
+                    {[2, 4, 6, 8, 10, 12].map(num => <option key={num} value={num}>{num} ที่นั่ง</option>)}
+                  </select>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isAddingTable}
+                  className="md:mt-6 bg-[#FF85A1] text-white px-8 py-3 rounded-2xl font-black text-sm shadow-lg shadow-pink-100 disabled:bg-gray-200"
+                >
+                  {isAddingTable ? 'กำลังเพิ่ม...' : <div className="flex items-center gap-2"><PlusCircle size={18} /> เพิ่มโต๊ะ</div>}
+                </button>
+              </form>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {tables.map((table) => (
+                  <div key={table.id} className="bg-white p-5 rounded-[2.5rem] border border-gray-50 flex justify-between items-center shadow-sm">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-pink-50 flex items-center justify-center text-2xl font-black text-[#FF85A1]">
+                        {table.table_number}
+                      </div>
+                      <div>
+                        <h4 className="font-black text-lg">โต๊ะ {table.table_number}</h4>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{table.capacity} ที่นั่ง • {table.status === 'available' ? 'ว่าง' : 'ไม่ว่าง'}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowQrModal(table.table_number)}
+                        className="p-3 bg-blue-50 text-blue-500 rounded-2xl hover:scale-110 transition-transform"
+                        title="แสดง QR Code"
+                      >
+                        <QrCode size={20} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTable(table.id)}
+                        className="p-3 bg-red-50 text-red-500 rounded-2xl hover:scale-110 transition-transform"
+                        title="ลบโต๊ะ"
+                      >
+                        <Trash2 size={20} />
+                      </button>
                     </div>
                   </div>
-                );
-              })
-            )}
-          </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="animate-in fade-in duration-500">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {tables.length === 0 ? (
+                  <div className="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-pink-100 text-pink-300 font-bold">
+                    ยังไม่มีข้อมูลโต๊ะในระบบ<br />
+                    (กรุณากดเพิ่มข้อมูลในฐานข้อมูล)
+                  </div>
+                ) : (
+                  tables.map((table) => {
+                    const isOccupied = table.status === 'occupied' || orders.some(o => o.table_no === table.table_number && (o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ' || o.status === 'เสร็จแล้ว'));
+                    const isBilling = table.status === 'billing' || table.status === 'เรียกเช็คบิล' || orders.some(o => o.table_no === table.table_number && o.status === 'เรียกเช็คบิล');
 
-          <div className="mt-12 flex flex-wrap gap-4 justify-center md:justify-start">
-            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-pink-50 shadow-sm">
-              <div className="w-3 h-3 bg-white border-2 border-pink-100 rounded-full"></div>
-              <span className="text-[10px] font-black text-gray-400">โต๊ะว่าง</span>
+                    let statusColor = 'bg-white border-pink-100 text-pink-400';
+                    let statusText = 'ว่าง';
+
+                    if (isBilling) {
+                      statusColor = 'bg-yellow-400 border-yellow-500 text-white animate-pulse';
+                      statusText = 'เรียกเช็คบิล';
+                    } else if (isOccupied) {
+                      statusColor = 'bg-[#FF85A1] border-pink-400 text-white';
+                      statusText = 'มีลูกค้า';
+                    }
+
+                    return (
+                      <button
+                        key={table.id}
+                        onClick={() => setSelectedTableDetail(table)}
+                        className={`${statusColor} p-6 rounded-[2.5rem] border-2 shadow-sm transition-all hover:scale-105 active:scale-95 flex flex-col items-center justify-center gap-2 group relative overflow-hidden`}
+                      >
+                        <div className="absolute top-2 right-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                          <LayoutGrid size={40} />
+                        </div>
+                        <span className="text-4xl font-black">{table.table_number}</span>
+                        <span className="text-xs font-black uppercase tracking-widest">{statusText}</span>
+                        <p className="text-[10px] opacity-60 font-bold mt-1 inline-flex items-center gap-1">
+                          <Utensils size={10} /> {table.capacity} ที่นั่ง
+                        </p>
+                        {isOccupied && (
+                          <div className="mt-2 text-[8px] bg-white/20 px-2 py-0.5 rounded-full font-black uppercase tracking-tighter">
+                            คลิกดูออเดอร์
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="mt-12 flex flex-wrap gap-4 justify-center md:justify-start">
+                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-pink-50 shadow-sm">
+                  <div className="w-3 h-3 bg-white border-2 border-pink-100 rounded-full"></div>
+                  <span className="text-[10px] font-black text-gray-400">โต๊ะว่าง</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-pink-50 shadow-sm">
+                  <div className="w-3 h-3 bg-[#FF85A1] rounded-full"></div>
+                  <span className="text-[10px] font-black text-gray-400">มีลูกค้า</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-pink-50 shadow-sm">
+                  <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
+                  <span className="text-[10px] font-black text-gray-400">เรียกเช็คบิล</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-pink-50 shadow-sm">
-              <div className="w-3 h-3 bg-[#FF85A1] rounded-full"></div>
-              <span className="text-[10px] font-black text-gray-400">มีลูกค้า</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-pink-50 shadow-sm">
-              <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
-              <span className="text-[10px] font-black text-gray-400">เรียกเช็คบิล</span>
-            </div>
-          </div>
+          )}
         </main>
       )}
 
-      {/* TAB: TABLES MANAGE */}
-      {activeTab === 'tables_manage' && (
+      {/* TAB: MENU */}
+      {activeTab === 'menu' && (
         <main className="p-6 max-w-4xl mx-auto animate-in fade-in duration-500 pb-40">
-          <header className="mb-8 flex justify-between items-end">
+          <header className="mb-6 flex justify-between items-end">
             <div>
-              <h1 className="text-3xl font-black tracking-tight">จัดการโต๊ะ</h1>
-              <p className="text-gray-400 font-bold text-sm">เพิ่มโต๊ะและออกระบบ QR Code</p>
-            </div>
-            <div className="bg-[#FF85A1] text-white px-4 py-2 rounded-xl text-xs font-black">
-              {tables.length} โต๊ะ
-            </div>
-          </header>
-
-          <form onSubmit={handleAddTable} className="bg-white p-6 rounded-[2.5rem] border border-gray-50 shadow-sm mb-8 flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">เลขโต๊ะ (Table No.)</label>
-              <input
-                type="text"
-                placeholder="เช่น 5, 6, A1"
-                required
-                className="w-full bg-gray-50 rounded-2xl px-5 py-3 font-bold outline-none border border-transparent focus:border-pink-200"
-                value={newTableNo}
-                onChange={(e) => setNewTableNo(e.target.value)}
-              />
-            </div>
-            <div className="md:w-40">
-              <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">ที่นั่ง (Capacity)</label>
-              <select
-                className="w-full bg-gray-50 rounded-2xl px-5 py-3 font-bold outline-none border border-transparent focus:border-pink-200"
-                value={newTableCapacity}
-                onChange={(e) => setNewTableCapacity(e.target.value)}
-              >
-                {[2, 4, 6, 8, 10, 12].map(num => <option key={num} value={num}>{num} ที่นั่ง</option>)}
-              </select>
+              <h1 className="text-3xl font-black tracking-tight">จัดการเมนู</h1>
+              <p className="text-gray-400 font-bold text-sm">{menus.length} รายการ</p>
             </div>
             <button
-              type="submit"
-              disabled={isAddingTable}
-              className="md:mt-6 bg-[#FF85A1] text-white px-8 py-3 rounded-2xl font-black text-sm shadow-lg shadow-pink-100 disabled:bg-gray-200"
+              onClick={() => {
+                setEditingId(null);
+                setFormData({ name: '', price: '', category: 'เมนูข้าว', image_url: '', imageFile: null, noodle_options: [] });
+                setIsModalOpen(true);
+              }}
+              className="bg-[#FF85A1] text-white px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 shadow-lg shadow-pink-100 hover:scale-[1.02] active:scale-95 transition-all"
             >
-              {isAddingTable ? 'กำลังเพิ่ม...' : <div className="flex items-center gap-2"><PlusCircle size={18} /> เพิ่มโต๊ะ</div>}
+              <Plus size={18} strokeWidth={3} /> เพิ่มเมนูใหม่
             </button>
-          </form>
+          </header>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div className="bg-[#EFFFF6] p-5 rounded-[2rem] flex-1 border border-green-100 shadow-sm">
+              <p className="text-[#10B981] text-[10px] font-black uppercase mb-1">พร้อมขาย</p>
+              <p className="text-3xl font-black text-black">{menus.filter(m => m.is_available).length}</p>
+            </div>
+            <div className="bg-[#FFF1F1] p-5 rounded-[2rem] flex-1 border border-red-100 shadow-sm">
+              <p className="text-[#F43F5E] text-[10px] font-black uppercase mb-1">สินค้าหมด</p>
+              <p className="text-3xl font-black text-black">{menus.filter(m => !m.is_available).length}</p>
+            </div>
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto no-scrollbar mb-6">
+            {['ทั้งหมด', 'เมนูข้าว', 'เมนูเส้น', 'กับข้าว'].map(cat => (
+              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-6 py-2.5 rounded-full text-sm font-black transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-[#FF85A1] text-white shadow-lg' : 'bg-white text-[#FF85A1]'}`}>{cat}</button>
+            ))}
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {tables.map((table) => (
-              <div key={table.id} className="bg-white p-5 rounded-[2.5rem] border border-gray-50 flex justify-between items-center shadow-sm">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-pink-50 flex items-center justify-center text-2xl font-black text-[#FF85A1]">
-                    {table.table_number}
-                  </div>
-                  <div>
-                    <h4 className="font-black text-lg">โต๊ะ {table.table_number}</h4>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{table.capacity} ที่นั่ง • {table.status === 'available' ? 'ว่าง' : 'ไม่ว่าง'}</p>
-                  </div>
+            {menus.filter(m => selectedCategory === 'ทั้งหมด' || m.category === selectedCategory).map((item) => (
+              <div key={item.id} className="bg-white p-4 rounded-[2rem] shadow-sm flex items-center gap-4 border border-pink-50">
+                <div className={`w-20 h-20 rounded-[1.5rem] overflow-hidden bg-gray-100 flex-shrink-0 ${!item.is_available && 'grayscale opacity-50'}`}>
+                  <img src={item.image_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt={item.name} />
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowQrModal(table.table_number)}
-                    className="p-3 bg-blue-50 text-blue-500 rounded-2xl hover:scale-110 transition-transform"
-                    title="แสดง QR Code"
-                  >
-                    <QrCode size={20} />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteTable(table.id)}
-                    className="p-3 bg-red-50 text-red-500 rounded-2xl hover:scale-110 transition-transform"
-                    title="ลบโต๊ะ"
-                  >
-                    <Trash2 size={20} />
-                  </button>
+                <div className="flex-1">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className={`font-black text-md ${!item.is_available ? 'text-pink-200 line-through' : 'text-[#FF85A1]'}`}>{item.name}</h3>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {item.noodle_options?.map((n: string) => (
+                          <span key={n} className="bg-blue-50 text-blue-500 text-[8px] px-1.5 py-0.5 rounded-md font-black">#{n}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-lg font-black text-black">฿{item.price}</p>
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => toggleMenuAvailability(item.id, item.is_available)}
+                        className={`w-10 h-5 rounded-full relative transition-all ${item.is_available ? 'bg-[#34D399]' : 'bg-gray-300'}`}
+                      >
+                        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${item.is_available ? 'right-0.5' : 'left-0.5'}`} />
+                      </button>
+                      <span className="text-[9px] font-black text-gray-400 uppercase">{item.is_available ? 'พร้อมขาย' : 'ของหมด'}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleEditClick(item)} className="p-2 bg-pink-50 rounded-full text-pink-400" title="แก้ไข"><Edit3 size={14} /></button>
+                      <button onClick={() => deleteMenu(item.id)} className="p-2 bg-red-50 rounded-full text-red-400" title="ลบ"><Trash2 size={14} /></button>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </main>
       )}
-
-      {/* TAB: MENU */}
-      {
-        activeTab === 'menu' && (
-          <main className="p-6 max-w-4xl mx-auto animate-in fade-in duration-500">
-            <header className="mb-6 flex justify-between items-end">
-              <div>
-                <h1 className="text-3xl font-black tracking-tight">จัดการเมนู</h1>
-                <p className="text-gray-400 font-bold text-sm">{menus.length} รายการ</p>
-              </div>
-              <button
-                onClick={() => {
-                  setEditingId(null);
-                  setFormData({ name: '', price: '', category: 'เมนูข้าว', image_url: '', imageFile: null, noodle_options: [] });
-                  setIsModalOpen(true);
-                }}
-                className="bg-[#FF85A1] text-white px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 shadow-lg shadow-pink-100 hover:scale-[1.02] active:scale-95 transition-all"
-              >
-                <Plus size={18} strokeWidth={3} /> เพิ่มเมนูใหม่
-              </button>
-            </header>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-              <div className="bg-[#EFFFF6] p-5 rounded-[2rem] flex-1 border border-green-100 shadow-sm">
-                <p className="text-[#10B981] text-[10px] font-black uppercase mb-1">พร้อมขาย</p>
-                <p className="text-3xl font-black text-black">{menus.filter(m => m.is_available).length}</p>
-              </div>
-              <div className="bg-[#FFF1F1] p-5 rounded-[2rem] flex-1 border border-red-100 shadow-sm">
-                <p className="text-[#F43F5E] text-[10px] font-black uppercase mb-1">สินค้าหมด</p>
-                <p className="text-3xl font-black text-black">{menus.filter(m => !m.is_available).length}</p>
-              </div>
-            </div>
-
-            <div className="flex gap-2 overflow-x-auto no-scrollbar mb-6">
-              {['ทั้งหมด', 'เมนูข้าว', 'เมนูเส้น', 'กับข้าว'].map(cat => (
-                <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-6 py-2.5 rounded-full text-sm font-black transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-[#FF85A1] text-white shadow-lg' : 'bg-white text-[#FF85A1]'}`}>{cat}</button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {menus.filter(m => selectedCategory === 'ทั้งหมด' || m.category === selectedCategory).map((item) => (
-                <div key={item.id} className="bg-white p-4 rounded-[2rem] shadow-sm flex items-center gap-4 border border-pink-50">
-                  <div className={`w-20 h-20 rounded-[1.5rem] overflow-hidden bg-gray-100 flex-shrink-0 ${!item.is_available && 'grayscale opacity-50'}`}>
-                    <img src={item.image_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className={`font-black text-md ${!item.is_available ? 'text-pink-200 line-through' : 'text-[#FF85A1]'}`}>{item.name}</h3>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {item.noodle_options?.map((n: string) => (
-                            <span key={n} className="bg-blue-50 text-blue-500 text-[8px] px-1.5 py-0.5 rounded-md font-black">#{n}</span>
-                          ))}
-                        </div>
-                      </div>
-                      <p className="text-lg font-black text-black">฿{item.price}</p>
-                    </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => toggleMenuAvailability(item.id, item.is_available)}
-                          className={`w-10 h-5 rounded-full relative transition-all ${item.is_available ? 'bg-[#34D399]' : 'bg-gray-300'}`}
-                        >
-                          <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${item.is_available ? 'right-0.5' : 'left-0.5'}`} />
-                        </button>
-                        <span className="text-[9px] font-black text-gray-400 uppercase">{item.is_available ? 'พร้อมขาย' : 'ของหมด'}</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => handleEditClick(item)} className="p-2 bg-pink-50 rounded-full text-pink-400"><Edit3 size={14} /></button>
-                        <button onClick={() => deleteMenu(item.id)} className="p-2 bg-red-50 rounded-full text-red-400"><Trash2 size={14} /></button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </main >
-        )
-      }
-
-      {/* TAB: ORDER */}
-      {
-        activeTab === 'order' && (
-          <main className="p-6 max-w-4xl mx-auto animate-in slide-in-from-bottom duration-500 pb-40">
-            <header className="mb-6 text-center md:text-left">
-              <h1 className="text-3xl font-black tracking-tight">ออเดอร์</h1>
-            </header>
-
-            <div className="flex bg-gray-100 p-1 rounded-2xl mb-6 max-w-md mx-auto md:mx-0">
-              {['กำลังทำ', 'เสร็จแล้ว', 'ยกเลิก'].map((tab) => (
-                <button key={tab} onClick={() => setOrderSubTab(tab)} className={`flex-1 py-2.5 rounded-xl font-bold text-[10px] transition-all ${orderSubTab === tab ? 'bg-[#FF85A1] text-white shadow-md' : 'text-[#FF85A1]'}`}>{tab}</button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {orders.filter(o => {
-                if (orderSubTab === 'กำลังทำ') return ['กำลังเตรียม', 'กำลังทำ', 'เสร็จแล้ว', 'เรียกเช็คบิล'].includes(o.status);
-                if (orderSubTab === 'เสร็จแล้ว') return o.status === 'เสร็จสิ้น';
-                if (orderSubTab === 'ยกเลิก') return o.status === 'ออร์เดอร์ยกเลิก' || o.status === 'ยกเลิก';
-                return true;
-              }).map((order) => (
-                <div key={order.id} className={`bg-white p-6 rounded-[2.5rem] shadow-sm border-2 transition-all ${order.status === 'เรียกเช็คบิล' ? 'border-pink-500 ring-4 ring-pink-50' : 'border-pink-50'}`}>
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black text-white ${order.status === 'เรียกเช็คบิล' ? 'bg-pink-500' : 'bg-pink-400'}`}>{order.table_no}</div>
-                      <div>
-                        <h3 className="font-black text-lg">โต๊ะ {order.table_no}</h3>
-                        <p className="text-[10px] text-gray-400 font-bold flex items-center gap-1">
-                          <Clock size={10} /> {formatOrderTime(order.created_at)}
-                        </p>
-                      </div>
-                    </div>
-                    <button onClick={() => deleteOrder(order.id)} className="p-2 text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
-                  </div>
-
-                  <div className="space-y-3 mb-4 border-y border-dashed py-3 border-gray-100">
-                    {order.items?.map((item: any, idx: number) => (
-                      <div key={idx} className="flex justify-between font-bold text-sm">
-                        <span className="flex-1"><span className="text-gray-400">{item.quantity}x</span> {item.name} <span className="text-blue-500 text-[10px]">{item.selectedNoodle}</span></span>
-                        <span className="font-black text-black">฿{item.price * item.quantity}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex gap-2">
-                    {order.status === 'เรียกเช็คบิล' ? (
-                      <button onClick={() => setActiveTab('billing')} className="w-full bg-red-500 text-white py-4 rounded-3xl font-black text-sm flex items-center justify-center gap-2 animate-pulse"><Wallet size={18} /> ไปที่หน้าชำระเงิน</button>
-                    ) : orderSubTab === 'กำลังทำ' ? (
-                      <div className="w-full space-y-2">
-                        {order.status === 'กำลังเตรียม' && (
-                          <div className="bg-orange-50 text-orange-600 py-3.5 rounded-3xl font-black text-sm flex items-center justify-center gap-2 border border-orange-100">
-                            <Timer size={18} /> 🕒 รอคิวปรุง...
-                          </div>
-                        )}
-                        {order.status === 'กำลังทำ' && (
-                          <div className="bg-amber-50 text-amber-600 py-3.5 rounded-3xl font-black text-sm flex items-center justify-center gap-2 border border-amber-100">
-                            <ChefHat size={18} /> 👨‍🍳 กำลังปรุงอาหาร...
-                          </div>
-                        )}
-                        {order.status === 'เสร็จแล้ว' && (
-                          <div className="bg-green-50 text-green-600 py-3.5 rounded-3xl font-black text-sm flex items-center justify-center gap-2 border border-green-100">
-                            <CheckCircle2 size={18} /> ✅ ปรุงเสร็จแล้ว (พร้อมเสิร์ฟ)
-                          </div>
-                        )}
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </main>
-        )
-      }
 
       {/* TAB: BILLING */}
       {
@@ -1303,39 +1244,55 @@ export default function AdminApp() {
                     )}
                   </div>
 
-                  {/* Payment History Section */}
+                  {/* ✅ Collapsible Payment History Section */}
                   <div className="mt-12">
-                    <div className="flex justify-between items-center mb-6">
-                      <h2 className="text-xl font-black text-[#FF85A1]">รายละเอียดการชำระเงิน (Payments)</h2>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{payments.length} รายการ</p>
-                    </div>
-                    <div className="space-y-3">
-                      {payments.length === 0 ? (
-                        <div className="text-center py-10 text-gray-300 italic bg-white rounded-3xl border border-dashed border-gray-100">
-                          ยังไม่มีประวัติการชำระเงิน
+                    <button
+                      onClick={() => setShowPaymentHistory(!showPaymentHistory)}
+                      className="w-full bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.98]"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="bg-pink-50 p-3 rounded-2xl text-[#FF85A1]">
+                          <Wallet size={24} />
                         </div>
-                      ) : (
-                        payments.map((payment) => (
-                          <div key={payment.id} className="bg-white p-5 rounded-[2rem] border border-gray-50 flex justify-between items-center shadow-sm hover:border-pink-100 transition-colors">
-                            <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center text-green-500">
-                                <Wallet size={24} />
-                              </div>
-                              <div>
-                                <p className="font-black text-sm">เลขที่ออเดอร์ #{payment.id}</p>
-                                <p className="text-[10px] text-gray-400 font-bold flex items-center gap-1">
-                                  <Clock size={10} /> {formatOrderTime(payment.created_at)} • {payment.payment_method === 'cash' ? 'เงินสด' : 'โอนเงิน'}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-lg font-black text-green-600">+ ฿{payment.amount.toLocaleString()}</p>
-                              <span className="text-[8px] font-black uppercase tracking-tighter text-gray-300">Transaction Verified</span>
-                            </div>
+                        <div className="text-left">
+                          <h2 className="text-lg font-black text-[#FF85A1]">รายละเอียดการชำระเงิน (Payments)</h2>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{payments.length} รายการในระบบ</p>
+                        </div>
+                      </div>
+                      <div className={`p-2 bg-gray-50 rounded-full text-gray-400 transition-transform duration-300 ${showPaymentHistory ? 'rotate-180' : ''}`}>
+                        <Timer size={20} className={showPaymentHistory ? '' : 'rotate-90'} />
+                      </div>
+                    </button>
+
+                    {showPaymentHistory && (
+                      <div className="mt-6 space-y-3 animate-in slide-in-from-top-4 duration-500">
+                        {payments.length === 0 ? (
+                          <div className="text-center py-10 text-gray-300 italic bg-white rounded-3xl border border-dashed border-gray-100">
+                            ยังไม่มีประวัติการชำระเงิน
                           </div>
-                        ))
-                      )}
-                    </div>
+                        ) : (
+                          payments.map((payment) => (
+                            <div key={payment.id} className="bg-white p-5 rounded-[2rem] border border-gray-50 flex justify-between items-center shadow-sm hover:border-pink-100 transition-colors">
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center text-green-500">
+                                  <Wallet size={24} />
+                                </div>
+                                <div>
+                                  <p className="font-black text-sm">เลขที่ออเดอร์ #{payment.id}</p>
+                                  <p className="text-[10px] text-gray-400 font-bold flex items-center gap-1">
+                                    <Clock size={10} /> {formatOrderTime(payment.created_at)} • {payment.payment_method === 'cash' ? 'เงินสด' : 'โอนเงิน'}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-lg font-black text-green-600">+ ฿{payment.amount.toLocaleString()}</p>
+                                <span className="text-[8px] font-black uppercase tracking-tighter text-gray-300">Transaction Verified</span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
                   </div>
                 </>
               );
@@ -1343,6 +1300,104 @@ export default function AdminApp() {
           </main>
         )
       }
+
+      {/* ✅ MODAL: TABLE DETAIL (Interactive Floor Plan) */}
+      {selectedTableDetail && (
+        <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-2xl rounded-[3rem] overflow-hidden shadow-2xl animate-in zoom-in duration-300 max-h-[90vh] flex flex-col">
+            <div className="bg-[#FF85A1] p-8 text-white flex justify-between items-start">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="bg-white/20 p-3 rounded-2xl"><LayoutGrid size={32} /></div>
+                  <h3 className="text-4xl font-black">โต๊ะ {selectedTableDetail.table_number}</h3>
+                </div>
+                <div className="flex gap-2">
+                  <span className="bg-white/20 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider">
+                    {selectedTableDetail.capacity} ที่นั่ง
+                  </span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${selectedTableDetail.status === 'available' ? 'bg-green-400' : selectedTableDetail.status === 'billing' ? 'bg-yellow-400' : 'bg-pink-400'}`}>
+                    {selectedTableDetail.status === 'available' ? 'ว่าง' : selectedTableDetail.status === 'billing' ? 'ลูกค้ารอเช็คบิล' : 'มีลูกค้า'}
+                  </span>
+                </div>
+              </div>
+              <button onClick={() => setSelectedTableDetail(null)} className="bg-white/10 hover:bg-white/20 transition-colors p-3 rounded-full">
+                <X size={28} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-8">
+              <div className="space-y-6">
+                <h4 className="text-xl font-black flex items-center gap-2">
+                  <ClipboardList className="text-[#FF85A1]" /> รายการออเดอร์ทั้งหมด
+                </h4>
+
+                {orders.filter(o => o.table_no === selectedTableDetail.table_number && o.status !== 'เสร็จสิ้น').length === 0 ? (
+                  <div className="py-20 text-center bg-gray-50 rounded-[2.5rem] border-2 border-dashed border-gray-100">
+                    <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">ยังไม่มีรายการสั่งอาหาร</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {orders.filter(o => o.table_no === selectedTableDetail.table_number && o.status !== 'เสร็จสิ้น').map((order) => (
+                      <div key={order.id} className="bg-white border-2 border-pink-50 rounded-[2rem] p-6 shadow-sm">
+                        <div className="flex justify-between items-center mb-4">
+                          <div className="flex items-center gap-2">
+                            <span className="bg-pink-50 text-[#FF85A1] text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest">
+                              {order.status}
+                            </span>
+                            <span className="text-[10px] text-gray-400 font-bold">
+                              {formatOrderTime(order.created_at)}
+                            </span>
+                          </div>
+                          <div className="flex gap-2">
+                            {['รอ', 'กำลังเตรียม', 'กำลังทำ', 'เสร็จแล้ว'].includes(order.status) && (
+                              <button
+                                onClick={() => updateOrderStatus(order.id, 'เสร็จแล้ว')}
+                                className="bg-green-50 text-green-600 p-2 rounded-xl hover:bg-green-100 transition-colors"
+                                title="เสร็จแล้ว"
+                              >
+                                <CheckCircle2 size={18} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          {order.items?.map((item: any, idx: number) => (
+                            <div key={idx} className="flex justify-between items-center text-sm font-bold">
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-400">{item.quantity}x</span>
+                                <span>{item.name} {item.selectedNoodle && `(${item.selectedNoodle})`}</span>
+                              </div>
+                              <span className="text-[#FF85A1]">฿{item.price * item.quantity}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-8 bg-gray-50 border-t flex gap-4">
+              {selectedTableDetail.status === 'billing' ? (
+                <button
+                  onClick={() => { setActiveTab('billing'); setSelectedTableDetail(null); }}
+                  className="flex-1 bg-red-500 text-white py-5 rounded-[2rem] font-black text-lg shadow-xl shadow-red-100 flex items-center justify-center gap-2 animate-pulse"
+                >
+                  <Wallet /> ไปที่คิวเช็คบิล
+                </button>
+              ) : (
+                <button
+                  onClick={() => setSelectedTableDetail(null)}
+                  className="flex-1 bg-white border-2 border-gray-200 text-gray-400 py-5 rounded-[2rem] font-black text-lg hover:bg-gray-100 transition-colors"
+                >
+                  ปิดหน้าต่าง
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL เพิ่ม/แก้ไขเมนู (คงเดิมทุกอย่าง) */}
       {
@@ -1397,22 +1452,13 @@ export default function AdminApp() {
 
       {/* NAV BAR (คงเดิม) */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t p-5 flex justify-around items-center z-50">
-        <button onClick={() => setActiveTab('floor')} className={`flex flex-col items-center gap-1 ${activeTab === 'floor' ? 'text-[#FF85A1]' : 'text-pink-200'}`}>
+        <button onClick={() => { setActiveTab('floor'); setIsTableManageMode(false); }} className={`flex flex-col items-center gap-1 ${activeTab === 'floor' ? 'text-[#FF85A1]' : 'text-pink-200'}`}>
           <LayoutGrid size={24} />
           <span className="text-[9px] font-black">แผนผังโต๊ะ</span>
         </button>
         <button onClick={() => setActiveTab('menu')} className={`flex flex-col items-center gap-1 ${activeTab === 'menu' ? 'text-[#FF85A1]' : 'text-pink-200'}`}>
           <Utensils size={24} />
           <span className="text-[9px] font-black">เมนู</span>
-        </button>
-        <button onClick={() => setActiveTab('order')} className={`flex flex-col items-center gap-1 relative ${activeTab === 'order' ? 'text-[#FF85A1]' : 'text-pink-200'}`}>
-          <ClipboardList size={24} />
-          <span className="text-[9px] font-black">ออเดอร์</span>
-          {orders.filter(o => o.status === 'รอ').length > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-black">
-              {orders.filter(o => o.status === 'รอ').length}
-            </span>
-          )}
         </button>
         <button onClick={() => setActiveTab('billing')} className={`flex flex-col items-center gap-1 relative ${activeTab === 'billing' ? 'text-red-500' : 'text-gray-300'}`}>
           <Wallet size={24} />
@@ -1423,42 +1469,43 @@ export default function AdminApp() {
             </span>
           )}
         </button>
-        <button onClick={() => setActiveTab('sales')} className={`flex flex-col items-center gap-1 ${activeTab === 'sales' ? 'text-[#FF69B4]' : 'text-pink-200'}`}><TrendingUp size={24} /><span className="text-[9px] font-black">ยอดขาย</span></button>
-        <button onClick={() => setActiveTab('tables_manage')} className={`flex flex-col items-center gap-1 ${activeTab === 'tables_manage' ? 'text-[#FF85A1]' : 'text-pink-200'}`}>
-          <PlusCircle size={24} />
-          <span className="text-[9px] font-black">จัดโต๊ะ</span>
+        <button onClick={() => setActiveTab('sales')} className={`flex flex-col items-center gap-1 ${activeTab === 'sales' ? 'text-[#FF69B4]' : 'text-pink-200'}`}>
+          <TrendingUp size={24} />
+          <span className="text-[9px] font-black">ยอดขาย</span>
         </button>
       </nav>
 
       {/* QR CODE MODAL */}
-      {showQrModal && (
-        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden shadow-2xl animate-in zoom-in duration-300">
-            <div className="bg-[#FF85A1] p-6 text-white text-center">
-              <h3 className="text-2xl font-black">QR Code สำหรับโต๊ะ {showQrModal}</h3>
-              <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest mt-1">สแกนเพื่อสั่งอาหารทันที</p>
-            </div>
-            <div className="p-10 flex flex-col items-center gap-6">
-              <div className="p-4 bg-white rounded-3xl border-4 border-pink-50 shadow-inner">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : '')}?table=${showQrModal}`}
-                  alt={`QR Table ${showQrModal}`}
-                  className="w-48 h-48"
-                />
+      {
+        showQrModal && (
+          <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-300">
+            <div className="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden shadow-2xl animate-in zoom-in duration-300">
+              <div className="bg-[#FF85A1] p-6 text-white text-center">
+                <h3 className="text-2xl font-black">QR Code สำหรับโต๊ะ {showQrModal}</h3>
+                <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest mt-1">สแกนเพื่อสั่งอาหารทันที</p>
               </div>
-              <p className="text-xs text-center text-gray-400 font-bold leading-relaxed px-4">
-                ให้ลูกค้านำมือถือมาสแกน QR Code นี้<br />เพื่อเข้าสู่หน้าร้านโต๊ะ {showQrModal} ได้ทันที
-              </p>
-              <button
-                onClick={() => setShowQrModal(null)}
-                className="w-full py-4 bg-gray-50 text-gray-400 rounded-2xl font-black text-sm active:scale-95 transition-transform"
-              >
-                ปิดหน้าต่าง
-              </button>
+              <div className="p-10 flex flex-col items-center gap-6">
+                <div className="p-4 bg-white rounded-3xl border-4 border-pink-50 shadow-inner">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : '')}?table=${showQrModal}`}
+                    alt={`QR Table ${showQrModal}`}
+                    className="w-48 h-48"
+                  />
+                </div>
+                <p className="text-xs text-center text-gray-400 font-bold leading-relaxed px-4">
+                  ให้ลูกค้านำมือถือมาสแกน QR Code นี้<br />เพื่อเข้าสู่หน้าร้านโต๊ะ {showQrModal} ได้ทันที
+                </p>
+                <button
+                  onClick={() => setShowQrModal(null)}
+                  className="w-full py-4 bg-gray-50 text-gray-400 rounded-2xl font-black text-sm active:scale-95 transition-transform"
+                >
+                  ปิดหน้าต่าง
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
     </div >
   );
 }
