@@ -17,7 +17,6 @@ interface Product {
   price: number;
   image_url: string;
   category: string;
-  description: string;
   is_available: boolean;
   has_noodle?: boolean;
   noodle_options?: string[];
@@ -173,7 +172,6 @@ function RestaurantAppContent() {
       price: 80,
       image_url: "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
       category: "เมนูข้าว",
-      description: "ข้าวผัดปูหอมกลิ่นกระทะ ใส่เนื้อปูสดใหม่",
       is_available: true
     },
     {
@@ -182,7 +180,6 @@ function RestaurantAppContent() {
       price: 120,
       image_url: "https://images.unsplash.com/photo-1555126634-323283e090fa?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
       category: "เมนูเส้น",
-      description: "ก๋วยเตี๋ยวต้มยำกุ้งรสจัดจ้าน เครื่องแน่น",
       is_available: true,
       has_noodle: true,
       noodle_options: ["เส้นเล็ก", "เส้นใหญ่", "บะหมี่", "หมี่ขาว", "วุ้นเส้น"]
@@ -193,7 +190,6 @@ function RestaurantAppContent() {
       price: 60,
       image_url: "https://images.unsplash.com/photo-1599305090598-fe179d501227?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
       category: "เมนูข้าว",
-      description: "ผัดกะเพราหมูสับรสเด็ด เผ็ดกำลังดี",
       is_available: true
     },
     {
@@ -202,7 +198,6 @@ function RestaurantAppContent() {
       price: 150,
       image_url: "https://images.unsplash.com/photo-1548943487-a2e4e43b485c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
       category: "กับข้าว",
-      description: "ต้มยำกุ้งน้ำข้น รสชาติไทยแท้",
       is_available: true
     },
     {
@@ -211,7 +206,6 @@ function RestaurantAppContent() {
       price: 70,
       image_url: "https://images.unsplash.com/photo-1432139555190-58524dae6a55?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
       category: "เมนูข้าว",
-      description: "ข้าวขาหมูเนื้อนุ่ม น้ำราดกลมกล่อม",
       is_available: false
     }
   ];
@@ -438,14 +432,31 @@ function RestaurantAppContent() {
 
     // Try real submit
     try {
-      const { error } = await supabase.from('orders').insert([{
-        items: cart,
+      // 1. Insert into orders table and get the id
+      const { data: orderData, error: orderError } = await supabase.from('orders').insert([{
+        items: cart, // Keep items JSON for now for compatibility with Admin/Kitchen
         total_price: totalPrice,
-        status: 'กำลังเตรียม',
+        status: 'รอ',
         table_no: tableNo,
         created_at: new Date().toISOString()
-      }]);
-      if (error) console.warn("Supabase submit failed (Demo Mode Active)", error);
+      }]).select().single();
+
+      if (orderError) {
+        console.warn("Supabase submit failed", orderError);
+      } else if (orderData) {
+        // 2. Insert each item into order_items table for true normalization
+        const orderItems = cart.map(item => ({
+          order_id: orderData.id,
+          menu_id: item.id,
+          quantity: item.quantity,
+          unit_price: item.price, // เปลี่ยนให้ตรงกับชื่อใน DB ของคุณ
+          note: item.note || ''
+          // นำ options ออกก่อนเนื่องจากในรูปไม่เห็นคอลัมน์นี้
+        }));
+
+        const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
+        if (itemsError) console.warn("Failed to insert into order_items:", itemsError);
+      }
 
       // Ensure table is occupied in DB
       await supabase.from('tables').update({ status: 'occupied' }).eq('table_number', tableNo);
@@ -796,7 +807,6 @@ function RestaurantAppContent() {
             </div>
             <div className="flex-1">
               <h3 className="font-black text-[15px]">{item.name}</h3>
-              <p className="text-[10px] text-gray-500 font-medium line-clamp-2 mt-0.5">{item.description}</p>
               <p className="text-black font-black mt-2 text-2xl">฿{item.price}</p>
             </div>
             <div className={`${!item.is_available ? 'bg-gray-300' : 'bg-[#FF85A1]'} text-black p-2.5 rounded-xl shadow-sm transition-all hover:scale-110 active:scale-95`}>
@@ -816,7 +826,6 @@ function RestaurantAppContent() {
               <h2 className="text-2xl font-black text-black">{activeProduct?.name}</h2>
               <p className="text-3xl font-black text-black">฿{activeProduct?.price}</p>
             </div>
-            <p className="text-sm text-gray-400 mb-6">{activeProduct?.description}</p>
 
             {/* --- ส่วนที่แก้ไข: โชว์เฉพาะเส้นที่คุณเลือกใน Admin --- */}
             {activeProduct?.has_noodle && activeProduct?.noodle_options && activeProduct?.noodle_options.length > 0 && (

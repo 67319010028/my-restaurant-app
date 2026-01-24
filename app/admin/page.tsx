@@ -6,11 +6,11 @@ import {
   Search, Edit3, Trash2, X, Image as ImageIcon,
   Check, UploadCloud, Clock, ChefHat, CheckCircle2,
   Loader2, Calendar, DollarSign, ListFilter, ListChecks,
-  PlusCircle, Timer, BellRing, Wallet, Eye, EyeOff, LayoutGrid
+  PlusCircle, Timer, BellRing, Wallet, Eye, EyeOff, LayoutGrid, QrCode
 } from 'lucide-react';
 
 export default function AdminApp() {
-  const [activeTab, setActiveTab] = useState<'menu' | 'order' | 'billing' | 'sales' | 'floor'>('floor');
+  const [activeTab, setActiveTab] = useState<'menu' | 'order' | 'billing' | 'sales' | 'floor' | 'tables_manage'>('floor');
   const [orderSubTab, setOrderSubTab] = useState('กำลังทำ');
   const [menus, setMenus] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
@@ -43,6 +43,12 @@ export default function AdminApp() {
   });
 
   const [isUnlocking, setIsUnlocking] = useState(false);
+
+  // States for Table Management
+  const [newTableNo, setNewTableNo] = useState('');
+  const [newTableCapacity, setNewTableCapacity] = useState('4');
+  const [showQrModal, setShowQrModal] = useState<string | null>(null);
+  const [isAddingTable, setIsAddingTable] = useState(false);
 
   // Notification sound function (Pure Web Audio API - iOS Friendly)
   const playNotificationSound = () => {
@@ -240,6 +246,39 @@ export default function AdminApp() {
       if (!error) setTables(data || []);
     } catch (e) {
       console.warn("Fetch Tables Exception", e);
+    }
+  };
+
+  const handleAddTable = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTableNo) return;
+    setIsAddingTable(true);
+    try {
+      const { error } = await supabase.from('tables').insert([{
+        table_number: newTableNo,
+        capacity: parseInt(newTableCapacity),
+        status: 'available'
+      }]);
+      if (!error) {
+        setNewTableNo('');
+        fetchTables();
+      } else {
+        alert("ไม่สามารถเพิ่มโต๊ะได้: " + error.message);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsAddingTable(false);
+    }
+  };
+
+  const handleDeleteTable = async (id: number) => {
+    if (!confirm("ต้องการลบโต๊ะนี้ใช่หรือไม่?")) return;
+    try {
+      const { error } = await supabase.from('tables').delete().eq('id', id);
+      if (!error) fetchTables();
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -738,6 +777,84 @@ export default function AdminApp() {
               <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
               <span className="text-[10px] font-black text-gray-400">เรียกเช็คบิล</span>
             </div>
+          </div>
+        </main>
+      )}
+
+      {/* TAB: TABLES MANAGE */}
+      {activeTab === 'tables_manage' && (
+        <main className="p-6 max-w-4xl mx-auto animate-in fade-in duration-500 pb-40">
+          <header className="mb-8 flex justify-between items-end">
+            <div>
+              <h1 className="text-3xl font-black tracking-tight">จัดการโต๊ะ</h1>
+              <p className="text-gray-400 font-bold text-sm">เพิ่มโต๊ะและออกระบบ QR Code</p>
+            </div>
+            <div className="bg-[#FF85A1] text-white px-4 py-2 rounded-xl text-xs font-black">
+              {tables.length} โต๊ะ
+            </div>
+          </header>
+
+          <form onSubmit={handleAddTable} className="bg-white p-6 rounded-[2.5rem] border border-gray-50 shadow-sm mb-8 flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">เลขโต๊ะ (Table No.)</label>
+              <input
+                type="text"
+                placeholder="เช่น 5, 6, A1"
+                required
+                className="w-full bg-gray-50 rounded-2xl px-5 py-3 font-bold outline-none border border-transparent focus:border-pink-200"
+                value={newTableNo}
+                onChange={(e) => setNewTableNo(e.target.value)}
+              />
+            </div>
+            <div className="md:w-40">
+              <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">ที่นั่ง (Capacity)</label>
+              <select
+                className="w-full bg-gray-50 rounded-2xl px-5 py-3 font-bold outline-none border border-transparent focus:border-pink-200"
+                value={newTableCapacity}
+                onChange={(e) => setNewTableCapacity(e.target.value)}
+              >
+                {[2, 4, 6, 8, 10, 12].map(num => <option key={num} value={num}>{num} ที่นั่ง</option>)}
+              </select>
+            </div>
+            <button
+              type="submit"
+              disabled={isAddingTable}
+              className="md:mt-6 bg-[#FF85A1] text-white px-8 py-3 rounded-2xl font-black text-sm shadow-lg shadow-pink-100 disabled:bg-gray-200"
+            >
+              {isAddingTable ? 'กำลังเพิ่ม...' : <div className="flex items-center gap-2"><PlusCircle size={18} /> เพิ่มโต๊ะ</div>}
+            </button>
+          </form>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {tables.map((table) => (
+              <div key={table.id} className="bg-white p-5 rounded-[2.5rem] border border-gray-50 flex justify-between items-center shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-pink-50 flex items-center justify-center text-2xl font-black text-[#FF85A1]">
+                    {table.table_number}
+                  </div>
+                  <div>
+                    <h4 className="font-black text-lg">โต๊ะ {table.table_number}</h4>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{table.capacity} ที่นั่ง • {table.status === 'available' ? 'ว่าง' : 'ไม่ว่าง'}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowQrModal(table.table_number)}
+                    className="p-3 bg-blue-50 text-blue-500 rounded-2xl hover:scale-110 transition-transform"
+                    title="แสดง QR Code"
+                  >
+                    <QrCode size={20} />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteTable(table.id)}
+                    className="p-3 bg-red-50 text-red-500 rounded-2xl hover:scale-110 transition-transform"
+                    title="ลบโต๊ะ"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </main>
       )}
@@ -1307,7 +1424,41 @@ export default function AdminApp() {
           )}
         </button>
         <button onClick={() => setActiveTab('sales')} className={`flex flex-col items-center gap-1 ${activeTab === 'sales' ? 'text-[#FF69B4]' : 'text-pink-200'}`}><TrendingUp size={24} /><span className="text-[9px] font-black">ยอดขาย</span></button>
+        <button onClick={() => setActiveTab('tables_manage')} className={`flex flex-col items-center gap-1 ${activeTab === 'tables_manage' ? 'text-[#FF85A1]' : 'text-pink-200'}`}>
+          <PlusCircle size={24} />
+          <span className="text-[9px] font-black">จัดโต๊ะ</span>
+        </button>
       </nav>
+
+      {/* QR CODE MODAL */}
+      {showQrModal && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden shadow-2xl animate-in zoom-in duration-300">
+            <div className="bg-[#FF85A1] p-6 text-white text-center">
+              <h3 className="text-2xl font-black">QR Code สำหรับโต๊ะ {showQrModal}</h3>
+              <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest mt-1">สแกนเพื่อสั่งอาหารทันที</p>
+            </div>
+            <div className="p-10 flex flex-col items-center gap-6">
+              <div className="p-4 bg-white rounded-3xl border-4 border-pink-50 shadow-inner">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : '')}?table=${showQrModal}`}
+                  alt={`QR Table ${showQrModal}`}
+                  className="w-48 h-48"
+                />
+              </div>
+              <p className="text-xs text-center text-gray-400 font-bold leading-relaxed px-4">
+                ให้ลูกค้านำมือถือมาสแกน QR Code นี้<br />เพื่อเข้าสู่หน้าร้านโต๊ะ {showQrModal} ได้ทันที
+              </p>
+              <button
+                onClick={() => setShowQrModal(null)}
+                className="w-full py-4 bg-gray-50 text-gray-400 rounded-2xl font-black text-sm active:scale-95 transition-transform"
+              >
+                ปิดหน้าต่าง
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div >
   );
 }
