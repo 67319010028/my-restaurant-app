@@ -665,13 +665,26 @@ function RestaurantAppContent() {
             </div>
           </div>
           <div className="mt-10 space-y-6">
-            <button onClick={callForBill} className="w-full bg-[#FF85A1] text-black py-5 rounded-[24px] font-black text-lg shadow-md flex items-center justify-center gap-3 active:scale-95 transition-transform">
-              <div className="bg-white/40 p-1 rounded-lg"><Clock size={20} /></div>เรียกพนักงานเช็คบิล
+            {preparingCount > 0 ? (
+              <div className="bg-orange-50 border border-orange-200 p-4 rounded-3xl text-center space-y-1">
+                <p className="text-orange-600 font-black text-sm flex items-center justify-center gap-2">
+                  <Clock size={16} /> ยังเช็คบิลไม่ได้ค่ะ
+                </p>
+                <p className="text-[10px] text-orange-400 font-bold uppercase tracking-wider">กรุณารออาหารเสิร์ฟครบทุกรายการก่อนนะคะ ({preparingCount} รายการ)</p>
+              </div>
+            ) : null}
+            <button
+              onClick={callForBill}
+              disabled={preparingCount > 0 || isCurrentlyBilling}
+              className={`w-full py-5 rounded-[24px] font-black text-lg shadow-md flex items-center justify-center gap-3 transition-all active:scale-95 ${preparingCount > 0 || isCurrentlyBilling ? 'bg-gray-200 text-gray-400 ring-4 ring-gray-50' : 'bg-[#FF85A1] text-black hover:scale-[1.02] shadow-pink-100'}`}
+            >
+              <div className={preparingCount > 0 || isCurrentlyBilling ? 'bg-gray-300 p-1 rounded-lg' : 'bg-white/40 p-1 rounded-lg'}><Clock size={20} /></div>
+              {isCurrentlyBilling ? 'กำลังมาเช็คบิลแล้วค่ะ...' : 'เรียกพนักงานเช็คบิล'}
             </button>
             <button onClick={() => setView('menu')} className="w-full text-center font-black text-pink-400">กลับไปหน้าเมนู</button>
           </div>
-        </main>
-      </div>
+        </main >
+      </div >
     );
   }
 
