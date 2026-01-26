@@ -426,7 +426,7 @@ export default function KitchenPage() {
             <div className="bg-white rounded-3xl p-12 border-2 border-dashed border-gray-100 shadow-sm max-w-md mx-auto">
               <ClipboardList size={64} className="text-gray-300 mx-auto mb-4" />
               <p className="text-gray-600 font-bold text-lg">ไม่พบรายการสั่งอาหาร</p>
-              <p className="text-gray-400 text-sm mt-2">รอออเดอร์จากแอดมิน...</p>
+              <p className="text-gray-400 text-sm mt-2">กำลังรอรับออเดอร์ใหม่...</p>
             </div>
           </div>
         ) : (
