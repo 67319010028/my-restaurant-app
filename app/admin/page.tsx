@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import {
   Utensils, ClipboardList, TrendingUp, Plus,
@@ -10,6 +11,7 @@ import {
 } from 'lucide-react';
 
 export default function AdminApp() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'menu' | 'billing' | 'sales' | 'floor'>('floor');
   const [isTableManageMode, setIsTableManageMode] = useState(false);
   const [orderSubTab, setOrderSubTab] = useState('กำลังทำ');
@@ -566,10 +568,26 @@ export default function AdminApp() {
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) setIsLoggedIn(true);
+      if (!session) {
+        router.push('/staff');
+        return;
+      }
+
+      // ตรวจสอบ Role จากตาราง profiles
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (!profile || profile.role?.toLowerCase() !== 'admin') {
+        router.push('/staff');
+      } else {
+        setIsLoggedIn(true);
+      }
     };
     checkUser();
-  }, []);
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -596,68 +614,13 @@ export default function AdminApp() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    setIsLoggedIn(false);
+    router.push('/staff');
   };
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-[#FFF5F8] flex items-center justify-center p-6 bg-[radial-gradient(circle_at_20%_20%,#FFD1DC_0%,transparent_25%),radial-gradient(circle_at_80%_80%,#FFB7C5_0%,transparent_25%)]">
-        <div className="bg-white/80 backdrop-blur-2xl w-full max-w-sm p-10 rounded-[3rem] shadow-[0_32px_64px_-16px_rgba(255,182,197,0.3)] border border-pink-100/50 text-center relative overflow-hidden">
-          {/* ตกแต่งพื้นหลังเล็กน้อย */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-pink-50 rounded-full -mr-16 -mt-16 blur-3xl opacity-50"></div>
-
-          <div className="relative mb-10">
-            <div className="w-24 h-24 bg-gradient-to-br from-[#FF85A1] to-[#FF9AA2] rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-pink-100/50 transform rotate-6 hover:rotate-0 transition-transform duration-500">
-              <span className="text-6xl drop-shadow-lg">🦐</span>
-            </div>
-            <h1 className="text-3xl font-black text-[#FF85A1] tracking-tight">Pa Kung Shop</h1>
-            <p className="text-[10px] text-[#FF85A1] font-black uppercase tracking-[0.2em] mt-2">Admin Dashboard Login</p>
-          </div>
-
-          <form onSubmit={handleLogin} className="space-y-4 relative">
-            <div className="group">
-              <input
-                type="email"
-                placeholder="อีเมลแอดมิน"
-                className={`w-full bg-white p-5 rounded-[1.8rem] font-bold outline-none border-2 transition-all shadow-sm text-[#411E24] ${loginError ? 'border-red-400 bg-red-50 text-red-500' : 'border-pink-50 focus:border-[#FFB7B2] group-hover:border-pink-100'}`}
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="group relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="รหัสผ่าน"
-                className={`w-full bg-white p-5 rounded-[1.8rem] font-bold outline-none border-2 transition-all shadow-sm pr-14 text-[#411E24] ${loginError ? 'border-red-400 bg-red-50 text-red-500' : 'border-pink-50 focus:border-[#FFB7B2] group-hover:border-pink-100'}`}
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-6 top-1/2 -translate-y-1/2 text-[#FF85A1] hover:text-pink-400 transition-colors"
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-              {loginError && (
-                <p className="text-red-400 text-[10px] font-bold mt-3 flex items-center justify-center gap-1 animate-pulse">
-                  <X size={12} /> อีเมลหรือรหัสผ่านไม่ถูกต้อง
-                </p>
-              )}
-            </div>
-            <button
-              type="submit"
-              disabled={isAuthenticating}
-              className="w-full bg-gradient-to-r from-[#FF9AA2] to-[#FFB7B2] text-white py-5 rounded-[1.8rem] font-black text-lg shadow-lg shadow-pink-100/60 hover:scale-[1.02] active:scale-95 transition-all mt-4 disabled:opacity-50"
-            >
-              {isAuthenticating ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ ✨'}
-            </button>
-          </form>
-
-          <p className="text-[9px] text-[#FF85A1] mt-10 font-bold uppercase tracking-widest">© 2026 Admin Portal v2.0</p>
-        </div>
+      <div className="min-h-screen bg-[#FFF5F8] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
       </div>
     );
   }

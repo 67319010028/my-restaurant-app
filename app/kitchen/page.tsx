@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import {
   Clock, CheckCircle2, Timer,
@@ -25,6 +26,8 @@ interface Order {
 }
 
 export default function KitchenPage() {
+  const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState('ทั้งหมด');
   const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
@@ -88,6 +91,29 @@ export default function KitchenPage() {
   const isFinished = (status: string) => status === 'เสร็จแล้ว' || status === 'เรียกเช็คบิล';
 
   useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/staff');
+        return;
+      }
+
+      // ตรวจสอบ Role จากตาราง profiles
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      const userRole = profile?.role?.toLowerCase();
+      if (!profile || (userRole !== 'kitchen' && userRole !== 'ห้องครัว')) {
+        router.push('/staff');
+      } else {
+        setIsLoggedIn(true);
+      }
+    };
+    checkUser();
+
     fetchOrders();
 
     // 1. ตรวจสอบว่าเคยอนุญาตเสียงไว้หรือยัง
@@ -162,7 +188,7 @@ export default function KitchenPage() {
       supabase.removeChannel(channel);
       broadcastChannel.close();
     };
-  }, []);
+  }, [router]);
 
   /* --- Mock Data for Fallback --- */
   const MOCK_ORDERS: Order[] = [
@@ -278,6 +304,14 @@ export default function KitchenPage() {
     return true;
   });
 
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-[#FFF5F8] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-pink-100 text-[#411E24] pb-10 font-sans">
 
@@ -294,6 +328,15 @@ export default function KitchenPage() {
               Kitchen Management System
             </p>
           </div>
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut();
+              router.push('/staff');
+            }}
+            className="text-red-400 font-black text-[10px] uppercase tracking-wider bg-red-50/50 px-4 py-1.5 rounded-full ml-auto"
+          >
+            Logout
+          </button>
         </div>
 
         {/* Audio Unlock Banner Overlay */}
@@ -475,8 +518,8 @@ export default function KitchenPage() {
                       <button
                         onClick={() => updateStatus(order.id, 'กำลังเตรียม')}
                         className={`py-4 rounded-2xl font-black text-sm active:scale-95 transition-all ${order.status === 'กำลังเตรียม'
-                            ? 'bg-pink-500 text-white shadow-lg shadow-pink-200'
-                            : 'bg-white text-pink-300 border border-pink-50'
+                          ? 'bg-pink-500 text-white shadow-lg shadow-pink-200'
+                          : 'bg-white text-pink-300 border border-pink-50'
                           }`}
                       >
                         รอ
@@ -484,8 +527,8 @@ export default function KitchenPage() {
                       <button
                         onClick={() => updateStatus(order.id, 'กำลังทำ')}
                         className={`py-4 rounded-2xl font-black text-sm active:scale-95 transition-all ${order.status === 'กำลังทำ'
-                            ? 'bg-pink-600 text-white shadow-lg shadow-pink-300'
-                            : 'bg-white text-pink-300 border border-pink-50'
+                          ? 'bg-pink-600 text-white shadow-lg shadow-pink-300'
+                          : 'bg-white text-pink-300 border border-pink-50'
                           }`}
                       >
                         กำลังทำ
@@ -493,8 +536,8 @@ export default function KitchenPage() {
                       <button
                         onClick={() => updateStatus(order.id, 'เสร็จแล้ว')}
                         className={`py-4 rounded-2xl font-black text-sm active:scale-95 transition-all ${order.status === 'เสร็จแล้ว'
-                            ? 'bg-[#FF1493] text-white shadow-lg shadow-pink-200'
-                            : 'bg-white text-pink-300 border border-pink-50'
+                          ? 'bg-[#FF1493] text-white shadow-lg shadow-pink-200'
+                          : 'bg-white text-pink-300 border border-pink-50'
                           }`}
                       >
                         ✓ เสร็จ
