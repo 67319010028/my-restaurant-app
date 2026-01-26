@@ -436,7 +436,7 @@ function RestaurantAppContent() {
       const { data: orderData, error: orderError } = await supabase.from('orders').insert([{
         items: cart, // Keep items JSON for now for compatibility with Admin/Kitchen
         total_price: totalPrice,
-        status: 'รอ',
+        status: 'กำลังเตรียม',
         table_no: tableNo,
         created_at: new Date().toISOString()
       }]).select().single();

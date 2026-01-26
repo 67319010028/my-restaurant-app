@@ -294,9 +294,6 @@ export default function KitchenPage() {
     // กรองออเดอร์ที่เช็คบิลเสร็จสิ้นแล้ว (เสร็จสิ้น) ออกจากทุกหน้าในครัว
     if (order.status === 'เสร็จสิ้น' || order.status === 'ยกเลิก' || order.status === 'ออร์เดอร์ยกเลิก') return false;
 
-    // ไม่แสดงออเดอร์ที่ยังไม่ได้รับจากแอดมิน (สถานะ "รอ")
-    if (order.status === 'รอ') return false;
-
     if (activeTab === 'รอ') return order.status === 'กำลังเตรียม';
     if (activeTab === 'กำลังทำ') return order.status === 'กำลังทำ';
     if (activeTab === 'เสร็จแล้ว') return isFinished(order.status);
