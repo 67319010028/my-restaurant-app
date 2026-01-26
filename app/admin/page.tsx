@@ -372,11 +372,17 @@ export default function AdminApp() {
 
         // 4.2 Record Payment
         if (totalAmount > 0) {
-          await supabase.from('payments').insert([{
-            order_id: id, // Record one of the IDs as reference
+          const { error: payError } = await supabase.from('payments').insert([{
+            order_id: tableOrders[0]?.id || 0, // สุ่ม ID จากออเดอร์จริงมาตัวนึงเพื่ออ้างอิง
             amount: totalAmount,
-            payment_method: 'cash' // Default for demo, can be expanded
+            payment_method: 'cash'
           }]);
+
+          if (payError) {
+            console.warn("Payment record failed:", payError);
+          } else {
+            fetchPayments(); // Refresh ทันทีเพื่อให้ยอดขึ้น
+          }
         }
 
         // 4.3 Reset Table Status to 'available'
