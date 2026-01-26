@@ -371,18 +371,29 @@ export default function AdminApp() {
         await supabase.from('orders').update({ status: newStatus }).eq('table_no', tableNo).neq('status', 'เสร็จสิ้น');
 
         // 4.2 Record Payment
+        console.log("Attempting to record payment for table:", tableNo);
+        console.log("Total Amount calculated:", totalAmount);
+        console.log("Orders found for table:", tableOrders.length);
+
         if (totalAmount > 0) {
-          const { error: payError } = await supabase.from('payments').insert([{
-            order_id: tableOrders[0]?.id || 0, // สุ่ม ID จากออเดอร์จริงมาตัวนึงเพื่ออ้างอิง
+          const paymentData = {
+            order_id: tableOrders[0]?.id || 0,
             amount: totalAmount,
             payment_method: 'cash'
-          }]);
+          };
+          console.log("Inserting payment data:", paymentData);
+
+          const { data: payData, error: payError } = await supabase.from('payments').insert([paymentData]).select();
 
           if (payError) {
-            console.warn("Payment record failed:", payError);
+            console.error("❌ Payment record failed in Supabase:", payError);
+            alert("บันทึกยอดขายไม่สำเร็จ: " + payError.message);
           } else {
+            console.log("✅ Payment recorded successfully:", payData);
             fetchPayments(); // Refresh ทันทีเพื่อให้ยอดขึ้น
           }
+        } else {
+          console.warn("Total Amount is 0, skipping payment record.");
         }
 
         // 4.3 Reset Table Status to 'available'
