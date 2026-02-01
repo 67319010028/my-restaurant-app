@@ -82,11 +82,11 @@ export default function StaffLoginPage() {
                 <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-full -mr-16 -mt-16 blur-3xl opacity-50"></div>
 
                 <div className="relative mb-10">
-                    <div className="w-24 h-24 bg-gradient-to-br from-[#FF8C00] to-[#FFA500] rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-orange-100/50 transform rotate-6 hover:rotate-0 transition-transform duration-500">
+                    <div className="w-24 h-24 bg-gradient-to-br from-[#FF4D00] to-[#FF7800] rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-orange-100/50 transform rotate-6 hover:rotate-0 transition-transform duration-500">
                         <Users size={48} className="text-white drop-shadow-lg" />
                     </div>
-                    <h1 className="text-3xl font-black text-[#FF8C00] tracking-tight">Pa Kung Shop</h1>
-                    <p className="text-[10px] text-[#FF8C00] font-black uppercase tracking-[0.2em] mt-2 leading-relaxed">
+                    <h1 className="text-3xl font-black text-[#FF4D00] tracking-tight">Pa Kung Shop</h1>
+                    <p className="text-[10px] text-[#FF4D00] font-black uppercase tracking-[0.2em] mt-2 leading-relaxed">
                         Staff Login Portal
                     </p>
                 </div>
@@ -96,7 +96,7 @@ export default function StaffLoginPage() {
                         <input
                             type="email"
                             placeholder="Username"
-                            className={`w-full bg-white p-5 rounded-[1.8rem] font-bold outline-none border-2 transition-all shadow-sm text-[#411E24] ${error ? 'border-red-400 bg-red-50 text-red-500' : 'border-orange-50 focus:border-[#FFCC80] group-hover:border-pink-100'}`}
+                            className={`w-full bg-white p-5 rounded-[1.8rem] font-bold outline-none border-2 transition-all shadow-sm text-[#411E24] ${error ? 'border-red-400 bg-red-50 text-red-500' : 'border-orange-50 focus:border-[#FFCC80] group-hover:border-orange-100'}`}
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
@@ -106,7 +106,7 @@ export default function StaffLoginPage() {
                         <input
                             type={showPassword ? "text" : "password"}
                             placeholder="Password"
-                            className={`w-full bg-white p-5 rounded-[1.8rem] font-bold outline-none border-2 transition-all shadow-sm pr-14 text-[#411E24] ${error ? 'border-red-400 bg-red-50 text-red-500' : 'border-orange-50 focus:border-[#FFCC80] group-hover:border-pink-100'}`}
+                            className={`w-full bg-white p-5 rounded-[1.8rem] font-bold outline-none border-2 transition-all shadow-sm pr-14 text-[#411E24] ${error ? 'border-red-400 bg-red-50 text-red-500' : 'border-orange-50 focus:border-[#FFCC80] group-hover:border-orange-100'}`}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
@@ -114,7 +114,7 @@ export default function StaffLoginPage() {
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-6 top-1/2 -translate-y-1/2 text-[#FF8C00] hover:text-orange-400 transition-colors"
+                            className="absolute right-6 top-1/2 -translate-y-1/2 text-[#FF4D00] hover:text-orange-400 transition-colors"
                         >
                             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                         </button>
@@ -130,13 +130,13 @@ export default function StaffLoginPage() {
                     <button
                         type="submit"
                         disabled={isAuthenticating}
-                        className="w-full bg-gradient-to-r from-[#FFA500] to-[#FFCC80] text-white py-5 rounded-[1.8rem] font-black text-lg shadow-lg shadow-orange-100/60 hover:scale-[1.02] active:scale-95 transition-all mt-4 disabled:opacity-50"
+                        className="w-full bg-gradient-to-r from-[#FF7800] to-[#FFCC80] text-white py-5 rounded-[1.8rem] font-black text-lg shadow-lg shadow-orange-100/60 hover:scale-[1.02] active:scale-95 transition-all mt-4 disabled:opacity-50"
                     >
                         {isAuthenticating ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ ✨'}
                     </button>
                 </form>
 
-                <p className="text-[9px] text-[#FF8C00] mt-10 font-bold uppercase tracking-widest">© 2026 Management Portal v1.0</p>
+                <p className="text-[9px] text-[#FF4D00] mt-10 font-bold uppercase tracking-widest">© 2026 Management Portal v1.0</p>
             </div>
         </div>
     );

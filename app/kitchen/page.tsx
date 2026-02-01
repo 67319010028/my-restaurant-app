@@ -315,7 +315,7 @@ export default function KitchenPage() {
       {/* Header & Status Summary Row */}
       <header className="p-6 bg-white/80 backdrop-blur-xl sticky top-0 z-10 shadow-lg border-b border-gray-200">
         <div className="flex items-center gap-4 mb-6">
-          <div className="bg-gradient-to-br from-[#FF8C00] to-[#FFA500] p-3 rounded-2xl shadow-md">
+          <div className="bg-gradient-to-br from-[#FF4D00] to-[#FF7800] p-3 rounded-2xl shadow-md">
             <ChefHat size={32} className="text-white" />
           </div>
           <div>
@@ -341,7 +341,7 @@ export default function KitchenPage() {
           <div className="fixed inset-0 z-[999] bg-white flex items-center justify-center p-6 sm:p-10">
             <div className="w-full max-w-sm text-center">
               <div className="w-24 h-24 bg-orange-100 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
-                <ChefHat size={48} className={`text-[#FF8C00] ${isUnlocking ? 'animate-spin' : 'animate-bounce'}`} />
+                <ChefHat size={48} className={`text-[#FF4D00] ${isUnlocking ? 'animate-spin' : 'animate-bounce'}`} />
               </div>
               <h2 className="text-3xl font-black text-gray-800 mb-4">ระบบเสียงห้องครัว</h2>
               <p className="text-gray-500 font-bold mb-10 leading-relaxed px-4">
@@ -352,7 +352,7 @@ export default function KitchenPage() {
               <button
                 onClick={unlockAudio}
                 disabled={isUnlocking}
-                className={`w-full py-6 rounded-[2rem] font-black text-xl shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 ${isUnlocking ? 'bg-gray-200 text-gray-400' : 'bg-[#FF8C00] text-white shadow-orange-200 hover:scale-[1.02]'}`}
+                className={`w-full py-6 rounded-[2rem] font-black text-xl shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 ${isUnlocking ? 'bg-gray-200 text-gray-400' : 'bg-[#FF4D00] text-white shadow-orange-200 hover:scale-[1.02]'}`}
               >
                 {isUnlocking ? 'กำลังเปิดเสียง...' : 'เปิดระบบเสียงห้องครัว ✨'}
               </button>
@@ -363,7 +363,7 @@ export default function KitchenPage() {
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-white p-4 rounded-2xl border-2 border-orange-200 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between mb-2">
-              <Timer size={20} className="text-[#FF8C00]" />
+              <Timer size={20} className="text-[#FF4D00]" />
               <div className="text-3xl font-black text-black">{orders.filter(o => o.status === 'กำลังเตรียม').length}</div>
             </div>
             <div className="text-orange-400 text-[11px] font-bold uppercase tracking-wider">รอดำเนินการ</div>
@@ -403,7 +403,7 @@ export default function KitchenPage() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === tab
-                ? 'bg-[#FF8C00] text-white shadow-md'
+                ? 'bg-[#FF4D00] text-white shadow-md'
                 : 'bg-white text-orange-300 hover:bg-orange-50 border border-orange-100'
                 }`}
             >
@@ -440,7 +440,7 @@ export default function KitchenPage() {
                 {/* Header */}
                 <div className="p-6 flex justify-between items-center bg-white">
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-[#FF8C00] rounded-3xl flex items-center justify-center text-3xl font-black text-white shadow-lg">
+                    <div className="w-16 h-16 bg-[#FF4D00] rounded-3xl flex items-center justify-center text-3xl font-black text-white shadow-lg">
                       {order.table_no}
                     </div>
                     <div>
@@ -489,7 +489,7 @@ export default function KitchenPage() {
                             </p>
                           )}
                         </div>
-                        <span className="bg-[#FF8C00] text-white px-4 py-1.5 rounded-xl text-sm font-black ml-4 shrink-0 shadow-md">
+                        <span className="bg-[#FF4D00] text-white px-4 py-1.5 rounded-xl text-sm font-black ml-4 shrink-0 shadow-md">
                           ×{item.quantity}
                         </span>
                       </div>

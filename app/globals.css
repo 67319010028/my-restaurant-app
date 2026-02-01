@@ -3,9 +3,9 @@
 :root {
   --background: #fffcf8;
   --foreground: #171717;
-  --primary-orange: #ff8c00;
-  --secondary-orange: #ffa500;
-  --light-orange: #fff7ed;
+  --primary-orange: #FF4D00;
+  --secondary-orange: #FF7800;
+  --light-orange: #FFF7ED;
 }
 
 @theme inline {
