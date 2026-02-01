@@ -303,19 +303,19 @@ export default function KitchenPage() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-[#FFF5F8] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
+      <div className="min-h-screen bg-[#FFF7ED] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-pink-100 text-[#411E24] pb-10 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-100 text-[#411E24] pb-10 font-sans">
 
       {/* Header & Status Summary Row */}
       <header className="p-6 bg-white/80 backdrop-blur-xl sticky top-0 z-10 shadow-lg border-b border-gray-200">
         <div className="flex items-center gap-4 mb-6">
-          <div className="bg-gradient-to-br from-[#FF85A1] to-[#FF9AA2] p-3 rounded-2xl shadow-md">
+          <div className="bg-gradient-to-br from-[#FF8C00] to-[#FFA500] p-3 rounded-2xl shadow-md">
             <ChefHat size={32} className="text-white" />
           </div>
           <div>
@@ -340,8 +340,8 @@ export default function KitchenPage() {
         {!isAudioUnlocked && (
           <div className="fixed inset-0 z-[999] bg-white flex items-center justify-center p-6 sm:p-10">
             <div className="w-full max-w-sm text-center">
-              <div className="w-24 h-24 bg-pink-100 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
-                <ChefHat size={48} className={`text-[#FF85A1] ${isUnlocking ? 'animate-spin' : 'animate-bounce'}`} />
+              <div className="w-24 h-24 bg-orange-100 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
+                <ChefHat size={48} className={`text-[#FF8C00] ${isUnlocking ? 'animate-spin' : 'animate-bounce'}`} />
               </div>
               <h2 className="text-3xl font-black text-gray-800 mb-4">ระบบเสียงห้องครัว</h2>
               <p className="text-gray-500 font-bold mb-10 leading-relaxed px-4">
@@ -352,7 +352,7 @@ export default function KitchenPage() {
               <button
                 onClick={unlockAudio}
                 disabled={isUnlocking}
-                className={`w-full py-6 rounded-[2rem] font-black text-xl shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 ${isUnlocking ? 'bg-gray-200 text-gray-400' : 'bg-[#FF85A1] text-white shadow-pink-200 hover:scale-[1.02]'}`}
+                className={`w-full py-6 rounded-[2rem] font-black text-xl shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 ${isUnlocking ? 'bg-gray-200 text-gray-400' : 'bg-[#FF8C00] text-white shadow-orange-200 hover:scale-[1.02]'}`}
               >
                 {isUnlocking ? 'กำลังเปิดเสียง...' : 'เปิดระบบเสียงห้องครัว ✨'}
               </button>
@@ -361,20 +361,20 @@ export default function KitchenPage() {
         )}
 
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white p-4 rounded-2xl border-2 border-pink-200 shadow-sm hover:shadow-md transition-all">
+          <div className="bg-white p-4 rounded-2xl border-2 border-orange-200 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between mb-2">
-              <Timer size={20} className="text-[#FF85A1]" />
+              <Timer size={20} className="text-[#FF8C00]" />
               <div className="text-3xl font-black text-black">{orders.filter(o => o.status === 'กำลังเตรียม').length}</div>
             </div>
-            <div className="text-pink-400 text-[11px] font-bold uppercase tracking-wider">รอดำเนินการ</div>
+            <div className="text-orange-400 text-[11px] font-bold uppercase tracking-wider">รอดำเนินการ</div>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border-2 border-pink-100 shadow-sm hover:shadow-md transition-all">
+          <div className="bg-white p-4 rounded-2xl border-2 border-orange-100 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between mb-2">
-              <ChefHat size={20} className="text-pink-400" />
+              <ChefHat size={20} className="text-orange-400" />
               <div className="text-3xl font-black text-black">{orders.filter(o => o.status === 'กำลังทำ').length}</div>
             </div>
-            <div className="text-pink-400 text-[11px] font-bold uppercase tracking-wider">กำลังทำ</div>
+            <div className="text-orange-400 text-[11px] font-bold uppercase tracking-wider">กำลังทำ</div>
           </div>
 
           <div className="bg-white p-4 rounded-2xl border-2 border-emerald-200 shadow-sm hover:shadow-md transition-all">
@@ -403,8 +403,8 @@ export default function KitchenPage() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === tab
-                ? 'bg-[#FF85A1] text-white shadow-md'
-                : 'bg-white text-pink-300 hover:bg-pink-50 border border-pink-100'
+                ? 'bg-[#FF8C00] text-white shadow-md'
+                : 'bg-white text-orange-300 hover:bg-orange-50 border border-orange-100'
                 }`}
             >
               {tab}
@@ -440,7 +440,7 @@ export default function KitchenPage() {
                 {/* Header */}
                 <div className="p-6 flex justify-between items-center bg-white">
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-[#FF85A1] rounded-3xl flex items-center justify-center text-3xl font-black text-white shadow-lg">
+                    <div className="w-16 h-16 bg-[#FF8C00] rounded-3xl flex items-center justify-center text-3xl font-black text-white shadow-lg">
                       {order.table_no}
                     </div>
                     <div>
@@ -455,8 +455,8 @@ export default function KitchenPage() {
                   <div className={`px-4 py-2 rounded-full text-xs font-black ${isFinished(order.status)
                     ? 'bg-emerald-100 text-emerald-600'
                     : order.status === 'กำลังทำ'
-                      ? 'bg-pink-100 text-pink-500'
-                      : 'bg-pink-50 text-pink-400'
+                      ? 'bg-orange-100 text-orange-500'
+                      : 'bg-orange-50 text-orange-400'
                     }`}>
                     {isFinished(order.status) ? '✓ เสร็จแล้ว' : order.status}
                   </div>
@@ -473,23 +473,23 @@ export default function KitchenPage() {
                           </span>
                           <div className="flex flex-wrap gap-2 items-center mt-2">
                             {item.isSpecial && (
-                              <span className="text-pink-500 font-black text-[10px] uppercase bg-pink-50 px-3 py-1 rounded-full border border-pink-100 flex items-center gap-1">
+                              <span className="text-orange-500 font-black text-[10px] uppercase bg-orange-50 px-3 py-1 rounded-full border border-orange-100 flex items-center gap-1">
                                 <span className="text-sm">⭐</span> พิเศษ
                               </span>
                             )}
                             {item.selectedNoodle && (
                               <span className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-black flex items-center gap-1 border border-blue-50">
-                                <Utensils size={12} strokeWidth={3} className="text-pink-400" /> {item.selectedNoodle}
+                                <Utensils size={12} strokeWidth={3} className="text-orange-400" /> {item.selectedNoodle}
                               </span>
                             )}
                           </div>
                           {item.note && (
-                            <p className="text-[10px] text-pink-400 font-bold mt-2 bg-pink-50/50 p-2 rounded-xl border border-pink-50">
+                            <p className="text-[10px] text-orange-400 font-bold mt-2 bg-orange-50/50 p-2 rounded-xl border border-orange-50">
                               💬 {item.note}
                             </p>
                           )}
                         </div>
-                        <span className="bg-[#FF85A1] text-white px-4 py-1.5 rounded-xl text-sm font-black ml-4 shrink-0 shadow-md">
+                        <span className="bg-[#FF8C00] text-white px-4 py-1.5 rounded-xl text-sm font-black ml-4 shrink-0 shadow-md">
                           ×{item.quantity}
                         </span>
                       </div>
@@ -515,8 +515,8 @@ export default function KitchenPage() {
                       <button
                         onClick={() => updateStatus(order.id, 'กำลังเตรียม')}
                         className={`py-4 rounded-2xl font-black text-sm active:scale-95 transition-all ${order.status === 'กำลังเตรียม'
-                          ? 'bg-pink-500 text-white shadow-lg shadow-pink-200'
-                          : 'bg-white text-pink-300 border border-pink-50'
+                          ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
+                          : 'bg-white text-orange-300 border border-orange-50'
                           }`}
                       >
                         รอ
@@ -524,8 +524,8 @@ export default function KitchenPage() {
                       <button
                         onClick={() => updateStatus(order.id, 'กำลังทำ')}
                         className={`py-4 rounded-2xl font-black text-sm active:scale-95 transition-all ${order.status === 'กำลังทำ'
-                          ? 'bg-pink-600 text-white shadow-lg shadow-pink-300'
-                          : 'bg-white text-pink-300 border border-pink-50'
+                          ? 'bg-orange-600 text-white shadow-lg shadow-orange-300'
+                          : 'bg-white text-orange-300 border border-orange-50'
                           }`}
                       >
                         กำลังทำ
@@ -533,8 +533,8 @@ export default function KitchenPage() {
                       <button
                         onClick={() => updateStatus(order.id, 'เสร็จแล้ว')}
                         className={`py-4 rounded-2xl font-black text-sm active:scale-95 transition-all ${order.status === 'เสร็จแล้ว'
-                          ? 'bg-[#FF1493] text-white shadow-lg shadow-pink-200'
-                          : 'bg-white text-pink-300 border border-pink-50'
+                          ? 'bg-[#FF4500] text-white shadow-lg shadow-orange-200'
+                          : 'bg-white text-orange-300 border border-orange-50'
                           }`}
                       >
                         ✓ เสร็จ

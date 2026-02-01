@@ -636,14 +636,14 @@ export default function AdminApp() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-[#FFF5F8] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
+      <div className="min-h-screen bg-[#FFF7ED] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FFF5F8] text-[#411E24] font-sans pb-32 relative">
+    <div className="min-h-screen bg-[#FFF7ED] text-[#411E24] font-sans pb-32 relative">
 
       {/* แจ้งเตือนเช็คบิล */}
       {billingOrdersCount > 0 && (
@@ -663,8 +663,8 @@ export default function AdminApp() {
       {!isAudioUnlocked && (
         <div className="fixed inset-0 z-[999] bg-white flex items-center justify-center p-6 sm:p-10">
           <div className="w-full max-w-sm text-center">
-            <div className="w-24 h-24 bg-pink-100 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
-              <BellRing size={48} className={`text-[#FF85A1] ${isUnlocking ? 'animate-spin' : 'animate-bounce'}`} />
+            <div className="w-24 h-24 bg-orange-100 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
+              <BellRing size={48} className={`text-[#FF8C00] ${isUnlocking ? 'animate-spin' : 'animate-bounce'}`} />
             </div>
             <h2 className="text-3xl font-black text-[#411E24] mb-4">เปิดเสียงแจ้งเตือน</h2>
             <p className="text-gray-500 font-bold mb-10 leading-relaxed px-4">
@@ -675,7 +675,7 @@ export default function AdminApp() {
             <button
               onClick={unlockAudio}
               disabled={isUnlocking}
-              className={`w-full py-6 rounded-[2rem] font-black text-xl shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 ${isUnlocking ? 'bg-gray-200 text-gray-400' : 'bg-[#FF85A1] text-white shadow-pink-200 hover:scale-[1.02]'}`}
+              className={`w-full py-6 rounded-[2rem] font-black text-xl shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 ${isUnlocking ? 'bg-gray-200 text-gray-400' : 'bg-[#FF8C00] text-white shadow-orange-200 hover:scale-[1.02]'}`}
             >
               {isUnlocking ? 'กำลังเปิดเสียง...' : 'ตกลง เปิดเสียง ✨'}
             </button>
@@ -716,7 +716,7 @@ export default function AdminApp() {
             </div>
             <button
               onClick={() => setIsTableManageMode(!isTableManageMode)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-sm transition-all shadow-lg ${isTableManageMode ? 'bg-[#411E24] text-white shadow-gray-200' : 'bg-white text-[#FF85A1] border-2 border-pink-50 shadow-pink-50'}`}
+              className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-sm transition-all shadow-lg ${isTableManageMode ? 'bg-[#411E24] text-white shadow-gray-200' : 'bg-white text-[#FF8C00] border-2 border-orange-50 shadow-orange-50'}`}
             >
               {isTableManageMode ? <LayoutGrid size={18} /> : <PlusCircle size={18} />}
               {isTableManageMode ? 'ดูแผนผังโต๊ะ' : 'จัดการโต๊ะ'}
@@ -732,7 +732,7 @@ export default function AdminApp() {
                     type="text"
                     placeholder="เช่น 5, 6, A1"
                     required
-                    className="w-full bg-gray-50 rounded-2xl px-5 py-3 font-bold outline-none border border-transparent focus:border-pink-200"
+                    className="w-full bg-gray-50 rounded-2xl px-5 py-3 font-bold outline-none border border-transparent focus:border-orange-200"
                     value={newTableNo}
                     onChange={(e) => setNewTableNo(e.target.value)}
                   />
@@ -740,7 +740,7 @@ export default function AdminApp() {
                 <div className="md:w-40">
                   <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">ที่นั่ง (Capacity)</label>
                   <select
-                    className="w-full bg-gray-50 rounded-2xl px-5 py-3 font-bold outline-none border border-transparent focus:border-pink-200"
+                    className="w-full bg-gray-50 rounded-2xl px-5 py-3 font-bold outline-none border border-transparent focus:border-orange-200"
                     value={newTableCapacity}
                     onChange={(e) => setNewTableCapacity(e.target.value)}
                   >
@@ -750,7 +750,7 @@ export default function AdminApp() {
                 <button
                   type="submit"
                   disabled={isAddingTable}
-                  className="md:mt-6 bg-[#FF85A1] text-white px-8 py-3 rounded-2xl font-black text-sm shadow-lg shadow-pink-100 disabled:bg-gray-200"
+                  className="md:mt-6 bg-[#FF8C00] text-white px-8 py-3 rounded-2xl font-black text-sm shadow-lg shadow-orange-100 disabled:bg-gray-200"
                 >
                   {isAddingTable ? 'กำลังเพิ่ม...' : <div className="flex items-center gap-2"><PlusCircle size={18} /> เพิ่มโต๊ะ</div>}
                 </button>
@@ -760,7 +760,7 @@ export default function AdminApp() {
                 {tables.map((table) => (
                   <div key={table.id} className="bg-white p-5 rounded-[2.5rem] border border-gray-50 flex justify-between items-center shadow-sm">
                     <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-pink-50 flex items-center justify-center text-2xl font-black text-[#FF85A1]">
+                      <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center text-2xl font-black text-[#FF8C00]">
                         {table.table_number}
                       </div>
                       <div>
@@ -792,7 +792,7 @@ export default function AdminApp() {
             <div className="animate-in fade-in duration-500">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 {tables.length === 0 ? (
-                  <div className="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-pink-100 text-pink-300 font-bold">
+                  <div className="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-orange-100 text-orange-300 font-bold">
                     ยังไม่มีข้อมูลโต๊ะในระบบ<br />
                     (กรุณากดเพิ่มข้อมูลในฐานข้อมูล)
                   </div>
@@ -801,14 +801,14 @@ export default function AdminApp() {
                     const isOccupied = table.status === 'occupied' || orders.some(o => o.table_no === table.table_number && (o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ' || o.status === 'เสร็จแล้ว'));
                     const isBilling = table.status === 'billing' || table.status === 'เรียกเช็คบิล' || orders.some(o => o.table_no === table.table_number && o.status === 'เรียกเช็คบิล');
 
-                    let statusColor = 'bg-white border-pink-100 text-pink-400';
+                    let statusColor = 'bg-white border-orange-100 text-orange-400';
                     let statusText = 'ว่าง';
 
                     if (isBilling) {
                       statusColor = 'bg-yellow-400 border-yellow-500 text-white animate-pulse';
                       statusText = 'เรียกเช็คบิล';
                     } else if (isOccupied) {
-                      statusColor = 'bg-[#FF85A1] border-pink-400 text-white';
+                      statusColor = 'bg-[#FF8C00] border-orange-400 text-white';
                       statusText = 'มีลูกค้า';
                     }
 
@@ -838,15 +838,15 @@ export default function AdminApp() {
               </div>
 
               <div className="mt-12 flex flex-wrap gap-4 justify-center md:justify-start">
-                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-pink-50 shadow-sm">
-                  <div className="w-3 h-3 bg-white border-2 border-pink-100 rounded-full"></div>
+                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-orange-50 shadow-sm">
+                  <div className="w-3 h-3 bg-white border-2 border-orange-100 rounded-full"></div>
                   <span className="text-[10px] font-black text-gray-400">โต๊ะว่าง</span>
                 </div>
-                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-pink-50 shadow-sm">
-                  <div className="w-3 h-3 bg-[#FF85A1] rounded-full"></div>
+                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-orange-50 shadow-sm">
+                  <div className="w-3 h-3 bg-[#FF8C00] rounded-full"></div>
                   <span className="text-[10px] font-black text-gray-400">มีลูกค้า</span>
                 </div>
-                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-pink-50 shadow-sm">
+                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-orange-50 shadow-sm">
                   <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
                   <span className="text-[10px] font-black text-gray-400">เรียกเช็คบิล</span>
                 </div>
@@ -870,7 +870,7 @@ export default function AdminApp() {
                 setFormData({ name: '', price: '', category: 'เมนูข้าว', image_url: '', imageFile: null, noodle_options: [] });
                 setIsModalOpen(true);
               }}
-              className="bg-[#FF85A1] text-white px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 shadow-lg shadow-pink-100 hover:scale-[1.02] active:scale-95 transition-all"
+              className="bg-[#FF8C00] text-white px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 shadow-lg shadow-orange-100 hover:scale-[1.02] active:scale-95 transition-all"
             >
               <Plus size={18} strokeWidth={3} /> เพิ่มเมนูใหม่
             </button>
@@ -889,20 +889,20 @@ export default function AdminApp() {
 
           <div className="flex gap-2 overflow-x-auto no-scrollbar mb-6">
             {['ทั้งหมด', 'เมนูข้าว', 'เมนูเส้น', 'กับข้าว'].map(cat => (
-              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-6 py-2.5 rounded-full text-sm font-black transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-[#FF85A1] text-white shadow-lg' : 'bg-white text-[#FF85A1]'}`}>{cat}</button>
+              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-6 py-2.5 rounded-full text-sm font-black transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-[#FF8C00] text-white shadow-lg' : 'bg-white text-[#FF8C00]'}`}>{cat}</button>
             ))}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {menus.filter(m => selectedCategory === 'ทั้งหมด' || m.category === selectedCategory).map((item) => (
-              <div key={item.id} className="bg-white p-4 rounded-[2rem] shadow-sm flex items-center gap-4 border border-pink-50">
+              <div key={item.id} className="bg-white p-4 rounded-[2rem] shadow-sm flex items-center gap-4 border border-orange-50">
                 <div className={`w-20 h-20 rounded-[1.5rem] overflow-hidden bg-gray-100 flex-shrink-0 ${!item.is_available && 'grayscale opacity-50'}`}>
                   <img src={item.image_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt={item.name} />
                 </div>
                 <div className="flex-1">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className={`font-black text-md ${!item.is_available ? 'text-pink-200 line-through' : 'text-[#FF85A1]'}`}>{item.name}</h3>
+                      <h3 className={`font-black text-md ${!item.is_available ? 'text-orange-200 line-through' : 'text-[#FF8C00]'}`}>{item.name}</h3>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {item.noodle_options?.map((n: string) => (
                           <span key={n} className="bg-blue-50 text-blue-500 text-[8px] px-1.5 py-0.5 rounded-md font-black">#{n}</span>
@@ -922,7 +922,7 @@ export default function AdminApp() {
                       <span className="text-[9px] font-black text-gray-400 uppercase">{item.is_available ? 'พร้อมขาย' : 'ของหมด'}</span>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => handleEditClick(item)} className="p-2 bg-pink-50 rounded-full text-pink-400" title="แก้ไข"><Edit3 size={14} /></button>
+                      <button onClick={() => handleEditClick(item)} className="p-2 bg-orange-50 rounded-full text-orange-400" title="แก้ไข"><Edit3 size={14} /></button>
                       <button onClick={() => deleteMenu(item.id)} className="p-2 bg-red-50 rounded-full text-red-400" title="ลบ"><Trash2 size={14} /></button>
                     </div>
                   </div>
@@ -960,7 +960,7 @@ export default function AdminApp() {
 
                   return (
                     <div key={tableNo} className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-2">
-                      <div className="bg-[#FF85A1] p-4 text-white flex justify-between items-center">
+                      <div className="bg-[#FF8C00] p-4 text-white flex justify-between items-center">
                         <div className="flex items-center gap-2">
                           <div className="bg-orange-500 p-2 rounded-xl"><Utensils size={18} /></div>
                           <span className="font-black text-lg">โต๊ะ {tableNo}</span>
@@ -1058,20 +1058,20 @@ export default function AdminApp() {
             <div className="flex bg-gray-100 p-1 rounded-2xl mb-6">
               <button
                 onClick={() => setSalesViewMode('daily')}
-                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all ${salesViewMode === 'daily' ? 'bg-white text-[#FF85A1] shadow-sm' : 'text-[#FF85A1]'}`}
+                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all ${salesViewMode === 'daily' ? 'bg-white text-[#FF8C00] shadow-sm' : 'text-[#FF8C00]'}`}
               >
                 รายวัน
               </button>
               <button
                 onClick={() => setSalesViewMode('monthly')}
-                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all ${salesViewMode === 'monthly' ? 'bg-white text-[#FF85A1] shadow-sm' : 'text-[#FF85A1]'}`}
+                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all ${salesViewMode === 'monthly' ? 'bg-white text-[#FF8C00] shadow-sm' : 'text-[#FF8C00]'}`}
               >
                 รายเดือน
               </button>
             </div>
 
             <div className="flex justify-between items-center mb-4 px-2">
-              <h2 className="text-xl font-black text-[#FF85A1]">สรุปยอดขาย</h2>
+              <h2 className="text-xl font-black text-[#FF8C00]">สรุปยอดขาย</h2>
               <button
                 onClick={() => {
                   if (confirm("ต้องการรีเซ็ตข้อมูลทดสอบกลับไปค่าเริ่มต้นใช่หรือไม่? (ข้อมูลที่บันทึกในเครื่องจะถูกล้าง)")) {
@@ -1079,7 +1079,7 @@ export default function AdminApp() {
                     fetchOrders();
                   }
                 }}
-                className="text-[10px] font-bold text-pink-400 border border-pink-100 px-3 py-1 rounded-full bg-pink-50/30 hover:bg-pink-50 transition-colors"
+                className="text-[10px] font-bold text-orange-400 border border-orange-100 px-3 py-1 rounded-full bg-orange-50/30 hover:bg-orange-50 transition-colors"
               >
                 รีเซ็ตข้อมูลทดสอบ
               </button>
@@ -1187,7 +1187,7 @@ export default function AdminApp() {
                       <p className="text-2xl font-black text-black">฿{avgTicket}</p>
                       <p className="text-[10px] font-bold text-gray-400 uppercase">เฉลี่ย/บิล</p>
                     </div>
-                    <div className="bg-[#FF85A1] p-5 rounded-[2.5rem] shadow-lg">
+                    <div className="bg-[#FF8C00] p-5 rounded-[2.5rem] shadow-lg">
                       <div className="bg-white/10 w-10 h-10 rounded-2xl flex items-center justify-center text-white mb-3">
                         <Clock size={20} />
                       </div>
@@ -1205,7 +1205,7 @@ export default function AdminApp() {
                       filteredSales.map((order) => (
                         <div key={order.id} className="bg-white p-5 rounded-[2.2rem] border border-gray-50 flex justify-between items-center shadow-sm">
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-pink-100 flex items-center justify-center text-black font-black border border-pink-200">
+                            <div className="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center text-black font-black border border-orange-200">
                               {order.table_no}
                             </div>
                             <div>
@@ -1231,11 +1231,11 @@ export default function AdminApp() {
                       className="w-full bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center justify-between hover:bg-gray-50 transition-colors active:scale-[0.98]"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="bg-pink-50 p-3 rounded-2xl text-[#FF85A1]">
+                        <div className="bg-orange-50 p-3 rounded-2xl text-[#FF8C00]">
                           <Wallet size={24} />
                         </div>
                         <div className="text-left">
-                          <h2 className="text-lg font-black text-[#FF85A1]">รายละเอียดการชำระเงิน (Payments)</h2>
+                          <h2 className="text-lg font-black text-[#FF8C00]">รายละเอียดการชำระเงิน (Payments)</h2>
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{payments.length} รายการในระบบ</p>
                         </div>
                       </div>
@@ -1252,7 +1252,7 @@ export default function AdminApp() {
                           </div>
                         ) : (
                           payments.map((payment) => (
-                            <div key={payment.id} className="bg-white p-5 rounded-[2rem] border border-gray-50 flex justify-between items-center shadow-sm hover:border-pink-100 transition-colors">
+                            <div key={payment.id} className="bg-white p-5 rounded-[2rem] border border-gray-50 flex justify-between items-center shadow-sm hover:border-orange-100 transition-colors">
                               <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center text-green-500">
                                   <Wallet size={24} />
@@ -1285,7 +1285,7 @@ export default function AdminApp() {
       {selectedTableDetail && (
         <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-2xl rounded-[3rem] overflow-hidden shadow-2xl animate-in zoom-in duration-300 max-h-[90vh] flex flex-col">
-            <div className="bg-[#FF85A1] p-8 text-white flex justify-between items-start">
+            <div className="bg-[#FF8C00] p-8 text-white flex justify-between items-start">
               <div>
                 <div className="flex items-center gap-3 mb-2">
                   <div className="bg-white/20 p-3 rounded-2xl"><LayoutGrid size={32} /></div>
@@ -1295,7 +1295,7 @@ export default function AdminApp() {
                   <span className="bg-white/20 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider">
                     {selectedTableDetail.capacity} ที่นั่ง
                   </span>
-                  <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${selectedTableDetail.status === 'available' ? 'bg-green-400' : selectedTableDetail.status === 'billing' ? 'bg-yellow-400' : 'bg-pink-400'}`}>
+                  <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${selectedTableDetail.status === 'available' ? 'bg-green-400' : selectedTableDetail.status === 'billing' ? 'bg-yellow-400' : 'bg-orange-400'}`}>
                     {selectedTableDetail.status === 'available' ? 'ว่าง' : selectedTableDetail.status === 'billing' ? 'ลูกค้ารอเช็คบิล' : 'มีลูกค้า'}
                   </span>
                 </div>
@@ -1308,7 +1308,7 @@ export default function AdminApp() {
             <div className="flex-1 overflow-y-auto p-8">
               <div className="space-y-6">
                 <h4 className="text-xl font-black flex items-center gap-2">
-                  <ClipboardList className="text-[#FF85A1]" /> รายการออเดอร์ทั้งหมด
+                  <ClipboardList className="text-[#FF8C00]" /> รายการออเดอร์ทั้งหมด
                 </h4>
 
                 {orders.filter(o => o.table_no === selectedTableDetail.table_number && o.status !== 'เสร็จสิ้น').length === 0 ? (
@@ -1318,10 +1318,10 @@ export default function AdminApp() {
                 ) : (
                   <div className="space-y-4">
                     {orders.filter(o => o.table_no === selectedTableDetail.table_number && o.status !== 'เสร็จสิ้น').map((order) => (
-                      <div key={order.id} className="bg-white border-2 border-pink-50 rounded-[2rem] p-6 shadow-sm">
+                      <div key={order.id} className="bg-white border-2 border-orange-50 rounded-[2rem] p-6 shadow-sm">
                         <div className="flex justify-between items-center mb-4">
                           <div className="flex items-center gap-2">
-                            <span className="bg-pink-50 text-[#FF85A1] text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest">
+                            <span className="bg-orange-50 text-[#FF8C00] text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest">
                               {order.status}
                             </span>
                             <span className="text-[10px] text-gray-400 font-bold">
@@ -1347,7 +1347,7 @@ export default function AdminApp() {
                                 <span className="text-gray-400">{item.quantity}x</span>
                                 <span>{item.name} {item.selectedNoodle && `(${item.selectedNoodle})`}</span>
                               </div>
-                              <span className="text-[#FF85A1]">฿{item.price * item.quantity}</span>
+                              <span className="text-[#FF8C00]">฿{item.price * item.quantity}</span>
                             </div>
                           ))}
                         </div>
@@ -1400,28 +1400,28 @@ export default function AdminApp() {
                   <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">หมวดหมู่</label>
                   <div className="flex gap-2 overflow-x-auto no-scrollbar">
                     {['เมนูข้าว', 'เมนูเส้น', 'กับข้าว'].map(cat => (
-                      <button key={cat} type="button" onClick={() => setFormData({ ...formData, category: cat })} className={`px-5 py-2.5 rounded-full text-[10px] font-black whitespace-nowrap ${formData.category === cat ? 'bg-[#FF85A1] text-white' : 'bg-pink-100 text-[#FF85A1]'}`}>{cat}</button>
+                      <button key={cat} type="button" onClick={() => setFormData({ ...formData, category: cat })} className={`px-5 py-2.5 rounded-full text-[10px] font-black whitespace-nowrap ${formData.category === cat ? 'bg-[#FF8C00] text-white' : 'bg-orange-100 text-[#FF8C00]'}`}>{cat}</button>
                     ))}
                   </div>
                 </div>
 
-                <div className="bg-pink-50 p-6 rounded-[2.5rem] border border-pink-100 space-y-4">
-                  <label className="text-[10px] font-black uppercase text-pink-500 flex items-center gap-2"><ListChecks size={14} /> ตัวเลือกเส้นสำหรับลูกค้า</label>
+                <div className="bg-orange-50 p-6 rounded-[2.5rem] border border-orange-100 space-y-4">
+                  <label className="text-[10px] font-black uppercase text-orange-500 flex items-center gap-2"><ListChecks size={14} /> ตัวเลือกเส้นสำหรับลูกค้า</label>
                   <div className="flex gap-2">
                     <input type="text" placeholder="เพิ่มเส้น..." className="flex-1 bg-white rounded-full px-4 py-2 text-xs font-bold outline-none text-[#411E24]" value={customNoodle} onChange={(e) => setCustomNoodle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCustomNoodle())} />
-                    <button type="button" onClick={handleAddCustomNoodle} className="bg-pink-500 text-white p-2 rounded-full"><PlusCircle size={20} /></button>
+                    <button type="button" onClick={handleAddCustomNoodle} className="bg-orange-500 text-white p-2 rounded-full"><PlusCircle size={20} /></button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {noodleTypes.map(noodle => (
                       <div key={noodle} className="relative group">
-                        <button type="button" onClick={() => toggleNoodle(noodle)} className={`w-full py-3 rounded-xl text-[10px] font-black border-2 ${formData.noodle_options.includes(noodle) ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-transparent text-[#FF85A1]'}`}>{noodle}</button>
+                        <button type="button" onClick={() => toggleNoodle(noodle)} className={`w-full py-3 rounded-xl text-[10px] font-black border-2 ${formData.noodle_options.includes(noodle) ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-transparent text-[#FF8C00]'}`}>{noodle}</button>
                         <button type="button" onClick={(e) => { e.stopPropagation(); handleDeleteNoodleType(noodle); }} className="absolute -top-1 -right-1 bg-red-100 text-red-500 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"><X size={10} /></button>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <button type="submit" disabled={isSaving} className={`w-full py-5 rounded-[2rem] font-black text-lg text-white shadow-xl ${isSaving ? 'bg-pink-200' : 'bg-[#FF85A1]'}`}>
+                <button type="submit" disabled={isSaving} className={`w-full py-5 rounded-[2rem] font-black text-lg text-white shadow-xl ${isSaving ? 'bg-orange-200' : 'bg-[#FF8C00]'}`}>
                   {isSaving ? 'กำลังบันทึก...' : 'บันทึกเมนู'}
                 </button>
               </form>
@@ -1432,11 +1432,11 @@ export default function AdminApp() {
 
       {/* NAV BAR (คงเดิม) */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t p-5 flex justify-around items-center z-50">
-        <button onClick={() => { setActiveTab('floor'); setIsTableManageMode(false); }} className={`flex flex-col items-center gap-1 ${activeTab === 'floor' ? 'text-[#FF85A1]' : 'text-pink-200'}`}>
+        <button onClick={() => { setActiveTab('floor'); setIsTableManageMode(false); }} className={`flex flex-col items-center gap-1 ${activeTab === 'floor' ? 'text-[#FF8C00]' : 'text-orange-200'}`}>
           <LayoutGrid size={24} />
           <span className="text-[9px] font-black">แผนผังโต๊ะ</span>
         </button>
-        <button onClick={() => setActiveTab('menu')} className={`flex flex-col items-center gap-1 ${activeTab === 'menu' ? 'text-[#FF85A1]' : 'text-pink-200'}`}>
+        <button onClick={() => setActiveTab('menu')} className={`flex flex-col items-center gap-1 ${activeTab === 'menu' ? 'text-[#FF8C00]' : 'text-orange-200'}`}>
           <Utensils size={24} />
           <span className="text-[9px] font-black">เมนู</span>
         </button>
@@ -1449,7 +1449,7 @@ export default function AdminApp() {
             </span>
           )}
         </button>
-        <button onClick={() => setActiveTab('sales')} className={`flex flex-col items-center gap-1 ${activeTab === 'sales' ? 'text-[#FF69B4]' : 'text-pink-200'}`}>
+        <button onClick={() => setActiveTab('sales')} className={`flex flex-col items-center gap-1 ${activeTab === 'sales' ? 'text-[#FF69B4]' : 'text-orange-200'}`}>
           <TrendingUp size={24} />
           <span className="text-[9px] font-black">ยอดขาย</span>
         </button>
@@ -1460,12 +1460,12 @@ export default function AdminApp() {
         showQrModal && (
           <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-300">
             <div className="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden shadow-2xl animate-in zoom-in duration-300">
-              <div className="bg-[#FF85A1] p-6 text-white text-center">
+              <div className="bg-[#FF8C00] p-6 text-white text-center">
                 <h3 className="text-2xl font-black">QR Code สำหรับโต๊ะ {showQrModal}</h3>
                 <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest mt-1">สแกนเพื่อสั่งอาหารทันที</p>
               </div>
               <div className="p-10 flex flex-col items-center gap-6">
-                <div className="p-4 bg-white rounded-3xl border-4 border-pink-50 shadow-inner">
+                <div className="p-4 bg-white rounded-3xl border-4 border-orange-50 shadow-inner">
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : '')}?table=${showQrModal}`}
                     alt={`QR Table ${showQrModal}`}
