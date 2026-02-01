@@ -881,8 +881,8 @@ export default function AdminApp() {
               <p className="text-[#10B981] text-[10px] font-black uppercase mb-1">พร้อมขาย</p>
               <p className="text-3xl font-black text-black">{menus.filter(m => m.is_available).length}</p>
             </div>
-            <div className="bg-[#FFF1F1] p-5 rounded-[2rem] flex-1 border border-red-100 shadow-sm">
-              <p className="text-[#F43F5E] text-[10px] font-black uppercase mb-1">สินค้าหมด</p>
+            <div className="bg-red-50 p-5 rounded-[2rem] flex-1 border border-red-100 shadow-sm">
+              <p className="text-red-500 text-[10px] font-black uppercase mb-1">สินค้าหมด</p>
               <p className="text-3xl font-black text-black">{menus.filter(m => !m.is_available).length}</p>
             </div>
           </div>

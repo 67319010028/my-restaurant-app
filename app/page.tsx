@@ -557,7 +557,7 @@ function RestaurantAppContent() {
                   </div>
                   <p className="text-black font-black text-xl mt-1">฿{item.totalItemPrice}</p>
                 </div>
-                <button onClick={() => removeFromCart(item.id, item.note, item.selectedNoodle, item.isSpecial)} className="absolute top-3 right-3 text-red-300"><Trash2 size={18} /></button>
+                <button onClick={() => removeFromCart(item.id, item.note, item.selectedNoodle, item.isSpecial)} className="absolute top-3 right-3 text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
                 <div className="absolute bottom-3 right-3 flex items-center gap-3 bg-white rounded-full p-1 border border-orange-100">
                   <button onClick={() => updateQuantity(item.id, -1, item.note, item.selectedNoodle, item.isSpecial)} className="bg-[#FF4D00] text-black rounded-full p-1 shadow-sm"><Minus size={14} /></button>
                   <span className="font-black text-sm text-black">{item.quantity}</span>
@@ -704,7 +704,7 @@ function RestaurantAppContent() {
               <div className={preparingCount > 0 || isCurrentlyBilling ? 'bg-gray-300 p-1 rounded-lg' : 'bg-white/40 p-1 rounded-lg'}><Clock size={20} /></div>
               {isCurrentlyBilling ? 'กำลังมาเช็คบิลแล้วค่ะ...' : 'เรียกพนักงานเช็คบิล'}
             </button>
-            <button onClick={() => setView('menu')} className="w-full text-center font-black text-orange-400">กลับไปหน้าเมนู</button>
+            <button onClick={() => setView('menu')} className="w-full text-center font-black text-[#FF7800]">กลับไปหน้าเมนู</button>
           </div>
         </main >
       </div >

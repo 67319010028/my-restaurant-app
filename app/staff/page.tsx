@@ -77,7 +77,7 @@ export default function StaffLoginPage() {
 
     return (
         <div className="min-h-screen bg-[#FFF7ED] flex items-center justify-center p-6 bg-[radial-gradient(circle_at_20%_20%,#FFEDD5_0%,transparent_25%),radial-gradient(circle_at_80%_80%,#FFDBBB_0%,transparent_25%)]">
-            <div className="bg-white/80 backdrop-blur-2xl w-full max-w-sm p-10 rounded-[3rem] shadow-[0_32px_64px_-16px_rgba(255,182,197,0.3)] border border-orange-100/50 text-center relative overflow-hidden">
+            <div className="bg-white/80 backdrop-blur-2xl w-full max-w-sm p-10 rounded-[3rem] shadow-[0_32px_64px_-16px_rgba(255,77,0,0.3)] border border-orange-100/50 text-center relative overflow-hidden">
                 {/* ตกแต่งพื้นหลังเล็กน้อย */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-full -mr-16 -mt-16 blur-3xl opacity-50"></div>
 
