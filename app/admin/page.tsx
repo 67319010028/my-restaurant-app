@@ -7,7 +7,7 @@ import {
   Search, Edit3, Trash2, X, Image as ImageIcon,
   Check, UploadCloud, Clock, ChefHat, CheckCircle2,
   Loader2, Calendar, DollarSign, ListFilter, ListChecks,
-  PlusCircle, Timer, BellRing, Eye, EyeOff, LayoutGrid, QrCode
+  PlusCircle, Timer, BellRing, Eye, EyeOff, LayoutGrid, QrCode, Wallet
 } from 'lucide-react';
 
 export default function AdminApp() {
@@ -1184,7 +1184,7 @@ export default function AdminApp() {
                     )}
                   </div>
                 </>
-              );
+              )
             })()}
           </main>
         )
@@ -1397,6 +1397,6 @@ export default function AdminApp() {
           </div>
         )
       }
-    </div >
+    </div>
   );
 }
