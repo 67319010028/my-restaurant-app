@@ -23,6 +23,7 @@ interface Order {
   status: string;
   total_price: number;
   items: OrderItem[];
+  queue_no?: number;
 }
 
 export default function KitchenPage() {
@@ -231,7 +232,7 @@ export default function KitchenPage() {
       const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       let baseOrders = data || [];
 
@@ -444,7 +445,14 @@ export default function KitchenPage() {
                       {order.table_no}
                     </div>
                     <div>
-                      <h3 className="text-gray-900 font-black text-xl">โต๊ะ {order.table_no}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-gray-900 font-black text-xl">โต๊ะ {order.table_no}</h3>
+                        {order.queue_no && (
+                          <span className="bg-[#FF4D00] text-white text-[10px] px-2 py-0.5 rounded-lg font-black uppercase tracking-wider shadow-sm">
+                            คิวที่ {order.queue_no}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-gray-400 text-sm font-bold flex items-center gap-1.5">
                         <Clock size={14} />
                         {new Date(order.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}

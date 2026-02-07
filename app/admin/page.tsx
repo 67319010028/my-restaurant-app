@@ -297,7 +297,7 @@ export default function AdminApp() {
   const fetchOrders = async () => {
     try {
       // 1. Fetch from Real Database
-      const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: true });
 
       let baseOrders = data || [];
 
@@ -924,6 +924,11 @@ export default function AdminApp() {
                         <div className="flex items-center gap-2">
                           <div className="bg-orange-500 p-2 rounded-xl"><Utensils size={18} /></div>
                           <span className="font-black text-lg">โต๊ะ {tableNo}</span>
+                          {tableOrders[0]?.queue_no && (
+                            <span className="bg-white/20 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                              คิวที่ {tableOrders[0].queue_no}
+                            </span>
+                          )}
                         </div>
                         <div className="bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1.5 border border-white/20">
                           <Clock size={12} className="text-orange-300" /> เรียกเช็คบิลเมื่อ {formatOrderTime(tableOrders[0]?.updated_at || tableOrders[0]?.created_at)}
@@ -1234,6 +1239,11 @@ export default function AdminApp() {
                               <span className="bg-orange-50 text-[#FF4D00] text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest">
                                 {order.status}
                               </span>
+                              {order.queue_no && (
+                                <span className="bg-blue-50 text-blue-600 text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest">
+                                  คิวที่ {order.queue_no}
+                                </span>
+                              )}
                               <span className="text-[10px] text-gray-400 font-bold">
                                 {formatOrderTime(order.created_at)}
                               </span>

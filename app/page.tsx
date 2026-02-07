@@ -29,7 +29,7 @@ interface CartItem extends Product {
   isSpecial?: boolean;
   totalItemPrice: number;
 }
-interface Order { id: number; total_price: number; status: string; table_no: string; created_at: string; items: any[]; }
+interface Order { id: number; total_price: number; status: string; table_no: string; created_at: string; items: any[]; queue_no?: number; }
 
 // แยกคอมโพเนนต์หลักออกมาเพื่อใช้ Suspense หุ้ม
 function RestaurantAppContent() {
@@ -273,7 +273,7 @@ function RestaurantAppContent() {
         .select('*')
         .eq('table_no', tableNo)
         .neq('status', 'เสร็จสิ้น')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (!error) {
         // ถ้า query สำเร็จ ให้ใช้ข้อมูลจริงเสมอ 
@@ -432,13 +432,28 @@ function RestaurantAppContent() {
 
     // Try real submit
     try {
+      // Fetch latest queue number for today
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const { data: lastOrder } = await supabase
+        .from('orders')
+        .select('queue_no')
+        .gte('created_at', startOfDay.toISOString())
+        .order('queue_no', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const nextQueueNo = lastOrder?.queue_no ? lastOrder.queue_no + 1 : 1;
+
       // 1. Insert into orders table and get the id
       const { data: orderData, error: orderError } = await supabase.from('orders').insert([{
         items: cart, // Keep items JSON for now for compatibility with Admin/Kitchen
         total_price: totalPrice,
         status: 'กำลังเตรียม',
         table_no: tableNo,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        queue_no: nextQueueNo
       }]).select().single();
 
       if (orderError) {
@@ -617,6 +632,7 @@ function RestaurantAppContent() {
                       <h3 className="font-black text-[15px] mb-0.5">{item.name} {item.isSpecial && <span className="text-[#FF4D00] text-[10px]">(พิเศษ)</span>}</h3>
                       <p className="text-[10px] text-gray-400 font-medium">
                         {item.selectedNoodle && `${item.selectedNoodle} • `}จำนวน x{item.quantity} • {formatTime(order.created_at)}
+                        {(order as any).queue_no && ` • คิวที่ ${(order as any).queue_no}`}
                       </p>
                     </div>
                     <div className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-colors ${order.status === 'เสร็จแล้ว' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-[#FFF7ED] border-orange-100 text-[#FF4D00]'
@@ -899,7 +915,7 @@ function RestaurantAppContent() {
       )}
 
       <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md md:max-w-2xl bg-white p-4 flex justify-around rounded-t-[32px] shadow-2xl border-t border-gray-50 z-30">
-        <button onClick={() => setView('cart')} className={`flex flex-col items-center transition-all relative ${view === 'cart' ? 'text-[#FF4D00]' : 'text-gray-300 hover:text-[#FF4D00]'}`}>
+        <button onClick={() => setView('cart')} className={`flex flex-col items-center transition-all relative ${(view as any) === 'cart' ? 'text-[#FF4D00]' : 'text-gray-300 hover:text-[#FF4D00]'}`}>
           <div className="p-2 rounded-xl transition-colors"><ShoppingCart size={24} /></div>
           <span className="text-[10px] font-black mt-1">ตะกร้า</span>
           {totalItemsCount > 0 && (
@@ -908,11 +924,11 @@ function RestaurantAppContent() {
             </span>
           )}
         </button>
-        <button onClick={() => setView('orders')} className={`flex flex-col items-center transition-all ${view === 'orders' ? 'text-[#FF4D00]' : 'text-gray-300 hover:text-[#FF4D00]'}`}>
+        <button onClick={() => setView('orders')} className={`flex flex-col items-center transition-all ${(view as any) === 'orders' ? 'text-[#FF4D00]' : 'text-gray-300 hover:text-[#FF4D00]'}`}>
           <div className="p-2 rounded-xl transition-colors"><ClipboardList size={24} strokeWidth={2.5} /></div>
           <span className="text-[10px] font-black mt-1">ที่สั่งแล้ว</span>
         </button>
-        <button onClick={() => setView('bill')} className={`flex flex-col items-center transition-all ${view === 'bill' ? 'text-[#FF4D00]' : 'text-gray-300 hover:text-[#FF4D00]'}`}>
+        <button onClick={() => setView('bill')} className={`flex flex-col items-center transition-all ${(view as any) === 'bill' ? 'text-[#FF4D00]' : 'text-gray-300 hover:text-[#FF4D00]'}`}>
           <div className="p-2 rounded-xl transition-colors"><Receipt size={24} strokeWidth={2.5} /></div>
           <span className="text-[10px] font-black mt-1">เช็คบิล</span>
         </button>
