@@ -91,10 +91,15 @@ function RestaurantAppContent() {
           alert("ขอบคุณที่ใช้บริการ! การชำระเงินเสร็จสิ้น");
 
           // Persist "Paid" state so refreshing doesn't bring back mock orders
-          if (typeof window !== 'undefined') localStorage.setItem(`demo_session_clear_${tableNo}`, 'true');
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(`demo_session_clear_${tableNo}`, 'true');
+            localStorage.removeItem(`checkin_done_${tableNo}`);
+            localStorage.removeItem(`table_billing_${tableNo}`);
+          }
 
           setOrders([]);
           setCart([]);
+          setIsCheckedIn(false);
           setView('menu');
         } else {
           fetchOrders();
@@ -126,15 +131,15 @@ function RestaurantAppContent() {
 
           // หากแอดมินกดรับเงินเรียบร้อย (เสร็จสิ้น) ให้รีเซ็ตหน้าจอทุกเครื่องในโต๊ะนี้
           if (payload.new && (payload.new as any).status === 'เสร็จสิ้น') {
-            alert("ขอบคุณที่ใช้บริการ! การชำระเงินเสร็จสิ้นแล้วค่ะ");
-            setOrders([]);
-            setCart([]);
-            setView('menu');
-
             if (typeof window !== 'undefined') {
               localStorage.removeItem(`table_billing_${tableNo}`);
+              localStorage.removeItem(`checkin_done_${tableNo}`);
               localStorage.setItem(`demo_session_clear_${tableNo}`, 'true');
             }
+            setOrders([]);
+            setCart([]);
+            setIsCheckedIn(false);
+            setView('menu');
           }
         }
       )
@@ -770,7 +775,7 @@ function RestaurantAppContent() {
           </button>
         </div>
         <div className="absolute bottom-10 text-[10px] text-gray-300 font-black tracking-widest uppercase">
-          Powered by Pa Kung System v2.0
+          ขับเคลื่อนโดย ระบบป้ากุ้ง v2.0
         </div>
       </div>
     );

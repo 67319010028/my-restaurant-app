@@ -323,7 +323,7 @@ export default function KitchenPage() {
             <h1 className="text-3xl font-black text-gray-800">ร้านป้ากุ้ง (ครัว)</h1>
             <p className="text-xs text-gray-500 font-bold uppercase tracking-widest flex items-center gap-2">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              Kitchen Management System
+              ระบบจัดการห้องครัว
             </p>
           </div>
           <button
@@ -333,7 +333,7 @@ export default function KitchenPage() {
             }}
             className="text-red-400 font-black text-[10px] uppercase tracking-wider bg-red-50/50 px-4 py-1.5 rounded-full ml-auto"
           >
-            Logout
+            ออกจากระบบ
           </button>
         </div>
 

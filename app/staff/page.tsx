@@ -84,7 +84,7 @@ export default function StaffLoginPage() {
                     </div>
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Pa Kung Shop</h1>
                     <p className="text-xs text-slate-500 font-medium mt-1 uppercase tracking-wider">
-                        Management Portal
+                        ระบบจัดการร้าน
                     </p>
                 </div>
 
@@ -92,7 +92,7 @@ export default function StaffLoginPage() {
                     <div>
                         <input
                             type="email"
-                            placeholder="Email Address"
+                            placeholder="อีเมล"
                             className="w-full bg-white px-4 py-3 rounded-xl font-medium outline-none border border-slate-200 focus:border-[#FF4D00] focus:ring-2 focus:ring-[#FF4D00]/10 transition-all text-slate-900"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -102,7 +102,7 @@ export default function StaffLoginPage() {
                     <div className="relative">
                         <input
                             type={showPassword ? "text" : "password"}
-                            placeholder="Password"
+                            placeholder="รหัสผ่าน"
                             className="w-full bg-white px-4 py-3 rounded-xl font-medium outline-none border border-slate-200 focus:border-[#FF4D00] focus:ring-2 focus:ring-[#FF4D00]/10 transition-all pr-12 text-slate-900"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}

@@ -7,7 +7,7 @@ import {
   Search, Edit3, Trash2, X, Image as ImageIcon,
   Check, UploadCloud, Clock, ChefHat, CheckCircle2,
   Loader2, Calendar, DollarSign, ListFilter, ListChecks,
-  PlusCircle, Timer, BellRing, Eye, EyeOff, LayoutGrid, QrCode, Wallet
+  PlusCircle, Timer, BellRing, Eye, EyeOff, LayoutGrid, QrCode, Wallet, Users
 } from 'lucide-react';
 
 export default function AdminApp() {
@@ -28,13 +28,17 @@ export default function AdminApp() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ✅ จัดการเรื่องวันที่ให้เป็นปัจจุบันตามเวลาไทย
-  const now = new Date();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
   const [salesViewMode, setSalesViewMode] = useState<'daily' | 'monthly'>('daily');
-  const [selectedSalesDate, setSelectedSalesDate] = useState(todayStr);
-  const [selectedSalesMonth, setSelectedSalesMonth] = useState(monthStr);
+  const [selectedSalesDate, setSelectedSalesDate] = useState("");
+  const [selectedSalesMonth, setSelectedSalesMonth] = useState("");
+
+  useEffect(() => {
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    setSelectedSalesDate(today);
+    setSelectedSalesMonth(month);
+  }, []);
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [noodleTypes, setNoodleTypes] = useState(['เส้นเล็ก', 'เส้นใหญ่', 'บะหมี่', 'หมี่ขาว']);
@@ -643,64 +647,75 @@ export default function AdminApp() {
         </div>
       )}
 
-      <div className="max-w-4xl mx-auto px-6 pt-4 space-y-2 text-center sm:text-left">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="flex flex-col gap-1 items-center sm:items-start">
-              <div className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-full border border-gray-100 shadow-sm">
-                <div className={`w-2 h-2 rounded-full ${realtimeStatus === 'SUBSCRIBED' ? 'bg-green-500 animate-pulse' : realtimeStatus === 'CONNECTING' ? 'bg-yellow-400' : 'bg-red-400'}`} />
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Realtime: {realtimeStatus}</span>
+      {/* PROFESSIONAL TOP HEADER */}
+      <header className="sticky top-0 z-[60] bg-white/70 backdrop-blur-2xl border-b border-slate-100/50 px-6 py-4">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2 mb-1">
+                <div className={`w-2 h-2 rounded-full ${realtimeStatus === 'SUBSCRIBED' ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]' : realtimeStatus === 'CONNECTING' ? 'bg-amber-400' : 'bg-red-500'}`} />
+                <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">เครือข่าย: {realtimeStatus === 'SUBSCRIBED' ? 'เชื่อมต่อแล้ว' : realtimeStatus}</span>
               </div>
-              <p className="text-[8px] text-gray-400 ml-2 font-bold font-sans">อัปเดตล่าสุด: {lastEventTime}</p>
+              <p className="text-[9px] text-slate-400 font-bold ml-4">อัปเดตล่าสุด: {lastEventTime}</p>
             </div>
-            <button onClick={playNotificationSound} className={`text-[10px] px-3 py-1 rounded-full font-black border flex items-center gap-1 active:scale-95 transition-transform ${isAudioUnlocked ? 'bg-blue-50 text-blue-500 border-blue-100' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>
-              <BellRing size={12} /> ทดสอบเสียง
+          </div>
+
+          <div className="flex items-center gap-5">
+            <button
+              onClick={playNotificationSound}
+              className={`group flex items-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-black transition-all duration-300 border ${isAudioUnlocked ? 'bg-blue-50/50 text-blue-500 border-blue-100 hover:bg-blue-100/50' : 'bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100'}`}
+            >
+              <BellRing size={14} className={isAudioUnlocked ? 'animate-bounce' : ''} />
+              <span className="hidden sm:inline">ทดสอบเสียง</span>
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 border border-slate-100 hover:border-red-100"
+            >
+              ออกจากระบบ
             </button>
           </div>
-          <button
-            onClick={handleLogout}
-            className="text-red-400 font-black text-[10px] uppercase tracking-wider bg-red-50/50 px-4 py-1.5 rounded-full"
-          >
-            Logout
-          </button>
         </div>
-      </div>
+      </header>
 
-      {/* TAB: FLOOR PLAN */}
       {activeTab === 'floor' && (
-        <main className="p-6 max-w-4xl mx-auto animate-in fade-in duration-500 pb-40">
-          <header className="mb-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="text-center md:text-left">
-              <h1 className="text-3xl font-black tracking-tight">แผนผังร้าน (Floor Plan)</h1>
-              <p className="text-gray-400 font-bold text-sm">ตรวจสอบสถานะโต๊ะแบบ Real-time</p>
+        <main className="p-6 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 pb-40">
+          <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">ผังที่นั่งร้านอาหาร</h1>
+              <div className="text-slate-500 font-medium flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                ตรวจสอบสถานะโต๊ะและการจองแบบ Real-time
+              </div>
             </div>
             <button
               onClick={() => setIsTableManageMode(!isTableManageMode)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-sm transition-all shadow-lg ${isTableManageMode ? 'bg-[#411E24] text-white shadow-gray-200' : 'bg-white text-[#FF4D00] border-2 border-orange-50 shadow-orange-50'}`}
+              className={`flex items-center gap-2 px-8 py-3.5 rounded-2xl font-black text-sm transition-all duration-300 shadow-lg ${isTableManageMode ? 'bg-slate-900 text-white shadow-slate-200' : 'bg-white text-orange-600 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl hover:-translate-y-0.5'}`}
             >
               {isTableManageMode ? <LayoutGrid size={18} /> : <PlusCircle size={18} />}
-              {isTableManageMode ? 'ดูแผนผังโต๊ะ' : 'จัดการโต๊ะ'}
+              {isTableManageMode ? 'ดูแผนผังโต๊ะ' : 'แก้ไขผังร้าน'}
             </button>
           </header>
 
           {isTableManageMode ? (
-            <div className="animate-in slide-in-from-top duration-500">
-              <form onSubmit={handleAddTable} className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm mb-8 flex flex-col md:flex-row gap-4">
+            <div className="animate-in slide-in-from-top-4 duration-500">
+              <form onSubmit={handleAddTable} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-10 flex flex-col md:flex-row gap-6">
                 <div className="flex-1">
-                  <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">เลขโต๊ะ (Table No.)</label>
+                  <label className="text-xs font-black uppercase text-slate-400 ml-2 mb-3 block tracking-widest">หมายเลขโต๊ะ</label>
                   <input
                     type="text"
-                    placeholder="เช่น 5, 6, A1"
+                    placeholder="เช่น 5, 12, VIP-1"
                     required
-                    className="w-full bg-gray-50 rounded-2xl px-5 py-3 font-bold outline-none border border-transparent focus:border-orange-200"
+                    className="w-full bg-slate-50 rounded-2xl px-6 py-4 font-bold outline-none border border-transparent focus:border-orange-200 focus:bg-white transition-all text-slate-900"
                     value={newTableNo}
                     onChange={(e) => setNewTableNo(e.target.value)}
                   />
                 </div>
-                <div className="md:w-40">
-                  <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">ที่นั่ง (Capacity)</label>
+                <div className="md:w-48">
+                  <label className="text-xs font-black uppercase text-slate-400 ml-2 mb-3 block tracking-widest">จำนวนที่นั่ง</label>
                   <select
-                    className="w-full bg-gray-50 rounded-2xl px-5 py-3 font-bold outline-none border border-transparent focus:border-orange-200"
+                    className="w-full bg-slate-50 rounded-2xl px-6 py-4 font-bold outline-none border border-transparent focus:border-orange-200 focus:bg-white transition-all text-slate-900 appearance-none"
                     value={newTableCapacity}
                     onChange={(e) => setNewTableCapacity(e.target.value)}
                   >
@@ -710,36 +725,38 @@ export default function AdminApp() {
                 <button
                   type="submit"
                   disabled={isAddingTable}
-                  className="md:mt-6 bg-[#FF4D00] text-white px-8 py-3 rounded-2xl font-black text-sm shadow-lg shadow-orange-100 disabled:bg-gray-200"
+                  className="md:mt-8 bg-slate-900 text-white px-10 py-4 rounded-2xl font-black text-sm shadow-xl hover:bg-slate-800 disabled:bg-slate-200 transition-all flex items-center justify-center gap-2"
                 >
-                  {isAddingTable ? 'กำลังเพิ่ม...' : <div className="flex items-center gap-2"><PlusCircle size={18} /> เพิ่มโต๊ะ</div>}
+                  {isAddingTable ? 'กำลังเพิ่ม...' : <><PlusCircle size={20} /> เพิ่มโต๊ะใหม่</>}
                 </button>
               </form>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tables.map((table) => (
-                  <div key={table.id} className="bg-white p-5 rounded-[2.5rem] border border-gray-50 flex justify-between items-center shadow-sm">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center text-2xl font-black text-[#FF4D00]">
+                  <div key={table.id} className="group bg-white p-6 rounded-[2.2rem] border border-slate-50 flex justify-between items-center shadow-[0_4px_20px_rgb(0,0,0,0.02)] hover:shadow-xl transition-all duration-500">
+                    <div className="flex items-center gap-5">
+                      <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-2xl font-black text-slate-900 group-hover:bg-orange-50 group-hover:border-orange-100 transition-colors">
                         {table.table_number}
                       </div>
                       <div>
-                        <h4 className="font-black text-lg">โต๊ะ {table.table_number}</h4>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{table.capacity} ที่นั่ง • {table.status === 'available' ? 'ว่าง' : 'ไม่ว่าง'}</p>
+                        <h4 className="font-black text-lg text-slate-900 mb-0.5">โต๊ะ {table.table_number}</h4>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                          <Users size={12} /> {table.capacity} ที่นั่ง • {table.status === 'available' ? 'ว่าง' : 'มีลูกค้า'}
+                        </p>
                       </div>
                     </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setShowQrModal(table.table_number)}
-                        className="p-3 bg-blue-50 text-blue-500 rounded-2xl hover:scale-110 transition-transform"
-                        title="แสดง QR Code"
+                        className="p-3 bg-slate-50 text-slate-400 hover:bg-blue-50 hover:text-blue-500 rounded-2xl transition-all"
+                        title="QR Menu"
                       >
                         <QrCode size={20} />
                       </button>
                       <button
                         onClick={() => handleDeleteTable(table.id)}
-                        className="p-3 bg-red-50 text-red-500 rounded-2xl hover:scale-110 transition-transform"
-                        title="ลบโต๊ะ"
+                        className="p-3 bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-2xl transition-all"
+                        title="ลบ"
                       >
                         <Trash2 size={20} />
                       </button>
@@ -749,46 +766,54 @@ export default function AdminApp() {
               </div>
             </div>
           ) : (
-            <div className="animate-in fade-in duration-500">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="animate-in fade-in duration-700">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
                 {tables.length === 0 ? (
-                  <div className="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-orange-100 text-orange-300 font-bold">
-                    ยังไม่มีข้อมูลโต๊ะในระบบ<br />
-                    (กรุณากดเพิ่มข้อมูลในฐานข้อมูล)
+                  <div className="col-span-full py-32 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100 text-slate-300 font-bold flex flex-col items-center gap-4">
+                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
+                      <LayoutGrid size={40} />
+                    </div>
+                    ยังไม่มีการตั้งค่าโต๊ะในขณะนี้<br />
+                    คลิก "แก้ไขผังร้าน" เพื่อเริ่ม
                   </div>
                 ) : (
                   tables.map((table) => {
                     const isOccupied = table.status === 'occupied' || orders.some(o => o.table_no === table.table_number && (o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ' || o.status === 'เสร็จแล้ว'));
                     const isBilling = table.status === 'billing' || table.status === 'เรียกเช็คบิล' || orders.some(o => o.table_no === table.table_number && o.status === 'เรียกเช็คบิล');
 
-                    let statusColor = 'bg-white border-orange-100 text-orange-400';
-                    let statusText = 'ว่าง';
+                    let statusClass = 'bg-white border-slate-100 text-slate-900 shadow-[0_4px_20px_rgb(0,0,0,0.02)]';
+                    let labelClass = 'text-slate-400';
+                    let accentClass = 'bg-slate-50 text-slate-400';
+                    let statusText = 'โต๊ะว่าง';
 
                     if (isBilling) {
-                      statusColor = 'bg-yellow-400 border-yellow-500 text-white animate-pulse';
+                      statusClass = 'bg-amber-400 border-amber-500 text-white shadow-xl shadow-amber-100 animate-pulse';
+                      labelClass = 'text-amber-100';
+                      accentClass = 'bg-white/20 text-white';
                       statusText = 'เรียกเช็คบิล';
                     } else if (isOccupied) {
-                      statusColor = 'bg-[#FF4D00] border-orange-400 text-white';
-                      statusText = 'มีลูกค้า';
+                      statusClass = 'bg-orange-600 border-orange-700 text-white shadow-xl shadow-orange-100';
+                      labelClass = 'text-orange-100';
+                      accentClass = 'bg-white/20 text-white';
+                      statusText = 'มีลูกค้าค้าง';
                     }
 
                     return (
                       <button
                         key={table.id}
                         onClick={() => setSelectedTableDetail(table)}
-                        className={`${statusColor} p-6 rounded-[2.5rem] border-2 shadow-sm transition-all hover:scale-105 active:scale-95 flex flex-col items-center justify-center gap-2 group relative overflow-hidden`}
+                        className={`${statusClass} h-48 rounded-[2.5rem] border-2 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl active:scale-95 flex flex-col items-center justify-center gap-3 relative overflow-hidden group`}
                       >
-                        <div className="absolute top-2 right-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                          <LayoutGrid size={40} />
+                        <span className="text-5xl font-black tracking-tighter">{table.table_number}</span>
+                        <div className="flex flex-col items-center">
+                          <span className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${labelClass}`}>{statusText}</span>
+                          <p className={`text-[9px] font-bold inline-flex items-center gap-1.5 opacity-70 ${labelClass}`}>
+                            <Users size={12} /> {table.capacity} ที่นั่ง
+                          </p>
                         </div>
-                        <span className="text-4xl font-black">{table.table_number}</span>
-                        <span className="text-xs font-black uppercase tracking-widest">{statusText}</span>
-                        <p className="text-[10px] opacity-60 font-bold mt-1 inline-flex items-center gap-1">
-                          <Utensils size={10} /> {table.capacity} ที่นั่ง
-                        </p>
-                        {isOccupied && (
-                          <div className="mt-2 text-[8px] bg-white/20 px-2 py-0.5 rounded-full font-black uppercase tracking-tighter">
-                            คลิกดูออเดอร์
+                        {isOccupied && !isBilling && (
+                          <div className="mt-2 bg-white/30 backdrop-blur-md px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border border-white/20 scale-90 group-hover:scale-100 transition-transform">
+                            ดูรายการสั่ง
                           </div>
                         )}
                       </button>
@@ -797,18 +822,18 @@ export default function AdminApp() {
                 )}
               </div>
 
-              <div className="mt-12 flex flex-wrap gap-4 justify-center md:justify-start">
-                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-orange-50 shadow-sm">
-                  <div className="w-3 h-3 bg-white border-2 border-orange-100 rounded-full"></div>
-                  <span className="text-[10px] font-black text-gray-400">โต๊ะว่าง</span>
+              <div className="mt-16 flex flex-wrap gap-6 justify-center">
+                <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-2xl border border-slate-50 shadow-sm">
+                  <div className="w-3 h-3 bg-white border-2 border-slate-200 rounded-full"></div>
+                  <span className="text-xs font-black text-slate-400 tracking-wider">AVAILABLE</span>
                 </div>
-                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-orange-50 shadow-sm">
-                  <div className="w-3 h-3 bg-[#FF4D00] rounded-full"></div>
-                  <span className="text-[10px] font-black text-gray-400">มีลูกค้า</span>
+                <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-2xl border border-slate-50 shadow-sm">
+                  <div className="w-3 h-3 bg-orange-600 rounded-full"></div>
+                  <span className="text-xs font-black text-slate-400 tracking-wider">OCCUPIED</span>
                 </div>
-                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-orange-50 shadow-sm">
-                  <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
-                  <span className="text-[10px] font-black text-gray-400">เรียกเช็คบิล</span>
+                <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-2xl border border-slate-50 shadow-sm">
+                  <div className="w-3 h-3 bg-amber-400 rounded-full animate-pulse"></div>
+                  <span className="text-xs font-black text-slate-400 tracking-wider">BILLING</span>
                 </div>
               </div>
             </div>
@@ -816,13 +841,15 @@ export default function AdminApp() {
         </main>
       )}
 
-      {/* TAB: MENU */}
       {activeTab === 'menu' && (
-        <main className="p-6 max-w-4xl mx-auto animate-in fade-in duration-500 pb-40">
-          <header className="mb-6 flex justify-between items-end">
+        <main className="p-6 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 pb-40">
+          <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h1 className="text-3xl font-black tracking-tight">จัดการเมนู</h1>
-              <p className="text-gray-400 font-bold text-sm">{menus.length} รายการ</p>
+              <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">คลังรายการอาหาร</h1>
+              <div className="text-slate-500 font-medium flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                จัดการเมนู ความพร้อมของสินค้า และราคา
+              </div>
             </div>
             <button
               onClick={() => {
@@ -830,60 +857,81 @@ export default function AdminApp() {
                 setFormData({ name: '', price: '', category: 'เมนูข้าว', image_url: '', imageFile: null, noodle_options: [] });
                 setIsModalOpen(true);
               }}
-              className="bg-[#FF4D00] text-white px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 shadow-lg shadow-orange-100 hover:scale-[1.02] active:scale-95 transition-all"
+              className="bg-slate-900 text-white px-8 py-3.5 rounded-2xl font-black text-sm flex items-center gap-2 shadow-xl hover:bg-slate-800 hover:-translate-y-0.5 transition-all"
             >
-              <Plus size={18} strokeWidth={3} /> เพิ่มเมนูใหม่
+              <Plus size={20} strokeWidth={3} /> เพิ่มเมนูใหม่
             </button>
           </header>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <div className="bg-[#EFFFF6] p-5 rounded-[2rem] flex-1 border border-green-100 shadow-sm">
-              <p className="text-[#10B981] text-[10px] font-black uppercase mb-1">พร้อมขาย</p>
-              <p className="text-3xl font-black text-black">{menus.filter(m => m.is_available).length}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+            <div className="bg-emerald-50 p-8 rounded-[2.5rem] border border-emerald-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)] flex items-center gap-6 group">
+              <div className="bg-white w-14 h-14 rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm transition-transform group-hover:scale-110">
+                <CheckCircle2 size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-emerald-600/60 uppercase tracking-[0.2em] mb-1">เมนูที่เปิดขาย</p>
+                <p className="text-4xl font-black text-slate-900">{menus.filter(m => m.is_available).length}</p>
+              </div>
             </div>
-            <div className="bg-red-50 p-5 rounded-[2rem] flex-1 border border-red-100 shadow-sm">
-              <p className="text-red-500 text-[10px] font-black uppercase mb-1">สินค้าหมด</p>
-              <p className="text-3xl font-black text-black">{menus.filter(m => !m.is_available).length}</p>
+            <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)] flex items-center gap-6 group">
+              <div className="bg-white w-14 h-14 rounded-2xl flex items-center justify-center text-slate-400 shadow-sm transition-transform group-hover:scale-110">
+                <EyeOff size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">สินค้าหมด</p>
+                <p className="text-4xl font-black text-slate-900">{menus.filter(m => !m.is_available).length}</p>
+              </div>
             </div>
           </div>
 
-          <div className="flex gap-2 overflow-x-auto no-scrollbar mb-6">
+          <div className="flex gap-3 overflow-x-auto no-scrollbar mb-10 pb-2">
             {['ทั้งหมด', 'เมนูข้าว', 'เมนูเส้น', 'กับข้าว'].map(cat => (
-              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-6 py-2.5 rounded-full text-sm font-black transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-[#FF4D00] text-white shadow-lg' : 'bg-white text-[#FF4D00]'}`}>{cat}</button>
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-8 py-3 rounded-2xl text-sm font-black transition-all duration-300 whitespace-nowrap border-2 ${selectedCategory === cat ? 'bg-slate-900 border-slate-900 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-400 hover:border-orange-200 hover:text-orange-600'}`}
+              >
+                {cat === 'ทั้งหมด' ? 'ทุกหมวดหมู่' : cat}
+              </button>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {menus.filter(m => selectedCategory === 'ทั้งหมด' || m.category === selectedCategory).map((item) => (
-              <div key={item.id} className="bg-white p-4 rounded-[2rem] shadow-sm flex items-center gap-4 border border-orange-50">
-                <div className={`w-20 h-20 rounded-[1.5rem] overflow-hidden bg-gray-100 flex-shrink-0 ${!item.is_available && 'grayscale opacity-50'}`}>
-                  <img src={item.image_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt={item.name} />
+              <div key={item.id} className="group bg-white p-5 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex items-center gap-6 border border-slate-50 hover:border-orange-100 hover:shadow-xl transition-all duration-500">
+                <div className={`w-24 h-24 rounded-[1.8rem] overflow-hidden bg-slate-100 flex-shrink-0 shadow-sm ring-1 ring-slate-100 ${!item.is_available && 'grayscale opacity-40'}`}>
+                  <img src={item.image_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={item.name} />
                 </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className={`font-black text-md ${!item.is_available ? 'text-orange-200 line-through' : 'text-[#FF4D00]'}`}>{item.name}</h3>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {item.noodle_options?.map((n: string) => (
-                          <span key={n} className="bg-blue-50 text-blue-500 text-[8px] px-1.5 py-0.5 rounded-md font-black">#{n}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1">
+                      <h3 className={`font-black text-xl truncate ${!item.is_available ? 'text-slate-300' : 'text-slate-900'}`}>{item.name}</h3>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {item.noodle_options?.slice(0, 3).map((n: string) => (
+                          <span key={n} className="bg-slate-50 text-slate-400 text-[9px] px-2.5 py-1 rounded-full font-black uppercase tracking-wider">#{n}</span>
                         ))}
                       </div>
                     </div>
-                    <p className="text-lg font-black text-black">฿{item.price}</p>
+                    <div className="text-right ml-4">
+                      <p className="text-2xl font-black text-slate-900 tracking-tighter">฿{item.price}</p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">ราคาต่อหน่วย</p>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="flex items-center gap-3">
                       <button
                         onClick={() => toggleMenuAvailability(item.id, item.is_available)}
-                        className={`w-10 h-5 rounded-full relative transition-all ${item.is_available ? 'bg-[#34D399]' : 'bg-gray-300'}`}
+                        className={`w-12 h-6 rounded-full relative transition-all duration-500 ${item.is_available ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-slate-200'}`}
                       >
-                        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${item.is_available ? 'right-0.5' : 'left-0.5'}`} />
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${item.is_available ? 'right-1' : 'left-1'}`} />
                       </button>
-                      <span className="text-[9px] font-black text-gray-400 uppercase">{item.is_available ? 'พร้อมขาย' : 'ของหมด'}</span>
+                      <span className={`text-[10px] font-black uppercase tracking-widest ${item.is_available ? 'text-emerald-500' : 'text-slate-300'}`}>
+                        {item.is_available ? 'เปิดขาย' : 'สินค้าหมด'}
+                      </span>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => handleEditClick(item)} className="p-2 bg-orange-50 rounded-full text-orange-400" title="แก้ไข"><Edit3 size={14} /></button>
-                      <button onClick={() => deleteMenu(item.id)} className="p-2 bg-red-50 rounded-full text-red-400" title="ลบ"><Trash2 size={14} /></button>
+                      <button onClick={() => handleEditClick(item)} className="p-3 bg-slate-50 text-slate-400 hover:bg-orange-50 hover:text-orange-600 rounded-2xl transition-all"><Edit3 size={18} /></button>
+                      <button onClick={() => deleteMenu(item.id)} className="p-3 bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-2xl transition-all"><Trash2 size={18} /></button>
                     </div>
                   </div>
                 </div>
@@ -893,25 +941,29 @@ export default function AdminApp() {
         </main>
       )}
 
-      {/* TAB: BILLING */}
       {
         activeTab === 'billing' && (
-          <main className="p-6 max-w-4xl mx-auto animate-in slide-in-from-right duration-500 pb-40">
-            <header className="mb-6 flex justify-between items-end">
+          <main className="p-6 max-w-5xl mx-auto animate-in slide-in-from-right-4 duration-700 pb-40">
+            <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
-                <h1 className="text-3xl font-black tracking-tight">รายการเช็คบิล</h1>
-                <p className="text-red-500 font-bold text-sm">รอดำเนินการ {billingOrdersCount} โต๊ะ</p>
+                <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">จัดการการชำระเงิน</h1>
+                <div className="text-slate-500 font-medium flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  ตรวจสอบออเดอร์และยืนยันการชำระเงินของลูกค้า
+                </div>
               </div>
-              <div onClick={() => fetchOrders()} className="bg-red-50 p-3 rounded-2xl text-red-500 cursor-pointer hover:bg-red-100 transition-colors">
-                <ClipboardList size={24} strokeWidth={3} />
+              <div onClick={() => fetchOrders()} className="bg-white p-4 rounded-2xl text-slate-400 hover:text-orange-600 cursor-pointer border border-slate-100 shadow-sm transition-all hover:shadow-md active:scale-95">
+                <ClipboardList size={28} strokeWidth={2.5} />
               </div>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* --- Aggregated Billing View: Group by Table --- */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {Array.from(new Set(orders.filter(o => o.status === 'เรียกเช็คบิล').map(o => o.table_no))).length === 0 ? (
-                <div className="p-12 text-center text-gray-400 bg-white rounded-3xl border-2 border-dashed border-gray-100 italic">
-                  ยังไม่มีโต๊ะเรียกเช็คบิลในขณะนี้
+                <div className="col-span-full py-32 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100 flex flex-col items-center gap-4">
+                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
+                    <Wallet size={40} />
+                  </div>
+                  <p className="text-slate-300 font-bold">ไม่มีรายการรอเช็คบิลในขณะนี้</p>
                 </div>
               ) : (
                 Array.from(new Set(orders.filter(o => o.status === 'เรียกเช็คบิล').map(o => o.table_no))).map((tableNo) => {
@@ -919,86 +971,102 @@ export default function AdminApp() {
                   const totalAmount = tableOrders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
 
                   return (
-                    <div key={tableNo} className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-2">
-                      <div className="bg-[#FF4D00] p-4 text-white flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <div className="bg-orange-500 p-2 rounded-xl"><Utensils size={18} /></div>
-                          <span className="font-black text-lg">โต๊ะ {tableNo}</span>
-                          {tableOrders[0]?.queue_no && (
-                            <span className="bg-white/20 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider">
-                              คิวที่ {tableOrders[0].queue_no}
-                            </span>
-                          )}
+                    <div key={tableNo} className="bg-white rounded-[3rem] overflow-hidden shadow-[0_8px_40px_rgb(0,0,0,0.04)] border border-slate-100 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      <div className="bg-slate-900 p-6 text-white flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                          <div className="bg-white/10 p-3 rounded-2xl"><Utensils size={24} /></div>
+                          <div>
+                            <span className="font-black text-xl block leading-none">โต๊ะ {tableNo}</span>
+                            {tableOrders[0]?.queue_no && (
+                              <span className="text-[10px] font-black uppercase text-orange-400 tracking-widest mt-1 block">
+                                คิวที่ #{tableOrders[0].queue_no}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div className="bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1.5 border border-white/20">
-                          <Clock size={12} className="text-orange-300" /> เรียกเช็คบิลเมื่อ {formatOrderTime(tableOrders[0]?.updated_at || tableOrders[0]?.created_at)}
+                        <div className="text-right">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Requested at</p>
+                          <div className="bg-white/10 px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-2 border border-white/5">
+                            <Clock size={12} className="text-orange-400" /> {formatOrderTime(tableOrders[0]?.updated_at || tableOrders[0]?.created_at)}
+                          </div>
                         </div>
                       </div>
 
-                      <div className="p-6">
-                        {/* ✅ Unserved Items Warning */}
+                      <div className="p-8">
                         {(() => {
                           const allTableOrders = orders.filter(o => o.table_no === tableNo && o.status !== 'เสร็จสิ้น');
                           const unservedOrders = allTableOrders.filter(o => o.status === 'รอ' || o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ');
 
                           if (unservedOrders.length > 0) {
                             return (
-                              <div className="mb-6 bg-red-50 border-2 border-red-500 rounded-3xl p-5 animate-pulse">
-                                <p className="text-red-600 font-black text-sm flex items-center gap-2 mb-3">
-                                  <BellRing size={18} /> ⚠️ แจ้งเตือน: มีรายการที่ยังไม่เสร็จสิ้น!
+                              <div className="mb-8 bg-red-50/50 border-2 border-red-100 rounded-[2rem] p-6">
+                                <p className="text-red-600 font-black text-xs flex items-center gap-2 mb-4 tracking-widest uppercase">
+                                  <BellRing size={16} /> แจ้งเตือน: มีรายการค้างที่ยังไม่เสร็จ!
                                 </p>
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                   {unservedOrders.map(o => (
-                                    <div key={o.id} className="bg-white/60 p-3 rounded-2xl">
-                                      {o.items?.map((item: any, i: number) => (
-                                        <div key={i} className="flex justify-between text-[11px] font-bold text-red-400">
-                                          <span>• {item.quantity}x {item.name} {item.selectedNoodle && `(${item.selectedNoodle})`}</span>
-                                          <span className="bg-red-100 px-2 py-0.5 rounded-full uppercase text-[8px]">{o.status}</span>
-                                        </div>
-                                      ))}
+                                    <div key={o.id} className="bg-white p-4 rounded-2xl shadow-sm border border-red-50 flex justify-between items-center">
+                                      <div className="flex-1">
+                                        {o.items?.map((item: any, i: number) => (
+                                          <div key={i} className="text-[11px] font-bold text-slate-600 mb-0.5">
+                                            {item.quantity}x {item.name} {item.selectedNoodle && `(${item.selectedNoodle})`}
+                                          </div>
+                                        ))}
+                                      </div>
+                                      <span className="bg-orange-50 text-orange-600 px-3 py-1 rounded-full uppercase text-[9px] font-black">{o.status}</span>
                                     </div>
                                   ))}
                                 </div>
-                                <p className="text-[10px] text-red-400 mt-3 font-bold">* กรุณาแจ้งครัวหรือตรวจสอบก่อนรับเงิน</p>
+                                <p className="text-[9px] text-red-400 mt-4 font-bold border-t border-red-100 pt-3">
+                                  * กรุณาตรวจสอบและเสิร์ฟรายการที่ค้างอยู่ก่อนปิดโต๊ะ
+                                </p>
                               </div>
                             );
                           }
                           return null;
                         })()}
 
-                        <div className="space-y-4 mb-6">
-                          {tableOrders.map((order, idx) => (
-                            <div key={order.id} className="space-y-2 border-b border-gray-50 pb-4 last:border-0 last:pb-0">
-                              <div className="flex justify-between items-center mb-1">
-                                <span className="text-[9px] font-bold text-[#8B5E3C]/30 uppercase tracking-wider">สั่งเมื่อ {formatOrderTime(order.created_at)}</span>
-                              </div>
+                        <div className="space-y-6 mb-8">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">สรุปรายการสั่งซื้อ</p>
+                          {tableOrders.map((order) => (
+                            <div key={order.id} className="space-y-3 border-b border-slate-50 pb-6 last:border-0 last:pb-0">
                               {order.items?.map((item: any, i: number) => (
-                                <div key={i} className="flex justify-between text-sm">
-                                  <span className="text-black font-medium">{item.quantity}x {item.name} {item.isSpecial && '(พิเศษ)'}</span>
-                                  <span className="font-black text-black">฿{(item.totalItemPrice || item.price) * item.quantity}</span>
+                                <div key={i} className="flex justify-between items-center text-sm">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-slate-400 font-black">{item.quantity}×</span>
+                                    <span className="text-slate-900 font-bold leading-tight">{item.name} {item.isSpecial && '(พิเศษ)'}</span>
+                                  </div>
+                                  <span className="font-black text-slate-900">฿{(item.totalItemPrice || item.price) * item.quantity}</span>
                                 </div>
                               ))}
                             </div>
                           ))}
                         </div>
 
-                        <div className="flex justify-between items-center pt-4 border-t border-gray-100 mb-6">
-                          <span className="text-gray-400 font-medium">รวมยอดชำระทั้งสิ้น</span>
-                          <span className="text-2xl font-black text-black">฿{totalAmount}</span>
+                        <div className="flex justify-between items-end pt-6 border-t border-slate-100 mb-8">
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">รวมทั้งสิ้น</p>
+                            <span className="text-4xl font-black text-slate-900 tracking-tighter">฿{totalAmount.toLocaleString()}</span>
+                          </div>
+                          <div className="flex flex-col items-end">
+                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1.5 mb-1">
+                              <Check size={14} strokeWidth={3} /> รวมภาษีแล้ว
+                            </span>
+                          </div>
                         </div>
 
-                        <div className="flex gap-3">
+                        <div className="flex gap-4">
                           <button
                             onClick={() => updateOrderStatus(tableOrders[0].id, 'กำลังเตรียม')}
-                            className="flex-1 py-3 border-2 border-gray-100 rounded-2xl text-gray-400 font-bold text-sm active:scale-95 transition-transform"
+                            className="px-6 py-5 bg-slate-50 text-slate-400 rounded-3xl font-black text-sm hover:bg-slate-100 transition-all active:scale-95"
                           >
-                            ย้อนกลับ
+                            ยกเลิก
                           </button>
                           <button
                             onClick={() => updateOrderStatus(0, 'เสร็จสิ้น', tableNo as string)}
-                            className="flex-[2] py-3 bg-green-500 text-white rounded-2xl font-black shadow-lg shadow-green-100 active:scale-95 transition-transform flex items-center justify-center gap-2"
+                            className="flex-1 py-5 bg-emerald-500 text-white rounded-3xl font-black shadow-xl shadow-emerald-100 hover:bg-emerald-600 transition-all active:scale-95 flex items-center justify-center gap-3"
                           >
-                            <CheckCircle2 size={18} /> ยืนยันรับเงิน
+                            <CheckCircle2 size={24} /> ยืนยันการชำระเงิน
                           </button>
                         </div>
                       </div>
@@ -1014,179 +1082,204 @@ export default function AdminApp() {
       {/* ✅ TAB: SALES (แก้ไขตรรกะให้ยอดขึ้น 100%) */}
       {
         activeTab === 'sales' && (
-          <main className="p-6 max-w-4xl mx-auto animate-in fade-in duration-500 pb-40">
-            <header className="mb-6">
-              <h1 className="text-3xl font-black tracking-tight">รายงานยอดขาย</h1>
-              <p className="text-gray-400 font-bold text-sm">ตรวจสอบรายได้ของคุณ</p>
+          <main className="p-6 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 pb-40">
+            <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <div>
+                <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">รายงานรายได้</h1>
+                <div className="text-slate-500 font-medium flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  วิเคราะห์ผลประกอบการและยอดขายแบบ Real-time
+                </div>
+              </div>
+              <div className="flex bg-slate-100 p-1.5 rounded-2xl shadow-inner inline-flex self-start">
+                <button
+                  onClick={() => setSalesViewMode('daily')}
+                  className={`px-8 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${salesViewMode === 'daily' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  รายวัน
+                </button>
+                <button
+                  onClick={() => setSalesViewMode('monthly')}
+                  className={`px-8 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${salesViewMode === 'monthly' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  รายเดือน
+                </button>
+              </div>
             </header>
 
-            <div className="flex bg-gray-100 p-1 rounded-2xl mb-6">
-              <button
-                onClick={() => setSalesViewMode('daily')}
-                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all ${salesViewMode === 'daily' ? 'bg-white text-[#FF4D00] shadow-sm' : 'text-[#FF4D00]'}`}
-              >
-                รายวัน
-              </button>
-              <button
-                onClick={() => setSalesViewMode('monthly')}
-                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all ${salesViewMode === 'monthly' ? 'bg-white text-[#FF4D00] shadow-sm' : 'text-[#FF4D00]'}`}
-              >
-                รายเดือน
-              </button>
-            </div>
-
-            <div className="flex justify-between items-center mb-4 px-2">
-              <h2 className="text-xl font-black text-[#FF4D00]">สรุปยอดขาย</h2>
-              <button
-                onClick={() => {
-                  if (confirm("ต้องการรีเซ็ตข้อมูลทดสอบกลับไปค่าเริ่มต้นใช่หรือไม่? (ข้อมูลที่บันทึกในเครื่องจะถูกล้าง)")) {
-                    localStorage.removeItem('demo_admin_orders');
-                    fetchOrders();
-                  }
-                }}
-                className="text-[10px] font-bold text-orange-400 border border-orange-100 px-3 py-1 rounded-full bg-orange-50/30 hover:bg-orange-50 transition-colors"
-              >
-                รีเซ็ตข้อมูลทดสอบ
-              </button>
-            </div>
-
-            <div className="bg-white p-4 rounded-[2rem] shadow-sm border border-gray-50 mb-6 flex items-center gap-4">
-              <div className="bg-blue-50 p-3 rounded-2xl text-blue-500">
-                <Calendar size={20} />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+              <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col md:flex-row items-center gap-8">
+                <div className="bg-emerald-50 w-20 h-20 rounded-[2rem] flex items-center justify-center text-emerald-600 flex-shrink-0">
+                  <Calendar size={40} strokeWidth={2.5} />
+                </div>
+                <div className="flex-1 text-center md:text-left">
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
+                    {salesViewMode === 'daily' ? 'ช่วงเวลาที่เลือก' : 'สรุปยอดรายเดือน'}
+                  </p>
+                  <div className="relative group">
+                    {salesViewMode === 'daily' ? (
+                      <input
+                        type="date"
+                        className="text-3xl font-black text-slate-900 outline-none bg-transparent cursor-pointer hover:text-orange-600 transition-colors"
+                        value={selectedSalesDate}
+                        onChange={(e) => setSelectedSalesDate(e.target.value)}
+                      />
+                    ) : (
+                      <input
+                        type="month"
+                        className="text-3xl font-black text-slate-900 outline-none bg-transparent cursor-pointer hover:text-orange-600 transition-colors"
+                        value={selectedSalesMonth}
+                        onChange={(e) => setSelectedSalesMonth(e.target.value)}
+                      />
+                    )}
+                    <div className="mt-2 text-slate-400 font-semibold flex items-center justify-center md:justify-start gap-2">
+                      <Clock size={14} className="opacity-50" />
+                      {(() => {
+                        try {
+                          return new Date(salesViewMode === 'daily' ? selectedSalesDate : selectedSalesMonth + '-01').toLocaleDateString('th-TH', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: salesViewMode === 'daily' ? 'numeric' : undefined,
+                            timeZone: 'Asia/Bangkok'
+                          });
+                        } catch (e) {
+                          return 'เลือกวันที่';
+                        }
+                      })()}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (confirm("Reset current display data?")) {
+                      localStorage.removeItem('demo_admin_orders');
+                      fetchOrders();
+                    }
+                  }}
+                  className="bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-orange-600 px-6 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all border border-slate-100"
+                >
+                  รีเฟรชข้อมูล
+                </button>
               </div>
-              <div className="flex-1">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">
-                  {salesViewMode === 'daily' ? 'เลือกวันที่' : 'เลือกเดือน'}
-                </p>
-                {salesViewMode === 'daily' ? (
-                  <div>
-                    <input
-                      type="date"
-                      className="w-full font-bold text-[#411E24] outline-none bg-transparent"
-                      value={selectedSalesDate}
-                      onChange={(e) => setSelectedSalesDate(e.target.value)}
-                    />
-                    <p className="text-[9px] text-gray-400 mt-1">
-                      {new Date(selectedSalesDate).toLocaleDateString('th-TH', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        timeZone: 'Asia/Bangkok'
-                      })}
-                    </p>
+
+              <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 transition-transform duration-700">
+                  <TrendingUp size={120} />
+                </div>
+                <div className="relative z-10">
+                  <p className="text-slate-400 font-bold text-xs uppercase tracking-[0.2em] mb-6">ประสิทธิภาพร้าน</p>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-end">
+                      <span className="text-slate-300 text-sm font-medium">เป้าหมายรายเดือน</span>
+                      <span className="text-white font-black text-lg">82%</span>
+                    </div>
+                    <div className="h-3 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                      <div className="h-full bg-gradient-to-r from-orange-400 to-orange-600 w-[82%] rounded-full shadow-[0_0_15px_rgba(251,146,60,0.4)]" />
+                    </div>
+                    <p className="text-slate-500 text-[10px] font-bold">ยอดขายของคุณสูงขึ้น +12% เมื่อเทียบกับเดือนที่แล้ว</p>
                   </div>
-                ) : (
-                  <div>
-                    <input
-                      type="month"
-                      className="w-full font-bold text-[#411E24] outline-none bg-transparent"
-                      value={selectedSalesMonth}
-                      onChange={(e) => setSelectedSalesMonth(e.target.value)}
-                    />
-                    <p className="text-[9px] text-gray-400 mt-1">
-                      {new Date(selectedSalesMonth + '-01').toLocaleDateString('th-TH', {
-                        year: 'numeric',
-                        month: 'long',
-                        timeZone: 'Asia/Bangkok'
-                      })}
-                    </p>
-                  </div>
-                )}
+                </div>
               </div>
             </div>
 
             {(() => {
-              // ✅ การกรองข้อมูลแบบใหม่ที่แม่นยำกว่าเดิม
               const filteredSales = orders.filter(o => {
-                // ในหน้า "ยอดขาย" ให้นับเฉพาะที่ 'เสร็จสิ้น' (ชำระเงินแล้ว) เท่านั้น
                 if (o.status !== 'เสร็จสิ้น') return false;
-                // ถ้าไม่มีวันที่ (NULL) ให้ตีว่าเป็นวันที่ปัจจุบันเพื่อให้แสดงผลในรายงานได้ทันที
                 const d = o.created_at ? new Date(o.created_at) : new Date();
-
-                if (isNaN(d.getTime())) return false; // ข้ามถ้าเป็นวันที่ที่ผิดพลาด
-
-                // ใช้ ToDateString เพื่อความแน่นอนในการเปรียบเทียบวัน
+                if (isNaN(d.getTime())) return false;
                 const year = d.getFullYear();
                 const month = String(d.getMonth() + 1).padStart(2, '0');
                 const day = String(d.getDate()).padStart(2, '0');
-
                 const orderDateStr = `${year}-${month}-${day}`;
                 const orderMonthStr = `${year}-${month}`;
-
-                // เปรียบเทียบกับวันที่ข้างนอก
-                if (salesViewMode === 'daily') {
-                  return orderDateStr === selectedSalesDate;
-                } else {
-                  return orderMonthStr === selectedSalesMonth;
-                }
+                return salesViewMode === 'daily' ? orderDateStr === selectedSalesDate : orderMonthStr === selectedSalesMonth;
               });
 
-              const totalRevenue = filteredSales.reduce((sum, o) => {
-                const price = Number(o.total_price);
-                return sum + (isNaN(price) ? 0 : price);
-              }, 0);
+              const totalRevenue = filteredSales.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
               const totalOrders = filteredSales.length;
               const avgTicket = totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(0) : 0;
 
               return (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                    <div className="bg-white p-5 rounded-[2.5rem] border border-gray-50 shadow-sm">
-                      <div className="bg-green-50 w-10 h-10 rounded-2xl flex items-center justify-center text-green-500 mb-3">
-                        <TrendingUp size={20} />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                    {[
+                      { label: 'รายได้รวม', value: `฿${totalRevenue.toLocaleString()}`, icon: <TrendingUp />, color: 'emerald', sub: '+฿2,400 วันนี้' },
+                      { label: 'จำนวนออเดอร์', value: totalOrders, icon: <ListChecks />, color: 'blue', sub: 'สำเร็จแล้ว' },
+                      { label: 'เฉลี่ยต่อบิล', value: `฿${avgTicket}`, icon: <DollarSign />, color: 'violet', sub: 'ต่อการทำรายการ' },
+                      { label: 'สถานะระบบ', value: totalOrders > 0 ? 'ปกติ' : 'หยุดพัก', icon: <BellRing />, color: 'orange', sub: 'เชื่อมต่ออยู่' }
+                    ].map((card, i) => (
+                      <div key={i} className="bg-white p-7 rounded-[2.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-50 hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] transition-all duration-500 hover:-translate-y-1">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 
+                          ${card.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
+                            card.color === 'blue' ? 'bg-blue-50 text-blue-600' :
+                              card.color === 'violet' ? 'bg-violet-50 text-violet-600' :
+                                'bg-orange-50 text-orange-600'}`}>
+                          {React.cloneElement(card.icon as any, { size: 24, strokeWidth: 2.5 })}
+                        </div>
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{card.label}</p>
+                        <p className="text-3xl font-black text-slate-900 mb-2">{card.value}</p>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[10px] font-bold ${card.color === 'orange' ? 'text-orange-400' : 'text-slate-400'}`}>{card.sub}</span>
+                        </div>
                       </div>
-                      <p className="text-2xl font-black text-black">฿{totalRevenue.toLocaleString()}</p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">รายได้รวม</p>
-                    </div>
-                    <div className="bg-white p-5 rounded-[2.5rem] border border-gray-50 shadow-sm">
-                      <div className="bg-blue-50 w-10 h-10 rounded-2xl flex items-center justify-center text-blue-500 mb-3">
-                        <ListChecks size={20} />
-                      </div>
-                      <p className="text-2xl font-black text-black">{totalOrders}</p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">ออเดอร์</p>
-                    </div>
-                    <div className="bg-white p-5 rounded-[2.5rem] border border-gray-50 shadow-sm">
-                      <div className="bg-orange-50 w-10 h-10 rounded-2xl flex items-center justify-center text-orange-500 mb-3">
-                        <DollarSign size={20} />
-                      </div>
-                      <p className="text-2xl font-black text-black">฿{avgTicket}</p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">เฉลี่ย/บิล</p>
-                    </div>
-                    <div className="bg-[#FF4D00] p-5 rounded-[2.5rem] shadow-lg">
-                      <div className="bg-white/10 w-10 h-10 rounded-2xl flex items-center justify-center text-white mb-3">
-                        <Clock size={20} />
-                      </div>
-                      <p className="text-2xl font-black text-white">{totalOrders > 0 ? 'ปกติ' : '-'}</p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">สถานะ</p>
-                    </div>
+                    ))}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {filteredSales.length === 0 ? (
-                      <div className="col-span-full text-center py-10 text-gray-400 font-bold bg-white rounded-[2rem] border border-dashed border-gray-100">
-                        ไม่มีรายการขายในช่วงเวลานี้
+                  <div className="bg-white rounded-[3rem] shadow-[0_8px_40px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
+                    <div className="px-10 py-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+                      <h3 className="text-xl font-black text-slate-900">ประวัติการทำรายการ</h3>
+                      <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-slate-100 shadow-sm text-xs font-bold text-slate-400">
+                        <ListFilter size={14} /> เฉพาะที่เสร็จสิ้น
                       </div>
-                    ) : (
-                      filteredSales.map((order) => (
-                        <div key={order.id} className="bg-white p-5 rounded-[2.2rem] border border-gray-50 flex justify-between items-center shadow-sm">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center text-black font-black border border-orange-200">
-                              {order.table_no}
-                            </div>
-                            <div>
-                              <p className="font-black text-sm">โต๊ะ {order.table_no}</p>
-                              <p className="text-[10px] text-gray-400 font-bold">
-                                {formatOrderTime(order.created_at)}
-                              </p>
-                            </div>
+                    </div>
+                    <div className="p-4 sm:p-8">
+                      {filteredSales.length === 0 ? (
+                        <div className="text-center py-20 flex flex-col items-center gap-4">
+                          <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
+                            <ClipboardList size={32} />
                           </div>
-                          <div className="text-right">
-                            <p className="font-black text-black">฿{order.total_price}</p>
-                            <p className="text-[10px] text-black font-bold">{order.items?.length || 0} รายการ</p>
-                          </div>
+                          <p className="text-slate-400 font-bold">ไม่พบรายการในช่วงเวลาที่เลือก</p>
                         </div>
-                      ))
-                    )}
+                      ) : (
+                        <div className="space-y-3">
+                          {filteredSales.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).map((order) => (
+                            <div key={order.id} className="group bg-white p-6 rounded-[1.8rem] border border-slate-50 flex flex-col sm:flex-row justify-between items-center transition-all hover:bg-slate-50 hover:border-slate-100 hover:shadow-sm">
+                              <div className="flex items-center gap-6 mb-4 sm:mb-0 w-full sm:w-auto">
+                                <div className="w-14 h-14 rounded-2xl bg-white border-2 border-slate-100 flex items-center justify-center text-slate-900 group-hover:border-orange-200 group-hover:bg-orange-50 transition-colors shadow-sm">
+                                  <span className="text-xl font-black">{order.table_no}</span>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-1">
+                                    <p className="font-black text-slate-900">โต๊ะ {order.table_no}</p>
+                                    <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase tracking-widest rounded-full">ชำระแล้ว</span>
+                                  </div>
+                                  <p className="text-xs text-slate-400 font-bold flex items-center gap-1.5">
+                                    <Clock size={12} /> {formatOrderTime(order.created_at)}
+                                    <span className="mx-1 opacity-20">•</span>
+                                    #{order.id.toString().slice(-4)}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between sm:justify-end gap-10 w-full sm:w-auto border-t sm:border-0 pt-4 sm:pt-0">
+                                <div className="text-left sm:text-right">
+                                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">จำนวน</p>
+                                  <p className="text-slate-900 font-black">{order.items?.length || 0} รายการ</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">ยอดรวม</p>
+                                  <p className="text-2xl font-black text-slate-900 group-hover:text-orange-600 transition-colors">฿{order.total_price?.toLocaleString()}</p>
+                                </div>
+                                <div className="hidden sm:block">
+                                  <button className="p-3 bg-slate-50 text-slate-300 rounded-xl group-hover:bg-white group-hover:text-slate-900 group-hover:shadow-sm transition-all">
+                                    <Eye size={18} />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </>
               )
@@ -1211,7 +1304,7 @@ export default function AdminApp() {
                       {selectedTableDetail.capacity} ที่นั่ง
                     </span>
                     <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${selectedTableDetail.status === 'available' ? 'bg-green-400' : selectedTableDetail.status === 'billing' ? 'bg-yellow-400' : 'bg-orange-400'}`}>
-                      {selectedTableDetail.status === 'available' ? 'ว่าง' : selectedTableDetail.status === 'billing' ? 'ลูกค้ารอเช็คบิล' : 'มีลูกค้า'}
+                      {selectedTableDetail.status === 'available' ? 'ว่าง' : selectedTableDetail.status === 'billing' ? 'เรียกเช็คบิล' : 'มีลูกค้า'}
                     </span>
                   </div>
                 </div>
@@ -1228,7 +1321,7 @@ export default function AdminApp() {
 
                   {orders.filter(o => o.table_no === selectedTableDetail.table_number && o.status !== 'เสร็จสิ้น').length === 0 ? (
                     <div className="py-20 text-center bg-gray-50 rounded-[2.5rem] border-2 border-dashed border-gray-100">
-                      <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">ยังไม่มีรายการสั่งอาหาร</p>
+                      <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">ยังไม่มีรายการสั่งอาหารในโต๊ะนี้</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -1258,6 +1351,13 @@ export default function AdminApp() {
                                   <CheckCircle2 size={18} />
                                 </button>
                               )}
+                              <button
+                                onClick={() => deleteOrder(order.id)}
+                                className="bg-red-50 text-red-400 p-2 rounded-xl hover:bg-red-100 transition-colors"
+                                title="ลบออเดอร์"
+                              >
+                                <Trash2 size={18} />
+                              </button>
                             </div>
                           </div>
                           <div className="space-y-2">
@@ -1351,51 +1451,67 @@ export default function AdminApp() {
         )
       }
 
-      {/* NAV BAR (คงเดิม) */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t p-5 flex justify-around items-center z-50">
-        <button onClick={() => { setActiveTab('floor'); setIsTableManageMode(false); }} className={`flex flex-col items-center gap-1 ${activeTab === 'floor' ? 'text-[#FF4D00]' : 'text-orange-200'}`}>
-          <LayoutGrid size={24} />
-          <span className="text-[9px] font-black">แผนผังโต๊ะ</span>
-        </button>
-        <button onClick={() => setActiveTab('menu')} className={`flex flex-col items-center gap-1 ${activeTab === 'menu' ? 'text-[#FF4D00]' : 'text-orange-200'}`}>
-          <Utensils size={24} />
-          <span className="text-[9px] font-black">เมนู</span>
-        </button>
-        <button onClick={() => setActiveTab('billing')} className={`flex flex-col items-center gap-1 relative ${activeTab === 'billing' ? 'text-red-500' : 'text-gray-300'}`}>
-          <Wallet size={24} />
-          <span className="text-[9px] font-black">เช็คบิล</span>
-          {billingOrdersCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-black animate-pulse">
-              {billingOrdersCount}
-            </span>
-          )}
-        </button>
-        <button onClick={() => setActiveTab('sales')} className={`flex flex-col items-center gap-1 ${activeTab === 'sales' ? 'text-[#FF4D00]' : 'text-orange-200'}`}>
-          <TrendingUp size={24} />
-          <span className="text-[9px] font-black">ยอดขาย</span>
-        </button>
+      {/* PROFESSIONAL BOTTOM NAV */}
+      <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-lg bg-white/80 backdrop-blur-2xl border border-white/40 p-3 flex justify-around items-center z-50 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] ring-1 ring-black/5 animate-in slide-in-from-bottom-10 duration-1000">
+        {[
+          { id: 'floor', label: 'ผังร้าน', icon: <LayoutGrid size={22} />, color: 'orange' },
+          { id: 'menu', label: 'เมนู', icon: <Utensils size={22} />, color: 'orange' },
+          { id: 'billing', label: 'เช็คบิล', icon: <Wallet size={22} />, color: 'amber', count: billingOrdersCount },
+          { id: 'sales', label: 'ยอดขาย', icon: <TrendingUp size={22} />, color: 'orange' }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => { setActiveTab(tab.id as any); setIsTableManageMode(false); }}
+            className={`flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all duration-500 relative group ${activeTab === tab.id ? 'bg-slate-900 text-white shadow-xl scale-110' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            {tab.icon}
+            <span className={`text-[8px] font-black tracking-widest ${activeTab === tab.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>{tab.label}</span>
+            {tab.count !== undefined && tab.count > 0 && (
+              <span className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black animate-pulse shadow-lg ${activeTab === tab.id ? 'bg-orange-500 text-white' : 'bg-red-500 text-white'}`}>
+                {tab.count}
+              </span>
+            )}
+          </button>
+        ))}
       </nav>
 
       {/* QR CODE MODAL */}
       {
         showQrModal && (
           <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-300">
-            <div className="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden shadow-2xl animate-in zoom-in duration-300">
-              <div className="bg-[#FF4D00] p-6 text-white text-center">
-                <h3 className="text-2xl font-black">QR Code สำหรับโต๊ะ {showQrModal}</h3>
-                <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest mt-1">สแกนเพื่อสั่งอาหารทันที</p>
-              </div>
-              <div className="p-10 flex flex-col items-center gap-6">
-                <div className="p-4 bg-white rounded-3xl border-4 border-orange-50 shadow-inner">
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : '')}?table=${showQrModal}`}
-                    alt={`QR Table ${showQrModal}`}
-                    className="w-48 h-48"
-                  />
+            <div className="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden shadow-2xl animate-in zoom-in duration-300 print:shadow-none print:m-0 print:rounded-none">
+              <style jsx global>{`
+                @media print {
+                  body * { visibility: hidden; }
+                  .print-area, .print-area * { visibility: visible; }
+                  .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+                }
+              `}</style>
+              <div className="print-area">
+                <div className="bg-[#FF4D00] p-6 text-white text-center print:bg-white print:text-black">
+                  <h3 className="text-2xl font-black">QR Code สำหรับโต๊ะ {showQrModal}</h3>
+                  <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest mt-1">สแกนเพื่อสั่งอาหารทันที</p>
                 </div>
-                <p className="text-xs text-center text-gray-400 font-bold leading-relaxed px-4">
-                  ให้ลูกค้านำมือถือมาสแกน QR Code นี้<br />เพื่อเข้าสู่หน้าร้านโต๊ะ {showQrModal} ได้ทันที
-                </p>
+                <div className="p-10 flex flex-col items-center gap-6">
+                  <div className="p-4 bg-white rounded-3xl border-4 border-orange-50 shadow-inner print:border-0 print:shadow-none">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : '')}?table=${showQrModal}`}
+                      alt={`QR Table ${showQrModal}`}
+                      className="w-48 h-48"
+                    />
+                  </div>
+                  <p className="text-xs text-center text-gray-400 font-bold leading-relaxed px-4 print:text-black">
+                    ให้ลูกค้านำมือถือมาสแกน QR Code นี้<br />เพื่อเข้าสู่หน้าร้านโต๊ะ {showQrModal} ได้ทันที
+                  </p>
+                </div>
+              </div>
+              <div className="p-10 pt-0 flex flex-col items-center gap-6 print:hidden">
+                <button
+                  onClick={() => window.print()}
+                  className="w-full py-4 bg-[#FF4D00] text-white rounded-2xl font-black text-sm active:scale-95 transition-transform flex items-center justify-center gap-2"
+                >
+                  <QrCode size={18} /> พิมพ์ QR Code
+                </button>
                 <button
                   onClick={() => setShowQrModal(null)}
                   className="w-full py-4 bg-gray-50 text-gray-400 rounded-2xl font-black text-sm active:scale-95 transition-transform"
