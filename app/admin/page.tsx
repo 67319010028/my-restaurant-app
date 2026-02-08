@@ -792,8 +792,8 @@ export default function AdminApp() {
                       accentClass = 'bg-white/20 text-white';
                       statusText = 'เรียกเช็คบิล';
                     } else if (isOccupied) {
-                      statusClass = 'bg-orange-600 border-orange-700 text-white shadow-xl shadow-orange-100';
-                      labelClass = 'text-orange-100';
+                      statusClass = 'bg-indigo-600 border-indigo-700 text-white shadow-xl shadow-indigo-100';
+                      labelClass = 'text-indigo-100';
                       accentClass = 'bg-white/20 text-white';
                       statusText = 'มีลูกค้าค้าง';
                     }
@@ -828,7 +828,7 @@ export default function AdminApp() {
                   <span className="text-xs font-black text-slate-400 tracking-wider">AVAILABLE</span>
                 </div>
                 <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-2xl border border-slate-50 shadow-sm">
-                  <div className="w-3 h-3 bg-orange-600 rounded-full"></div>
+                  <div className="w-3 h-3 bg-indigo-600 rounded-full"></div>
                   <span className="text-xs font-black text-slate-400 tracking-wider">OCCUPIED</span>
                 </div>
                 <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-2xl border border-slate-50 shadow-sm">
@@ -1270,9 +1270,7 @@ export default function AdminApp() {
                                   <p className="text-2xl font-black text-slate-900 group-hover:text-orange-600 transition-colors">฿{order.total_price?.toLocaleString()}</p>
                                 </div>
                                 <div className="hidden sm:block">
-                                  <button className="p-3 bg-slate-50 text-slate-300 rounded-xl group-hover:bg-white group-hover:text-slate-900 group-hover:shadow-sm transition-all">
-                                    <Eye size={18} />
-                                  </button>
+                                  {/* Redundant Eye icon removed */}
                                 </div>
                               </div>
                             </div>
@@ -1293,7 +1291,7 @@ export default function AdminApp() {
         selectedTableDetail && (
           <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
             <div className="bg-white w-full max-w-2xl rounded-[3rem] overflow-hidden shadow-2xl animate-in zoom-in duration-300 max-h-[90vh] flex flex-col">
-              <div className="bg-[#FF4D00] p-8 text-white flex justify-between items-start">
+              <div className="bg-slate-900 p-8 text-white flex justify-between items-start">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="bg-white/20 p-3 rounded-2xl"><LayoutGrid size={32} /></div>
@@ -1326,10 +1324,10 @@ export default function AdminApp() {
                   ) : (
                     <div className="space-y-4">
                       {orders.filter(o => o.table_no === selectedTableDetail.table_number && o.status !== 'เสร็จสิ้น').map((order) => (
-                        <div key={order.id} className="bg-white border-2 border-orange-50 rounded-[2rem] p-6 shadow-sm">
+                        <div key={order.id} className="bg-white border-2 border-indigo-50 rounded-[2rem] p-6 shadow-sm">
                           <div className="flex justify-between items-center mb-4">
                             <div className="flex items-center gap-2">
-                              <span className="bg-orange-50 text-[#FF4D00] text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest">
+                              <span className="bg-emerald-50 text-emerald-600 text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest">
                                 {order.status}
                               </span>
                               {order.queue_no && (
@@ -1421,28 +1419,28 @@ export default function AdminApp() {
                   <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">หมวดหมู่</label>
                   <div className="flex gap-2 overflow-x-auto no-scrollbar">
                     {['เมนูข้าว', 'เมนูเส้น', 'กับข้าว'].map(cat => (
-                      <button key={cat} type="button" onClick={() => setFormData({ ...formData, category: cat })} className={`px-5 py-2.5 rounded-full text-[10px] font-black whitespace-nowrap ${formData.category === cat ? 'bg-[#FF4D00] text-white' : 'bg-orange-100 text-[#FF4D00]'}`}>{cat}</button>
+                      <button key={cat} type="button" onClick={() => setFormData({ ...formData, category: cat })} className={`px-5 py-2.5 rounded-full text-[10px] font-black whitespace-nowrap ${formData.category === cat ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'}`}>{cat}</button>
                     ))}
                   </div>
                 </div>
 
-                <div className="bg-orange-50 p-6 rounded-[2.5rem] border border-orange-100 space-y-4">
-                  <label className="text-[10px] font-black uppercase text-orange-500 flex items-center gap-2"><ListChecks size={14} /> ตัวเลือกเส้นสำหรับลูกค้า</label>
+                <div className="bg-indigo-50/50 p-6 rounded-[2.5rem] border border-indigo-100 space-y-4">
+                  <label className="text-[10px] font-black uppercase text-indigo-500 flex items-center gap-2"><ListChecks size={14} /> ตัวเลือกเส้นสำหรับลูกค้า</label>
                   <div className="flex gap-2">
                     <input type="text" placeholder="เพิ่มเส้น..." className="flex-1 bg-white rounded-full px-4 py-2 text-xs font-bold outline-none text-[#411E24]" value={customNoodle} onChange={(e) => setCustomNoodle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCustomNoodle())} />
-                    <button type="button" onClick={handleAddCustomNoodle} className="bg-orange-500 text-white p-2 rounded-full"><PlusCircle size={20} /></button>
+                    <button type="button" onClick={handleAddCustomNoodle} className="bg-indigo-500 text-white p-2 rounded-full"><PlusCircle size={20} /></button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {noodleTypes.map(noodle => (
                       <div key={noodle} className="relative group">
-                        <button type="button" onClick={() => toggleNoodle(noodle)} className={`w-full py-3 rounded-xl text-[10px] font-black border-2 ${formData.noodle_options.includes(noodle) ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-transparent text-[#FF4D00]'}`}>{noodle}</button>
+                        <button type="button" onClick={() => toggleNoodle(noodle)} className={`w-full py-3 rounded-xl text-[10px] font-black border-2 ${formData.noodle_options.includes(noodle) ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-transparent text-slate-400'}`}>{noodle}</button>
                         <button type="button" onClick={(e) => { e.stopPropagation(); handleDeleteNoodleType(noodle); }} className="absolute -top-1 -right-1 bg-red-100 text-red-500 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"><X size={10} /></button>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <button type="submit" disabled={isSaving} className={`w-full py-5 rounded-[2rem] font-black text-lg text-white shadow-xl ${isSaving ? 'bg-orange-200' : 'bg-[#FF4D00]'}`}>
+                <button type="submit" disabled={isSaving} className={`w-full py-5 rounded-[2rem] font-black text-lg text-white shadow-xl ${isSaving ? 'bg-slate-200' : 'bg-emerald-500 shadow-emerald-100 hover:bg-emerald-600 transition-all'}`}>
                   {isSaving ? 'กำลังบันทึก...' : 'บันทึกเมนู'}
                 </button>
               </form>
