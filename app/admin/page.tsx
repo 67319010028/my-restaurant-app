@@ -1174,7 +1174,7 @@ export default function AdminApp() {
                       <span className="text-white font-black text-lg">82%</span>
                     </div>
                     <div className="h-3 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
-                      <div className="h-full bg-gradient-to-r from-orange-400 to-orange-600 w-[82%] rounded-full shadow-[0_0_15px_rgba(251,146,60,0.4)]" />
+                      <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 w-[82%] rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)]" />
                     </div>
                     <p className="text-slate-500 text-[10px] font-bold">ยอดขายของคุณสูงขึ้น +12% เมื่อเทียบกับเดือนที่แล้ว</p>
                   </div>
@@ -1206,23 +1206,130 @@ export default function AdminApp() {
                       { label: 'รายได้รวม', value: `฿${totalRevenue.toLocaleString()}`, icon: <TrendingUp />, color: 'emerald', sub: '+฿2,400 วันนี้' },
                       { label: 'จำนวนออเดอร์', value: totalOrders, icon: <ListChecks />, color: 'blue', sub: 'สำเร็จแล้ว' },
                       { label: 'เฉลี่ยต่อบิล', value: `฿${avgTicket}`, icon: <DollarSign />, color: 'violet', sub: 'ต่อการทำรายการ' },
-                      { label: 'สถานะระบบ', value: totalOrders > 0 ? 'ปกติ' : 'หยุดพัก', icon: <BellRing />, color: 'orange', sub: 'เชื่อมต่ออยู่' }
+                      { label: 'สถานะระบบ', value: totalOrders > 0 ? 'ปกติ' : 'หยุดพัก', icon: <BellRing />, color: 'indigo', sub: 'เชื่อมต่ออยู่' }
                     ].map((card, i) => (
                       <div key={i} className="bg-white p-7 rounded-[2.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-50 hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] transition-all duration-500 hover:-translate-y-1">
                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 
                           ${card.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
                             card.color === 'blue' ? 'bg-blue-50 text-blue-600' :
                               card.color === 'violet' ? 'bg-violet-50 text-violet-600' :
-                                'bg-orange-50 text-orange-600'}`}>
+                                'bg-indigo-50 text-indigo-600'}`}>
                           {React.cloneElement(card.icon as any, { size: 24, strokeWidth: 2.5 })}
                         </div>
                         <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{card.label}</p>
                         <p className="text-3xl font-black text-slate-900 mb-2">{card.value}</p>
                         <div className="flex items-center gap-1.5">
-                          <span className={`text-[10px] font-bold ${card.color === 'orange' ? 'text-orange-400' : 'text-slate-400'}`}>{card.sub}</span>
+                          <span className={`text-[10px] font-bold ${card.color === 'indigo' ? 'text-indigo-400' : 'text-slate-400'}`}>{card.sub}</span>
                         </div>
                       </div>
                     ))}
+                  </div>
+
+                  {/* 📊 NEW: Sales Statistics & Analysis Section */}
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-12">
+                    {/* Top Selling Items Table */}
+                    <div className="bg-white rounded-[3rem] shadow-[0_8px_40px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
+                      <div className="px-10 py-7 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
+                        <div>
+                          <h3 className="text-xl font-black text-slate-900">เมนูยอดนิยม</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Top 5 Best Sellers</p>
+                        </div>
+                        <div className="bg-indigo-50 text-indigo-600 p-2 rounded-xl">
+                          <TrendingUp size={20} />
+                        </div>
+                      </div>
+                      <div className="p-8">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="text-[10px] text-slate-400 font-black uppercase tracking-widest border-b border-slate-50">
+                              <th className="text-left pb-4">อันดับ</th>
+                              <th className="text-left pb-4">ชื่อเมนู</th>
+                              <th className="text-center pb-4">จำนวน</th>
+                              <th className="text-right pb-4">ยอดขายรวม</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50">
+                            {(() => {
+                              const itemStats: Record<string, { qty: number, revenue: number }> = {};
+                              filteredSales.forEach(o => {
+                                o.items?.forEach((item: any) => {
+                                  if (!itemStats[item.name]) itemStats[item.name] = { qty: 0, revenue: 0 };
+                                  itemStats[item.name].qty += Number(item.quantity) || 0;
+                                  itemStats[item.name].revenue += (Number(item.price) || 0) * (Number(item.quantity) || 0);
+                                });
+                              });
+                              return Object.entries(itemStats)
+                                .sort((a, b) => b[1].qty - a[1].qty)
+                                .slice(0, 5)
+                                .map(([name, stats], idx) => (
+                                  <tr key={name} className="group hover:bg-slate-50/50 transition-colors">
+                                    <td className="py-4">
+                                      <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black ${idx === 0 ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>
+                                        {idx + 1}
+                                      </span>
+                                    </td>
+                                    <td className="py-4 font-black text-slate-900">{name}</td>
+                                    <td className="py-4 text-center font-bold text-slate-500">{stats.qty}</td>
+                                    <td className="py-4 text-right font-black text-indigo-600">฿{stats.revenue.toLocaleString()}</td>
+                                  </tr>
+                                ));
+                            })()}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Category Breakdown */}
+                    <div className="bg-white rounded-[3rem] shadow-[0_8px_40px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
+                      <div className="px-10 py-7 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
+                        <div>
+                          <h3 className="text-xl font-black text-slate-900">สถิติตามหมวดหมู่</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Revenue by Category</p>
+                        </div>
+                        <div className="bg-emerald-50 text-emerald-600 p-2 rounded-xl">
+                          <LayoutGrid size={20} />
+                        </div>
+                      </div>
+                      <div className="p-8 space-y-6">
+                        {(() => {
+                          const catStats: Record<string, number> = {};
+                          filteredSales.forEach(o => {
+                            o.items?.forEach((item: any) => {
+                              // Extract category from item or default to 'ทั่วไป'
+                              const cat = item.category || 'ทั่วไป';
+                              catStats[cat] = (catStats[cat] || 0) + ((Number(item.price) || 0) * (Number(item.quantity) || 0));
+                            });
+                          });
+                          const totalCatRevenue = Object.values(catStats).reduce((a, b) => a + b, 0);
+                          return Object.entries(catStats)
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([cat, amount], idx) => {
+                              const percent = totalCatRevenue > 0 ? (amount / totalCatRevenue * 100) : 0;
+                              const colors = ['bg-indigo-500', 'bg-emerald-500', 'bg-violet-500', 'bg-blue-500', 'bg-slate-400'];
+                              return (
+                                <div key={cat} className="space-y-2">
+                                  <div className="flex justify-between items-end">
+                                    <span className="font-black text-slate-900 text-sm">{cat}</span>
+                                    <div className="text-right">
+                                      <span className="text-[10px] font-black text-slate-400 block uppercase">฿{amount.toLocaleString()}</span>
+                                      <span className="text-xs font-black text-slate-900">{percent.toFixed(1)}%</span>
+                                    </div>
+                                  </div>
+                                  <div className="h-2 bg-slate-50 rounded-full overflow-hidden">
+                                    <div className={`h-full ${colors[idx % colors.length]} rounded-full transition-all duration-1000`} style={{ width: `${percent}%` }} />
+                                  </div>
+                                </div>
+                              );
+                            });
+                        })()}
+                        {Object.keys(filteredSales).length === 0 && (
+                          <div className="flex flex-col items-center justify-center py-10 opacity-20">
+                            <ClipboardList size={40} />
+                            <p className="text-xs font-bold mt-2">ไม่มีข้อมูลเพื่อวิเคราะห์</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="bg-white rounded-[3rem] shadow-[0_8px_40px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
