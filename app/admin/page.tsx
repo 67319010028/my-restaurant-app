@@ -1108,7 +1108,7 @@ export default function AdminApp() {
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-              <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col md:flex-row items-center gap-8">
+              <div className="lg:col-span-3 bg-white p-8 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col md:flex-row items-center gap-8">
                 <div className="bg-emerald-50 w-20 h-20 rounded-[2rem] flex items-center justify-center text-emerald-600 flex-shrink-0">
                   <Calendar size={40} strokeWidth={2.5} />
                 </div>
@@ -1161,25 +1161,6 @@ export default function AdminApp() {
                   รีเฟรชข้อมูล
                 </button>
               </div>
-
-              <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 transition-transform duration-700">
-                  <TrendingUp size={120} />
-                </div>
-                <div className="relative z-10">
-                  <p className="text-slate-400 font-bold text-xs uppercase tracking-[0.2em] mb-6">ประสิทธิภาพร้าน</p>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-end">
-                      <span className="text-slate-300 text-sm font-medium">เป้าหมายรายเดือน</span>
-                      <span className="text-white font-black text-lg">82%</span>
-                    </div>
-                    <div className="h-3 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
-                      <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 w-[82%] rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)]" />
-                    </div>
-                    <p className="text-slate-500 text-[10px] font-bold">ยอดขายของคุณสูงขึ้น +12% เมื่อเทียบกับเดือนที่แล้ว</p>
-                  </div>
-                </div>
-              </div>
             </div>
 
             {(() => {
@@ -1201,33 +1182,117 @@ export default function AdminApp() {
 
               return (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                  {/* 1. TOP METRICS ROW */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
                     {[
-                      { label: 'รายได้รวม', value: `฿${totalRevenue.toLocaleString()}`, icon: <TrendingUp />, color: 'emerald', sub: '+฿2,400 วันนี้' },
+                      { label: 'รายได้รวม', value: `฿${totalRevenue.toLocaleString()}`, icon: <TrendingUp />, color: 'emerald', sub: 'ยอดขายสำเร็จ' },
                       { label: 'จำนวนออเดอร์', value: totalOrders, icon: <ListChecks />, color: 'blue', sub: 'สำเร็จแล้ว' },
                       { label: 'เฉลี่ยต่อบิล', value: `฿${avgTicket}`, icon: <DollarSign />, color: 'violet', sub: 'ต่อการทำรายการ' },
-                      { label: 'สถานะระบบ', value: totalOrders > 0 ? 'ปกติ' : 'หยุดพัก', icon: <BellRing />, color: 'indigo', sub: 'เชื่อมต่ออยู่' }
                     ].map((card, i) => (
-                      <div key={i} className="bg-white p-7 rounded-[2.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-50 hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] transition-all duration-500 hover:-translate-y-1">
+                      <div key={i} className="bg-white p-7 rounded-[2.5rem] shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-50 hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] transition-all duration-500">
                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 
                           ${card.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
                             card.color === 'blue' ? 'bg-blue-50 text-blue-600' :
-                              card.color === 'violet' ? 'bg-violet-50 text-violet-600' :
-                                'bg-indigo-50 text-indigo-600'}`}>
+                              'bg-violet-50 text-violet-600'}`}>
                           {React.cloneElement(card.icon as any, { size: 24, strokeWidth: 2.5 })}
                         </div>
                         <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{card.label}</p>
                         <p className="text-3xl font-black text-slate-900 mb-2">{card.value}</p>
                         <div className="flex items-center gap-1.5">
-                          <span className={`text-[10px] font-bold ${card.color === 'indigo' ? 'text-indigo-400' : 'text-slate-400'}`}>{card.sub}</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{card.sub}</span>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  {/* 📊 NEW: Sales Statistics & Analysis Section */}
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-12">
-                    {/* Top Selling Items Table */}
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+                    {/* 2. TREND GRAPH (7-DAY REVENUE) */}
+                    <div className="bg-white rounded-[3rem] shadow-[0_8px_40px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden flex flex-col">
+                      <div className="px-10 py-7 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
+                        <div>
+                          <h3 className="text-xl font-black text-slate-900">แนวโน้มรายได้</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Revenue Trend (Last 7 Days)</p>
+                        </div>
+                        <div className="bg-emerald-50 text-emerald-600 p-2 rounded-xl">
+                          <TrendingUp size={20} />
+                        </div>
+                      </div>
+                      <div className="p-10 flex-1 flex flex-col justify-center">
+                        {(() => {
+                          const last7Days = [...Array(7)].map((_, i) => {
+                            const d = new Date();
+                            d.setDate(d.getDate() - (6 - i));
+                            return d.toISOString().split('T')[0];
+                          });
+
+                          const dailyData = last7Days.map(dateStr => {
+                            const dayRevenue = orders.filter(o => {
+                              if (o.status !== 'เสร็จสิ้น') return false;
+                              const od = new Date(o.created_at || '');
+                              return od.toISOString().split('T')[0] === dateStr;
+                            }).reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
+                            return dayRevenue;
+                          });
+
+                          const maxRevenue = Math.max(...dailyData, 1000);
+                          const points = dailyData.map((val, i) => {
+                            const x = (i / 6) * 100;
+                            const y = 100 - (val / maxRevenue) * 100;
+                            return `${x},${y}`;
+                          }).join(' ');
+
+                          return (
+                            <div className="relative h-48 w-full group">
+                              <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
+                                {/* Gradient Fill */}
+                                <defs>
+                                  <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#10b981" stopOpacity="0.2" />
+                                    <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                                  </linearGradient>
+                                </defs>
+                                <path
+                                  d={`M 0,100 L ${points} L 100,100 Z`}
+                                  fill="url(#chartGradient)"
+                                />
+                                {/* Main Line */}
+                                <polyline
+                                  fill="none"
+                                  stroke="#10b981"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  points={points}
+                                  className="drop-shadow-sm"
+                                />
+                                {/* Data Points */}
+                                {dailyData.map((val, i) => (
+                                  <circle
+                                    key={i}
+                                    cx={(i / 6) * 100}
+                                    cy={100 - (val / maxRevenue) * 100}
+                                    r="1.5"
+                                    fill="white"
+                                    stroke="#10b981"
+                                    strokeWidth="1"
+                                    className="hover:r-2 transition-all cursor-pointer"
+                                  />
+                                ))}
+                              </svg>
+                              <div className="flex justify-between mt-6 px-1">
+                                {last7Days.map((d, i) => (
+                                  <span key={i} className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
+                                    {new Date(d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* 3. TOP SELLING ITEMS TABLE */}
                     <div className="bg-white rounded-[3rem] shadow-[0_8px_40px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
                       <div className="px-10 py-7 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
                         <div>
@@ -1235,7 +1300,7 @@ export default function AdminApp() {
                           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Top 5 Best Sellers</p>
                         </div>
                         <div className="bg-indigo-50 text-indigo-600 p-2 rounded-xl">
-                          <TrendingUp size={20} />
+                          <PlusCircle size={20} />
                         </div>
                       </div>
                       <div className="p-8">
@@ -1264,13 +1329,13 @@ export default function AdminApp() {
                                 .map(([name, stats], idx) => (
                                   <tr key={name} className="group hover:bg-slate-50/50 transition-colors">
                                     <td className="py-4">
-                                      <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black ${idx === 0 ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>
+                                      <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black ${idx === 0 ? 'bg-emerald-500 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>
                                         {idx + 1}
                                       </span>
                                     </td>
                                     <td className="py-4 font-black text-slate-900">{name}</td>
                                     <td className="py-4 text-center font-bold text-slate-500">{stats.qty}</td>
-                                    <td className="py-4 text-right font-black text-indigo-600">฿{stats.revenue.toLocaleString()}</td>
+                                    <td className="py-4 text-right font-black text-emerald-600">฿{stats.revenue.toLocaleString()}</td>
                                   </tr>
                                 ));
                             })()}
@@ -1278,110 +1343,50 @@ export default function AdminApp() {
                         </table>
                       </div>
                     </div>
-
-                    {/* Category Breakdown */}
-                    <div className="bg-white rounded-[3rem] shadow-[0_8px_40px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
-                      <div className="px-10 py-7 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
-                        <div>
-                          <h3 className="text-xl font-black text-slate-900">สถิติตามหมวดหมู่</h3>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Revenue by Category</p>
-                        </div>
-                        <div className="bg-emerald-50 text-emerald-600 p-2 rounded-xl">
-                          <LayoutGrid size={20} />
-                        </div>
-                      </div>
-                      <div className="p-8 space-y-6">
-                        {(() => {
-                          const catStats: Record<string, number> = {};
-                          filteredSales.forEach(o => {
-                            o.items?.forEach((item: any) => {
-                              // Extract category from item or default to 'ทั่วไป'
-                              const cat = item.category || 'ทั่วไป';
-                              catStats[cat] = (catStats[cat] || 0) + ((Number(item.price) || 0) * (Number(item.quantity) || 0));
-                            });
-                          });
-                          const totalCatRevenue = Object.values(catStats).reduce((a, b) => a + b, 0);
-                          return Object.entries(catStats)
-                            .sort((a, b) => b[1] - a[1])
-                            .map(([cat, amount], idx) => {
-                              const percent = totalCatRevenue > 0 ? (amount / totalCatRevenue * 100) : 0;
-                              const colors = ['bg-indigo-500', 'bg-emerald-500', 'bg-violet-500', 'bg-blue-500', 'bg-slate-400'];
-                              return (
-                                <div key={cat} className="space-y-2">
-                                  <div className="flex justify-between items-end">
-                                    <span className="font-black text-slate-900 text-sm">{cat}</span>
-                                    <div className="text-right">
-                                      <span className="text-[10px] font-black text-slate-400 block uppercase">฿{amount.toLocaleString()}</span>
-                                      <span className="text-xs font-black text-slate-900">{percent.toFixed(1)}%</span>
-                                    </div>
-                                  </div>
-                                  <div className="h-2 bg-slate-50 rounded-full overflow-hidden">
-                                    <div className={`h-full ${colors[idx % colors.length]} rounded-full transition-all duration-1000`} style={{ width: `${percent}%` }} />
-                                  </div>
-                                </div>
-                              );
-                            });
-                        })()}
-                        {Object.keys(filteredSales).length === 0 && (
-                          <div className="flex flex-col items-center justify-center py-10 opacity-20">
-                            <ClipboardList size={40} />
-                            <p className="text-xs font-bold mt-2">ไม่มีข้อมูลเพื่อวิเคราะห์</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
                   </div>
 
+                  {/* 4. COMPACT TRANSACTION HISTORY */}
                   <div className="bg-white rounded-[3rem] shadow-[0_8px_40px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
-                    <div className="px-10 py-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
-                      <h3 className="text-xl font-black text-slate-900">ประวัติการทำรายการ</h3>
-                      <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-slate-100 shadow-sm text-xs font-bold text-slate-400">
-                        <ListFilter size={14} /> เฉพาะที่เสร็จสิ้น
+                    <div className="px-10 py-7 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
+                      <h3 className="text-xl font-black text-slate-900">ประวัติการขายล่าสุด</h3>
+                      <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-slate-100 shadow-sm text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        <ListFilter size={14} /> 10 รายการล่าสุด
                       </div>
                     </div>
-                    <div className="p-4 sm:p-8">
+                    <div className="p-8">
                       {filteredSales.length === 0 ? (
-                        <div className="text-center py-20 flex flex-col items-center gap-4">
-                          <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
-                            <ClipboardList size={32} />
-                          </div>
-                          <p className="text-slate-400 font-bold">ไม่พบรายการในช่วงเวลาที่เลือก</p>
+                        <div className="text-center py-20 opacity-20 flex flex-col items-center gap-4">
+                          <ClipboardList size={40} />
+                          <p className="text-xs font-bold">ไม่พบรายการในช่วงเวลาที่เลือก</p>
                         </div>
                       ) : (
-                        <div className="space-y-3">
-                          {filteredSales.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).map((order) => (
-                            <div key={order.id} className="group bg-white p-6 rounded-[1.8rem] border border-slate-50 flex flex-col sm:flex-row justify-between items-center transition-all hover:bg-slate-50 hover:border-slate-100 hover:shadow-sm">
-                              <div className="flex items-center gap-6 mb-4 sm:mb-0 w-full sm:w-auto">
-                                <div className="w-14 h-14 rounded-2xl bg-white border-2 border-slate-100 flex items-center justify-center text-slate-900 group-hover:border-orange-200 group-hover:bg-orange-50 transition-colors shadow-sm">
-                                  <span className="text-xl font-black">{order.table_no}</span>
-                                </div>
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-3 mb-1">
-                                    <p className="font-black text-slate-900">โต๊ะ {order.table_no}</p>
-                                    <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase tracking-widest rounded-full">ชำระแล้ว</span>
+                        <div className="divide-y divide-slate-50">
+                          {filteredSales
+                            .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+                            .slice(0, 10)
+                            .map((order) => (
+                              <div key={order.id} className="py-4 flex items-center justify-between group hover:bg-slate-50/50 transition-colors px-4 -mx-4 rounded-2xl">
+                                <div className="flex items-center gap-6">
+                                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest w-12 text-center">
+                                    {formatOrderTime(order.created_at)}
                                   </div>
-                                  <p className="text-xs text-slate-400 font-bold flex items-center gap-1.5">
-                                    <Clock size={12} /> {formatOrderTime(order.created_at)}
-                                    <span className="mx-1 opacity-20">•</span>
-                                    #{order.id.toString().slice(-4)}
-                                  </p>
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-black text-slate-900">
+                                      {order.table_no}
+                                    </div>
+                                    <span className="text-xs font-bold text-slate-400">โต๊ะ {order.table_no}</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-8">
+                                  <div className="text-right">
+                                    <p className="text-sm font-black text-slate-900">฿{order.total_price?.toLocaleString()}</p>
+                                  </div>
+                                  <div className="w-4 h-4 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                                    <Check size={10} strokeWidth={4} />
+                                  </div>
                                 </div>
                               </div>
-                              <div className="flex items-center justify-between sm:justify-end gap-10 w-full sm:w-auto border-t sm:border-0 pt-4 sm:pt-0">
-                                <div className="text-left sm:text-right">
-                                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">จำนวน</p>
-                                  <p className="text-slate-900 font-black">{order.items?.length || 0} รายการ</p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">ยอดรวม</p>
-                                  <p className="text-2xl font-black text-slate-900 group-hover:text-orange-600 transition-colors">฿{order.total_price?.toLocaleString()}</p>
-                                </div>
-                                <div className="hidden sm:block">
-                                  {/* Redundant Eye icon removed */}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
+                            ))}
                         </div>
                       )}
                     </div>
