@@ -680,7 +680,7 @@ export default function AdminApp() {
       </header>
 
       {activeTab === 'floor' && (
-        <main className="p-6 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 pb-40">
+        <main className="p-6 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 pb-52">
           <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">ผังที่นั่งร้านอาหาร</h1>
@@ -842,7 +842,7 @@ export default function AdminApp() {
       )}
 
       {activeTab === 'menu' && (
-        <main className="p-6 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 pb-40">
+        <main className="p-6 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 pb-52">
           <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">คลังรายการอาหาร</h1>
@@ -898,40 +898,40 @@ export default function AdminApp() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {menus.filter(m => selectedCategory === 'ทั้งหมด' || m.category === selectedCategory).map((item) => (
-              <div key={item.id} className="group bg-white p-5 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex items-center gap-6 border border-slate-50 hover:border-orange-100 hover:shadow-xl transition-all duration-500">
-                <div className={`w-24 h-24 rounded-[1.8rem] overflow-hidden bg-slate-100 flex-shrink-0 shadow-sm ring-1 ring-slate-100 ${!item.is_available && 'grayscale opacity-40'}`}>
+              <div key={item.id} className="group bg-white p-4 md:p-5 rounded-[2rem] md:rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex items-center gap-4 md:gap-6 border border-slate-50 hover:border-orange-100 hover:shadow-xl transition-all duration-500">
+                <div className={`w-20 h-20 md:w-24 md:h-24 rounded-[1.5rem] md:rounded-[1.8rem] overflow-hidden bg-slate-100 flex-shrink-0 shadow-sm ring-1 ring-slate-100 ${!item.is_available && 'grayscale opacity-40'}`}>
                   <img src={item.image_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={item.name} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                      <h3 className={`font-black text-xl truncate ${!item.is_available ? 'text-slate-300' : 'text-slate-900'}`}>{item.name}</h3>
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {item.noodle_options?.slice(0, 3).map((n: string) => (
-                          <span key={n} className="bg-slate-50 text-slate-400 text-[9px] px-2.5 py-1 rounded-full font-black uppercase tracking-wider">#{n}</span>
+                  <div className="flex justify-between items-start mb-1 md:mb-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className={`font-black text-lg md:text-xl truncate ${!item.is_available ? 'text-slate-300' : 'text-slate-900'}`}>{item.name}</h3>
+                      <div className="flex flex-wrap gap-1 mt-1 md:mt-2">
+                        {item.noodle_options?.slice(0, 2).map((n: string) => (
+                          <span key={n} className="bg-slate-50 text-slate-400 text-[8px] md:text-[9px] px-2 py-0.5 md:px-2.5 md:py-1 rounded-full font-black uppercase tracking-wider">#{n}</span>
                         ))}
                       </div>
                     </div>
-                    <div className="text-right ml-4">
-                      <p className="text-2xl font-black text-slate-900 tracking-tighter">฿{item.price}</p>
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">ราคาต่อหน่วย</p>
+                    <div className="text-right ml-2 md:ml-4 flex-shrink-0">
+                      <p className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter">฿{item.price}</p>
+                      <p className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">ราคาต่อหน่วย</p>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between mt-4">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between mt-3 md:mt-4">
+                    <div className="flex items-center gap-2 md:gap-3">
                       <button
                         onClick={() => toggleMenuAvailability(item.id, item.is_available)}
-                        className={`w-12 h-6 rounded-full relative transition-all duration-500 ${item.is_available ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-slate-200'}`}
+                        className={`w-10 h-5 md:w-12 md:h-6 rounded-full relative transition-all duration-500 ${item.is_available ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-slate-200'}`}
                       >
-                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${item.is_available ? 'right-1' : 'left-1'}`} />
+                        <div className={`absolute top-0.5 md:top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${item.is_available ? 'right-0.5 md:right-1' : 'left-0.5 md:left-1'}`} />
                       </button>
-                      <span className={`text-[10px] font-black uppercase tracking-widest ${item.is_available ? 'text-emerald-500' : 'text-slate-300'}`}>
+                      <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest ${item.is_available ? 'text-emerald-500' : 'text-slate-300'}`}>
                         {item.is_available ? 'เปิดขาย' : 'สินค้าหมด'}
                       </span>
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => handleEditClick(item)} className="p-3 bg-slate-50 text-slate-400 hover:bg-orange-50 hover:text-orange-600 rounded-2xl transition-all"><Edit3 size={18} /></button>
-                      <button onClick={() => deleteMenu(item.id)} className="p-3 bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-2xl transition-all"><Trash2 size={18} /></button>
+                    <div className="flex gap-1 md:gap-2">
+                      <button onClick={() => handleEditClick(item)} className="p-2 md:p-3 bg-slate-50 text-slate-400 hover:bg-orange-50 hover:text-orange-600 rounded-xl md:rounded-2xl transition-all"><Edit3 size={16} /></button>
+                      <button onClick={() => deleteMenu(item.id)} className="p-2 md:p-3 bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-xl md:rounded-2xl transition-all"><Trash2 size={16} /></button>
                     </div>
                   </div>
                 </div>
@@ -943,7 +943,7 @@ export default function AdminApp() {
 
       {
         activeTab === 'billing' && (
-          <main className="p-6 max-w-5xl mx-auto animate-in slide-in-from-right-4 duration-700 pb-40">
+          <main className="p-6 max-w-5xl mx-auto animate-in slide-in-from-right-4 duration-700 pb-52">
             <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
                 <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">จัดการการชำระเงิน</h1>
@@ -1082,7 +1082,7 @@ export default function AdminApp() {
       {/* ✅ TAB: SALES (แก้ไขตรรกะให้ยอดขึ้น 100%) */}
       {
         activeTab === 'sales' && (
-          <main className="p-6 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 pb-40">
+          <main className="p-6 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 pb-52">
             <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
                 <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">รายงานรายได้</h1>

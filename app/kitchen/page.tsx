@@ -516,7 +516,7 @@ export default function KitchenPage() {
 
                   {isFinished(order.status) ? (
                     <div className="bg-[#10B981] text-white py-5 rounded-[1.8rem] text-center font-black text-lg flex items-center justify-center gap-2 shadow-lg shadow-green-100">
-                      <CheckCircle2 size={24} strokeWidth={3} /> เสิร์ฟเรียบร้อย
+                      <CheckCircle2 size={24} strokeWidth={3} /> เสร็จแล้ว
                     </div>
                   ) : (
                     <div className="grid grid-cols-3 gap-3">
