@@ -607,18 +607,18 @@ export default function AdminApp() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFF7ED] text-[#411E24] font-sans pb-32 relative">
+    <div className="min-h-screen bg-[#FFF0E6] text-[#000000] font-sans pb-32 relative">
 
       {/* แจ้งเตือนเช็คบิล */}
       {billingOrdersCount > 0 && (
         <div onClick={() => setActiveTab('billing')} className="fixed top-4 left-4 right-4 z-[110] bg-red-600 text-white p-4 rounded-3xl shadow-2xl flex items-center justify-between animate-bounce cursor-pointer border-2 border-white">
-          <div className="flex items-center gap-3">
-            <div className="bg-white/20 p-2 rounded-full"><BellRing size={20} className="animate-pulse" /></div>
+          <div className="flex items-center gap-4">
+            <div className="bg-white/30 p-3 rounded-full"><BellRing size={28} className="animate-pulse" /></div>
             <div>
-              <p className="font-black text-sm">เรียกเช็คบิล! ({billingOrdersCount} โต๊ะ)</p>
+              <p className="font-black text-2xl">เรียกเช็คบิล! ({billingOrdersCount} โต๊ะ)</p>
             </div>
           </div>
-          <button className="bg-white text-red-600 px-4 py-1 rounded-full text-[10px] font-black uppercase">ไปที่หน้าเช็คบิล</button>
+          <button className="bg-white text-red-600 px-6 py-2 rounded-full text-sm font-black uppercase shadow-lg border-2 border-red-100">ดูบิล</button>
         </div>
       )}
 
@@ -631,7 +631,7 @@ export default function AdminApp() {
               <BellRing size={48} className={`text-[#FF4D00] ${isUnlocking ? 'animate-spin' : 'animate-bounce'}`} />
             </div>
             <h2 className="text-3xl font-black text-[#411E24] mb-4">เปิดเสียงแจ้งเตือน</h2>
-            <p className="text-gray-500 font-bold mb-10 leading-relaxed px-4">
+            <p className="text-black font-bold mb-10 leading-relaxed px-4">
               คลิกปุ่มด้านล่างเพื่อเริ่มระบบเสียงแจ้งเตือน<br />
               ออเดอร์ใหม่และลูกค้าเรียกเช็คบิล<br />
               (เพื่อให้ทำงานได้บนมือถือ)
@@ -639,7 +639,7 @@ export default function AdminApp() {
             <button
               onClick={unlockAudio}
               disabled={isUnlocking}
-              className={`w-full py-6 rounded-[2rem] font-black text-xl shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 ${isUnlocking ? 'bg-gray-200 text-gray-400' : 'bg-[#FF4D00] text-white shadow-orange-200 hover:scale-[1.02]'}`}
+              className={`w-full py-6 rounded-[2rem] font-black text-xl shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 ${isUnlocking ? 'bg-gray-200 text-black' : 'bg-[#FF4D00] text-white shadow-orange-200 hover:scale-[1.02]'}`}
             >
               {isUnlocking ? 'กำลังเปิดเสียง...' : 'ตกลง เปิดเสียง ✨'}
             </button>
@@ -648,30 +648,30 @@ export default function AdminApp() {
       )}
 
       {/* PROFESSIONAL TOP HEADER */}
-      <header className="sticky top-0 z-[60] bg-white/70 backdrop-blur-2xl border-b border-slate-100/50 px-6 py-4">
+      <header className="sticky top-0 z-[60] bg-white/80 backdrop-blur-xl border-b border-[#E8E4D8] px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="flex flex-col">
-              <div className="flex items-center gap-2 mb-1">
-                <div className={`w-2 h-2 rounded-full ${realtimeStatus === 'SUBSCRIBED' ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]' : realtimeStatus === 'CONNECTING' ? 'bg-amber-400' : 'bg-red-500'}`} />
-                <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">เครือข่าย: {realtimeStatus === 'SUBSCRIBED' ? 'เชื่อมต่อแล้ว' : realtimeStatus}</span>
+              <div className="flex items-center gap-3 mb-1">
+                <div className={`w-3 h-3 rounded-full ${realtimeStatus === 'SUBSCRIBED' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                <span className="text-sm font-black text-[#2D3436] uppercase tracking-widest">เครือข่าย: {realtimeStatus === 'SUBSCRIBED' ? 'พร้อม' : 'ขัดข้อง'}</span>
               </div>
-              <p className="text-[9px] text-slate-400 font-bold ml-4">อัปเดตล่าสุด: {lastEventTime}</p>
+              <p className="text-xs text-[#636E72] font-bold ml-6">อัปเดตล่าสุด: {lastEventTime}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-5">
             <button
               onClick={playNotificationSound}
-              className={`group flex items-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-black transition-all duration-300 border ${isAudioUnlocked ? 'bg-blue-50/50 text-blue-500 border-blue-100 hover:bg-blue-100/50' : 'bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100'}`}
+              className={`group flex items-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-black transition-all duration-300 border ${isAudioUnlocked ? 'bg-[#F0F4EF] text-[#7C9070] border-[#7C9070]/20' : 'bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100'}`}
             >
               <BellRing size={14} className={isAudioUnlocked ? 'animate-bounce' : ''} />
-              <span className="hidden sm:inline">ทดสอบเสียง</span>
+              <span className="hidden sm:inline text-[#2D3436]">ทดสอบเสียง</span>
             </button>
 
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 border border-slate-100 hover:border-red-100"
+              className="px-6 py-2.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all border-2 border-red-100"
             >
               ออกจากระบบ
             </button>
@@ -683,15 +683,15 @@ export default function AdminApp() {
         <main className="p-6 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 pb-52">
           <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">ผังที่นั่งร้านอาหาร</h1>
-              <div className="text-slate-500 font-medium flex items-center gap-2">
+              <h1 className="text-4xl font-black text-[#2D3436] tracking-tight mb-2">ผังที่นั่งร้านอาหาร</h1>
+              <div className="text-[#636E72] font-medium flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 ตรวจสอบสถานะโต๊ะและการจองแบบ Real-time
               </div>
             </div>
             <button
               onClick={() => setIsTableManageMode(!isTableManageMode)}
-              className={`flex items-center gap-2 px-8 py-3.5 rounded-2xl font-black text-sm transition-all duration-300 shadow-lg ${isTableManageMode ? 'bg-slate-900 text-white shadow-slate-200' : 'bg-white text-orange-600 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl hover:-translate-y-0.5'}`}
+              className={`flex items-center gap-2 px-8 py-3.5 rounded-2xl font-black text-sm transition-all duration-300 shadow-lg ${isTableManageMode ? 'bg-[#2D3436] text-white' : 'bg-white text-[#7C9070] border border-[#E8E4D8] shadow-sm hover:shadow-md hover:-translate-y-0.5'}`}
             >
               {isTableManageMode ? <LayoutGrid size={18} /> : <PlusCircle size={18} />}
               {isTableManageMode ? 'ดูแผนผังโต๊ะ' : 'แก้ไขผังร้าน'}
@@ -702,7 +702,7 @@ export default function AdminApp() {
             <div className="animate-in slide-in-from-top-4 duration-500">
               <form onSubmit={handleAddTable} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-10 flex flex-col md:flex-row gap-6">
                 <div className="flex-1">
-                  <label className="text-xs font-black uppercase text-slate-400 ml-2 mb-3 block tracking-widest">หมายเลขโต๊ะ</label>
+                  <label className="text-xs font-black uppercase text-black ml-2 mb-3 block tracking-widest">หมายเลขโต๊ะ</label>
                   <input
                     type="text"
                     placeholder="เช่น 5, 12, VIP-1"
@@ -713,7 +713,7 @@ export default function AdminApp() {
                   />
                 </div>
                 <div className="md:w-48">
-                  <label className="text-xs font-black uppercase text-slate-400 ml-2 mb-3 block tracking-widest">จำนวนที่นั่ง</label>
+                  <label className="text-xs font-black uppercase text-black ml-2 mb-3 block tracking-widest">จำนวนที่นั่ง</label>
                   <select
                     className="w-full bg-slate-50 rounded-2xl px-6 py-4 font-bold outline-none border border-transparent focus:border-orange-200 focus:bg-white transition-all text-slate-900 appearance-none"
                     value={newTableCapacity}
@@ -740,7 +740,7 @@ export default function AdminApp() {
                       </div>
                       <div>
                         <h4 className="font-black text-lg text-slate-900 mb-0.5">โต๊ะ {table.table_number}</h4>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                        <p className="text-[10px] text-black font-bold uppercase tracking-widest flex items-center gap-1.5">
                           <Users size={12} /> {table.capacity} ที่นั่ง • {table.status === 'available' ? 'ว่าง' : 'มีลูกค้า'}
                         </p>
                       </div>
@@ -748,14 +748,14 @@ export default function AdminApp() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => setShowQrModal(table.table_number)}
-                        className="p-3 bg-slate-50 text-slate-400 hover:bg-blue-50 hover:text-blue-500 rounded-2xl transition-all"
+                        className="p-3 bg-slate-50 text-black hover:bg-blue-50 hover:text-blue-500 rounded-2xl transition-all"
                         title="QR Menu"
                       >
                         <QrCode size={20} />
                       </button>
                       <button
                         onClick={() => handleDeleteTable(table.id)}
-                        className="p-3 bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-2xl transition-all"
+                        className="p-3 bg-slate-50 text-black hover:bg-red-50 hover:text-red-500 rounded-2xl transition-all"
                         title="ลบ"
                       >
                         <Trash2 size={20} />
@@ -769,8 +769,8 @@ export default function AdminApp() {
             <div className="animate-in fade-in duration-700">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
                 {tables.length === 0 ? (
-                  <div className="col-span-full py-32 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100 text-slate-300 font-bold flex flex-col items-center gap-4">
-                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
+                  <div className="col-span-full py-32 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100 text-black font-bold flex flex-col items-center gap-4">
+                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-black">
                       <LayoutGrid size={40} />
                     </div>
                     ยังไม่มีการตั้งค่าโต๊ะในขณะนี้<br />
@@ -781,9 +781,9 @@ export default function AdminApp() {
                     const isOccupied = table.status === 'occupied' || orders.some(o => o.table_no === table.table_number && (o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ' || o.status === 'เสร็จแล้ว'));
                     const isBilling = table.status === 'billing' || table.status === 'เรียกเช็คบิล' || orders.some(o => o.table_no === table.table_number && o.status === 'เรียกเช็คบิล');
 
-                    let statusClass = 'bg-white border-slate-100 text-slate-900 shadow-[0_4px_20px_rgb(0,0,0,0.02)]';
-                    let labelClass = 'text-slate-400';
-                    let accentClass = 'bg-slate-50 text-slate-400';
+                    let statusClass = 'bg-white border-[#E8E4D8] text-[#2D3436] shadow-sm';
+                    let labelClass = 'text-[#636E72]';
+                    let accentClass = 'bg-[#F9F7F2] text-[#2D3436]';
                     let statusText = 'โต๊ะว่าง';
 
                     if (isBilling) {
@@ -792,8 +792,8 @@ export default function AdminApp() {
                       accentClass = 'bg-white/20 text-white';
                       statusText = 'เรียกเช็คบิล';
                     } else if (isOccupied) {
-                      statusClass = 'bg-indigo-600 border-indigo-700 text-white shadow-xl shadow-indigo-100';
-                      labelClass = 'text-indigo-100';
+                      statusClass = 'bg-[#7C9070] border-[#7C9070] text-white shadow-xl shadow-[#7C9070]/20';
+                      labelClass = 'text-[#F0F4EF]';
                       accentClass = 'bg-white/20 text-white';
                       statusText = 'มีลูกค้าค้าง';
                     }
@@ -804,11 +804,11 @@ export default function AdminApp() {
                         onClick={() => setSelectedTableDetail(table)}
                         className={`${statusClass} h-48 rounded-[2.5rem] border-2 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl active:scale-95 flex flex-col items-center justify-center gap-3 relative overflow-hidden group`}
                       >
-                        <span className="text-5xl font-black tracking-tighter">{table.table_number}</span>
+                        <span className="text-6xl font-black tracking-tighter">{table.table_number}</span>
                         <div className="flex flex-col items-center">
-                          <span className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${labelClass}`}>{statusText}</span>
-                          <p className={`text-[9px] font-bold inline-flex items-center gap-1.5 opacity-70 ${labelClass}`}>
-                            <Users size={12} /> {table.capacity} ที่นั่ง
+                          <span className={`text-sm font-black uppercase tracking-[0.2em] mb-1 ${labelClass}`}>{statusText}</span>
+                          <p className={`text-xs font-bold inline-flex items-center gap-1.5 opacity-80 ${labelClass}`}>
+                            <Users size={16} /> {table.capacity} ที่นั่ง
                           </p>
                         </div>
                         {isOccupied && !isBilling && (
@@ -823,17 +823,17 @@ export default function AdminApp() {
               </div>
 
               <div className="mt-16 flex flex-wrap gap-6 justify-center">
-                <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-2xl border border-slate-50 shadow-sm">
-                  <div className="w-3 h-3 bg-white border-2 border-slate-200 rounded-full"></div>
-                  <span className="text-xs font-black text-slate-400 tracking-wider">AVAILABLE</span>
+                <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-2xl border border-[#E8E4D8] shadow-sm">
+                  <div className="w-3 h-3 bg-white border-2 border-[#BBC3C6] rounded-full"></div>
+                  <span className="text-xs font-black text-[#636E72] tracking-wider">โต๊ะว่าง</span>
                 </div>
-                <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-2xl border border-slate-50 shadow-sm">
-                  <div className="w-3 h-3 bg-indigo-600 rounded-full"></div>
-                  <span className="text-xs font-black text-slate-400 tracking-wider">OCCUPIED</span>
+                <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-2xl border border-[#E8E4D8] shadow-sm">
+                  <div className="w-3 h-3 bg-[#7C9070] rounded-full"></div>
+                  <span className="text-xs font-black text-[#636E72] tracking-wider">มีลูกค้า</span>
                 </div>
-                <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-2xl border border-slate-50 shadow-sm">
+                <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-2xl border border-[#E8E4D8] shadow-sm">
                   <div className="w-3 h-3 bg-amber-400 rounded-full animate-pulse"></div>
-                  <span className="text-xs font-black text-slate-400 tracking-wider">BILLING</span>
+                  <span className="text-xs font-black text-[#636E72] tracking-wider">รอเช็คบิล</span>
                 </div>
               </div>
             </div>
@@ -846,7 +846,7 @@ export default function AdminApp() {
           <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">คลังรายการอาหาร</h1>
-              <div className="text-slate-500 font-medium flex items-center gap-2">
+              <div className="text-black font-medium flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
                 จัดการเมนู ความพร้อมของสินค้า และราคา
               </div>
@@ -878,7 +878,7 @@ export default function AdminApp() {
                 <EyeOff size={24} />
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">สินค้าหมด</p>
+                <p className="text-[10px] font-black text-black uppercase tracking-[0.2em] mb-1">สินค้าหมด</p>
                 <p className="text-4xl font-black text-slate-900">{menus.filter(m => !m.is_available).length}</p>
               </div>
             </div>
@@ -889,7 +889,7 @@ export default function AdminApp() {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-8 py-3 rounded-2xl text-sm font-black transition-all duration-300 whitespace-nowrap border-2 ${selectedCategory === cat ? 'bg-slate-900 border-slate-900 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-400 hover:border-orange-200 hover:text-orange-600'}`}
+                className={`px-8 py-3 rounded-2xl text-sm font-black transition-all duration-300 whitespace-nowrap border-2 ${selectedCategory === cat ? 'bg-black border-black text-white shadow-lg' : 'bg-white border-slate-100 text-black hover:border-orange-200 hover:text-orange-600'}`}
               >
                 {cat === 'ทั้งหมด' ? 'ทุกหมวดหมู่' : cat}
               </button>
@@ -908,13 +908,13 @@ export default function AdminApp() {
                       <h3 className={`font-black text-lg md:text-xl truncate ${!item.is_available ? 'text-slate-300' : 'text-slate-900'}`}>{item.name}</h3>
                       <div className="flex flex-wrap gap-1 mt-1 md:mt-2">
                         {item.noodle_options?.slice(0, 2).map((n: string) => (
-                          <span key={n} className="bg-slate-50 text-slate-400 text-[8px] md:text-[9px] px-2 py-0.5 md:px-2.5 md:py-1 rounded-full font-black uppercase tracking-wider">#{n}</span>
+                          <span key={n} className="bg-slate-50 text-black text-[8px] md:text-[9px] px-2 py-0.5 md:px-2.5 md:py-1 rounded-full font-black uppercase tracking-wider">#{n}</span>
                         ))}
                       </div>
                     </div>
                     <div className="text-right ml-2 md:ml-4 flex-shrink-0">
                       <p className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter">฿{item.price}</p>
-                      <p className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">ราคาต่อหน่วย</p>
+                      <p className="text-[8px] md:text-[9px] font-black text-black uppercase tracking-widest mt-1">ราคาต่อหน่วย</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between mt-3 md:mt-4">
@@ -947,12 +947,12 @@ export default function AdminApp() {
             <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
                 <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">จัดการการชำระเงิน</h1>
-                <div className="text-slate-500 font-medium flex items-center gap-2">
+                <div className="text-black font-medium flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                   ตรวจสอบออเดอร์และยืนยันการชำระเงินของลูกค้า
                 </div>
               </div>
-              <div onClick={() => fetchOrders()} className="bg-white p-4 rounded-2xl text-slate-400 hover:text-orange-600 cursor-pointer border border-slate-100 shadow-sm transition-all hover:shadow-md active:scale-95">
+              <div onClick={() => fetchOrders()} className="bg-white p-4 rounded-2xl text-black hover:text-orange-600 cursor-pointer border border-slate-100 shadow-sm transition-all hover:shadow-md active:scale-95">
                 <ClipboardList size={28} strokeWidth={2.5} />
               </div>
             </header>
@@ -985,7 +985,7 @@ export default function AdminApp() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Requested at</p>
+                          <p className="text-[10px] font-black text-black uppercase tracking-widest mb-1">เวลาที่แจ้ง</p>
                           <div className="bg-white/10 px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-2 border border-white/5">
                             <Clock size={12} className="text-orange-400" /> {formatOrderTime(tableOrders[0]?.updated_at || tableOrders[0]?.created_at)}
                           </div>
@@ -1086,7 +1086,7 @@ export default function AdminApp() {
             <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
                 <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">รายงานรายได้</h1>
-                <div className="text-slate-500 font-medium flex items-center gap-2">
+                <div className="text-black font-medium flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   วิเคราะห์ผลประกอบการและยอดขายแบบ Real-time
                 </div>
@@ -1116,42 +1116,39 @@ export default function AdminApp() {
                   <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
                     {salesViewMode === 'daily' ? 'ช่วงเวลาที่เลือก' : 'สรุปยอดรายเดือน'}
                   </p>
-                  <div className="relative group">
-                    {salesViewMode === 'daily' ? (
-                      <input
-                        type="date"
-                        className="text-3xl font-black text-slate-900 outline-none bg-transparent cursor-pointer hover:text-orange-600 transition-colors"
-                        value={selectedSalesDate}
-                        onChange={(e) => setSelectedSalesDate(e.target.value)}
-                      />
-                    ) : (
-                      <input
-                        type="month"
-                        className="text-3xl font-black text-slate-900 outline-none bg-transparent cursor-pointer hover:text-orange-600 transition-colors"
-                        value={selectedSalesMonth}
-                        onChange={(e) => setSelectedSalesMonth(e.target.value)}
-                      />
-                    )}
-                    <div className="mt-2 text-slate-400 font-semibold flex items-center justify-center md:justify-start gap-2">
-                      <Clock size={14} className="opacity-50" />
-                      {(() => {
-                        try {
-                          return new Date(salesViewMode === 'daily' ? selectedSalesDate : selectedSalesMonth + '-01').toLocaleDateString('th-TH', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: salesViewMode === 'daily' ? 'numeric' : undefined,
-                            timeZone: 'Asia/Bangkok'
-                          });
-                        } catch (e) {
-                          return 'เลือกวันที่';
-                        }
-                      })()}
+                  <div className="relative group inline-block">
+                    <div className="flex items-center gap-4 cursor-pointer hover:text-orange-600 transition-colors">
+                      <div className="text-3xl font-black text-slate-900 group-hover:text-orange-600">
+                        {(() => {
+                          try {
+                            const dateString = salesViewMode === 'daily' ? selectedSalesDate : selectedSalesMonth + '-01';
+                            const dateObj = new Date(dateString);
+                            return dateObj.toLocaleDateString('th-TH', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: salesViewMode === 'daily' ? 'numeric' : undefined,
+                              timeZone: 'Asia/Bangkok'
+                            });
+                          } catch (e) {
+                            return 'เลือกวันที่';
+                          }
+                        })()}
+                      </div>
+                      <div className="bg-slate-50 p-2 rounded-xl text-slate-400 group-hover:bg-orange-50 group-hover:text-orange-600 transition-all">
+                        <Calendar size={24} />
+                      </div>
                     </div>
+                    <input
+                      type={salesViewMode === 'daily' ? "date" : "month"}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full"
+                      value={salesViewMode === 'daily' ? selectedSalesDate : selectedSalesMonth}
+                      onChange={(e) => salesViewMode === 'daily' ? setSelectedSalesDate(e.target.value) : setSelectedSalesMonth(e.target.value)}
+                    />
                   </div>
                 </div>
                 <button
                   onClick={() => {
-                    if (confirm("Reset current display data?")) {
+                    if (confirm("ต้องการรีเซ็ตข้อมูลการแสดงผลปัจจุบันหรือไม่?")) {
                       localStorage.removeItem('demo_admin_orders');
                       fetchOrders();
                     }
@@ -1211,7 +1208,7 @@ export default function AdminApp() {
                       <div className="px-10 py-7 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
                         <div>
                           <h3 className="text-xl font-black text-slate-900">แนวโน้มรายได้</h3>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Revenue Trend (Last 7 Days)</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">แนวโน้มรายได้ (7 วันล่าสุด)</p>
                         </div>
                         <div className="bg-emerald-50 text-emerald-600 p-2 rounded-xl">
                           <TrendingUp size={20} />
@@ -1297,7 +1294,7 @@ export default function AdminApp() {
                       <div className="px-10 py-7 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
                         <div>
                           <h3 className="text-xl font-black text-slate-900">เมนูยอดนิยม</h3>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Top 5 Best Sellers</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">5 อันดับเมนูขายดี</p>
                         </div>
                         <div className="bg-indigo-50 text-indigo-600 p-2 rounded-xl">
                           <PlusCircle size={20} />
@@ -1350,7 +1347,7 @@ export default function AdminApp() {
                     <div className="px-10 py-7 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
                       <h3 className="text-xl font-black text-slate-900">ประวัติการขายล่าสุด</h3>
                       <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-slate-100 shadow-sm text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        <ListFilter size={14} /> 10 รายการล่าสุด
+                        <ListFilter size={14} /> 10 บิลล่าสุด
                       </div>
                     </div>
                     <div className="p-8">
@@ -1361,32 +1358,71 @@ export default function AdminApp() {
                         </div>
                       ) : (
                         <div className="divide-y divide-slate-50">
-                          {filteredSales
-                            .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
-                            .slice(0, 10)
-                            .map((order) => (
-                              <div key={order.id} className="py-4 flex items-center justify-between group hover:bg-slate-50/50 transition-colors px-4 -mx-4 rounded-2xl">
-                                <div className="flex items-center gap-6">
-                                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest w-12 text-center">
-                                    {formatOrderTime(order.created_at)}
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-black text-slate-900">
-                                      {order.table_no}
+                          {(() => {
+                            // Group orders by table_no and session (within 15 minutes window)
+                            const groupedBills: any[] = [];
+                            const sortedOrders = [...filteredSales].sort((a, b) =>
+                              new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()
+                            );
+
+                            sortedOrders.forEach(order => {
+                              const orderTime = new Date(order.updated_at || order.created_at).getTime();
+                              // Find if this order fits into an existing bill (same table + within 15 mins)
+                              const existingBill = groupedBills.find(bill =>
+                                bill.table_no === order.table_no &&
+                                Math.abs(new Date(bill.settlement_time).getTime() - orderTime) < 15 * 60 * 1000
+                              );
+
+                              if (existingBill) {
+                                existingBill.total_price += (Number(order.total_price) || 0);
+                                existingBill.order_count += 1;
+                                // Use the most recent time as settlement time
+                                if (orderTime > new Date(existingBill.settlement_time).getTime()) {
+                                  existingBill.settlement_time = order.updated_at || order.created_at;
+                                }
+                              } else {
+                                groupedBills.push({
+                                  id: order.id,
+                                  table_no: order.table_no,
+                                  total_price: Number(order.total_price) || 0,
+                                  settlement_time: order.updated_at || order.created_at,
+                                  order_count: 1
+                                });
+                              }
+                            });
+
+                            return groupedBills
+                              .sort((a: any, b: any) => new Date(b.settlement_time).getTime() - new Date(a.settlement_time).getTime())
+                              .slice(0, 10)
+                              .map((bill: any) => (
+                                <div key={bill.id} className="py-4 flex items-center justify-between group hover:bg-slate-50/50 transition-colors px-4 -mx-4 rounded-2xl">
+                                  <div className="flex items-center gap-6">
+                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest w-12 text-center">
+                                      {formatOrderTime(bill.settlement_time)}
                                     </div>
-                                    <span className="text-xs font-bold text-slate-400">โต๊ะ {order.table_no}</span>
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-xs font-black text-white shadow-sm">
+                                        {bill.table_no}
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span className="text-xs font-bold text-black">โต๊ะ {bill.table_no}</span>
+                                        {bill.order_count > 1 && (
+                                          <span className="text-[8px] text-slate-400 font-black uppercase">รวม {bill.order_count} ออเดอร์</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-8">
+                                    <div className="text-right">
+                                      <p className="text-sm font-black text-slate-900">฿{bill.total_price.toLocaleString()}</p>
+                                    </div>
+                                    <div className="w-4 h-4 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                                      <Check size={10} strokeWidth={4} />
+                                    </div>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-8">
-                                  <div className="text-right">
-                                    <p className="text-sm font-black text-slate-900">฿{order.total_price?.toLocaleString()}</p>
-                                  </div>
-                                  <div className="w-4 h-4 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-                                    <Check size={10} strokeWidth={4} />
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
+                              ));
+                          })()}
                         </div>
                       )}
                     </div>
@@ -1425,8 +1461,8 @@ export default function AdminApp() {
 
               <div className="flex-1 overflow-y-auto p-8">
                 <div className="space-y-6">
-                  <h4 className="text-xl font-black flex items-center gap-2">
-                    <ClipboardList className="text-[#FF4D00]" /> รายการออเดอร์ทั้งหมด
+                  <h4 className="text-xl font-black flex items-center gap-2 text-[#2D3436]">
+                    <ClipboardList className="text-[#7C9070]" /> รายการออเดอร์ทั้งหมด
                   </h4>
 
                   {orders.filter(o => o.table_no === selectedTableDetail.table_number && o.status !== 'เสร็จสิ้น').length === 0 ? (
@@ -1477,7 +1513,7 @@ export default function AdminApp() {
                                   <span className="text-gray-400">{item.quantity}x</span>
                                   <span>{item.name} {item.selectedNoodle && `(${item.selectedNoodle})`}</span>
                                 </div>
-                                <span className="text-[#FF4D00]">฿{item.price * item.quantity}</span>
+                                <span className="text-[#7C9070]">฿{item.price * item.quantity}</span>
                               </div>
                             ))}
                           </div>
@@ -1520,8 +1556,8 @@ export default function AdminApp() {
                 <button onClick={() => setIsModalOpen(false)} className="p-2 bg-gray-100 rounded-full"><X size={24} /></button>
               </div>
               <form onSubmit={handleSaveMenu} className="space-y-6 pb-20">
-                <div onClick={() => !isSaving && fileInputRef.current?.click()} className="w-full h-40 bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden cursor-pointer">
-                  {formData.image_url ? <img src={formData.image_url} className="w-full h-full object-cover" /> : <ImageIcon size={30} className="text-gray-300" />}
+                <div onClick={() => !isSaving && fileInputRef.current?.click()} className="w-full h-40 bg-[#F9F7F2] rounded-[2rem] border-2 border-dashed border-[#E8E4D8] flex items-center justify-center overflow-hidden cursor-pointer">
+                  {formData.image_url ? <img src={formData.image_url} className="w-full h-full object-cover" /> : <ImageIcon size={30} className="text-[#BBC3C6]" />}
                   <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
                 </div>
                 <input type="text" placeholder="ชื่อเมนู" required className="w-full bg-gray-50 rounded-[1.5rem] p-5 font-bold outline-none text-[#411E24]" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
@@ -1531,7 +1567,7 @@ export default function AdminApp() {
                   <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">หมวดหมู่</label>
                   <div className="flex gap-2 overflow-x-auto no-scrollbar">
                     {['เมนูข้าว', 'เมนูเส้น', 'กับข้าว'].map(cat => (
-                      <button key={cat} type="button" onClick={() => setFormData({ ...formData, category: cat })} className={`px-5 py-2.5 rounded-full text-[10px] font-black whitespace-nowrap ${formData.category === cat ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'}`}>{cat}</button>
+                      <button key={cat} type="button" onClick={() => setFormData({ ...formData, category: cat })} className={`px-5 py-2.5 rounded-full text-[10px] font-black whitespace-nowrap ${formData.category === cat ? 'bg-[#7C9070] text-white' : 'bg-[#F0F4EF] text-[#7C9070]'}`}>{cat}</button>
                     ))}
                   </div>
                 </div>
@@ -1552,7 +1588,7 @@ export default function AdminApp() {
                   </div>
                 </div>
 
-                <button type="submit" disabled={isSaving} className={`w-full py-5 rounded-[2rem] font-black text-lg text-white shadow-xl ${isSaving ? 'bg-slate-200' : 'bg-emerald-500 shadow-emerald-100 hover:bg-emerald-600 transition-all'}`}>
+                <button type="submit" disabled={isSaving} className={`w-full py-5 rounded-[2rem] font-black text-lg text-white shadow-xl ${isSaving ? 'bg-slate-200' : 'bg-[#7C9070] shadow-[#7C9070]/20 hover:bg-[#6D7F62] transition-all'}`}>
                   {isSaving ? 'กำลังบันทึก...' : 'บันทึกเมนู'}
                 </button>
               </form>
@@ -1564,20 +1600,20 @@ export default function AdminApp() {
       {/* PROFESSIONAL BOTTOM NAV */}
       <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-lg bg-white/80 backdrop-blur-2xl border border-white/40 p-3 flex justify-around items-center z-50 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] ring-1 ring-black/5 animate-in slide-in-from-bottom-10 duration-1000">
         {[
-          { id: 'floor', label: 'ผังร้าน', icon: <LayoutGrid size={22} />, color: 'orange' },
-          { id: 'menu', label: 'เมนู', icon: <Utensils size={22} />, color: 'orange' },
+          { id: 'floor', label: 'ผังร้าน', icon: <LayoutGrid size={22} />, color: 'sage' },
+          { id: 'menu', label: 'เมนู', icon: <Utensils size={22} />, color: 'sage' },
           { id: 'billing', label: 'เช็คบิล', icon: <Wallet size={22} />, color: 'amber', count: billingOrdersCount },
-          { id: 'sales', label: 'ยอดขาย', icon: <TrendingUp size={22} />, color: 'orange' }
+          { id: 'sales', label: 'ยอดขาย', icon: <TrendingUp size={22} />, color: 'sage' }
         ].map(tab => (
           <button
             key={tab.id}
             onClick={() => { setActiveTab(tab.id as any); setIsTableManageMode(false); }}
-            className={`flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all duration-500 relative group ${activeTab === tab.id ? 'bg-slate-900 text-white shadow-xl scale-110' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all duration-500 relative group ${activeTab === tab.id ? 'bg-[#7C9070] text-white shadow-xl scale-110' : 'text-[#636E72] hover:text-[#7C9070]'}`}
           >
             {tab.icon}
             <span className={`text-[8px] font-black tracking-widest ${activeTab === tab.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>{tab.label}</span>
             {tab.count !== undefined && tab.count > 0 && (
-              <span className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black animate-pulse shadow-lg ${activeTab === tab.id ? 'bg-orange-500 text-white' : 'bg-red-500 text-white'}`}>
+              <span className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black animate-pulse shadow-lg ${activeTab === tab.id ? 'bg-[#2D3436] text-white' : 'bg-red-500 text-white'}`}>
                 {tab.count}
               </span>
             )}
@@ -1598,12 +1634,12 @@ export default function AdminApp() {
                 }
               `}</style>
               <div className="print-area">
-                <div className="bg-[#FF4D00] p-6 text-white text-center print:bg-white print:text-black">
+                <div className="bg-[#7C9070] p-6 text-white text-center print:bg-white print:text-black">
                   <h3 className="text-2xl font-black">QR Code สำหรับโต๊ะ {showQrModal}</h3>
                   <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest mt-1">สแกนเพื่อสั่งอาหารทันที</p>
                 </div>
                 <div className="p-10 flex flex-col items-center gap-6">
-                  <div className="p-4 bg-white rounded-3xl border-4 border-orange-50 shadow-inner print:border-0 print:shadow-none">
+                  <div className="p-4 bg-white rounded-3xl border-4 border-[#F0F4EF] shadow-inner print:border-0 print:shadow-none">
                     <img
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : '')}?table=${showQrModal}`}
                       alt={`QR Table ${showQrModal}`}
@@ -1618,7 +1654,7 @@ export default function AdminApp() {
               <div className="p-10 pt-0 flex flex-col items-center gap-6 print:hidden">
                 <button
                   onClick={() => window.print()}
-                  className="w-full py-4 bg-[#FF4D00] text-white rounded-2xl font-black text-sm active:scale-95 transition-transform flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-[#7C9070] text-white rounded-2xl font-black text-sm active:scale-95 transition-transform flex items-center justify-center gap-2"
                 >
                   <QrCode size={18} /> พิมพ์ QR Code
                 </button>

@@ -82,7 +82,7 @@ export default function StaffLoginPage() {
                     <div className="w-20 h-20 bg-[#FF4D00]/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#FF4D00]/10">
                         <Users size={40} className="text-[#FF4D00]" />
                     </div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Pa Kung Shop</h1>
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">ร้านป้ากกุ้ง</h1>
                     <p className="text-xs text-slate-500 font-medium mt-1 uppercase tracking-wider">
                         ระบบจัดการร้าน
                     </p>
@@ -133,7 +133,7 @@ export default function StaffLoginPage() {
                     </button>
                 </form>
 
-                <p className="text-[10px] text-slate-400 mt-8 font-medium uppercase tracking-widest">© 2026 Management System</p>
+                <p className="text-[10px] text-slate-400 mt-8 font-medium uppercase tracking-widest">© 2026 ระบบจัดการร้านอาหาร</p>
             </div>
         </div>
     );

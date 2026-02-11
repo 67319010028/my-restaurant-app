@@ -311,7 +311,7 @@ export default function KitchenPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 text-slate-900 pb-10 font-sans">
+    <div className="min-h-screen bg-[#F9F7F2] font-sans pb-32 text-[#2D3436]">
 
       {/* Header & Status Summary Row */}
       <header className="p-6 bg-white/90 backdrop-blur-xl sticky top-0 z-10 shadow-sm border-b border-slate-100">
@@ -320,9 +320,9 @@ export default function KitchenPage() {
             <ChefHat size={32} className="text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-gray-800">ร้านป้ากุ้ง (ครัว)</h1>
-            <p className="text-xs text-gray-500 font-bold uppercase tracking-widest flex items-center gap-2">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            <h1 className="text-4xl font-black text-black">ร้านป้ากุ้ง (ครัว)</h1>
+            <p className="text-sm text-black font-bold uppercase tracking-widest flex items-center gap-2">
+              <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
               ระบบจัดการห้องครัว
             </p>
           </div>
@@ -331,7 +331,7 @@ export default function KitchenPage() {
               await supabase.auth.signOut();
               router.push('/staff');
             }}
-            className="text-red-400 font-black text-[10px] uppercase tracking-wider bg-red-50/50 px-4 py-1.5 rounded-full ml-auto"
+            className="text-red-600 font-black text-xs uppercase tracking-wider bg-red-100 px-6 py-2 rounded-full ml-auto border border-red-200"
           >
             ออกจากระบบ
           </button>
@@ -341,11 +341,11 @@ export default function KitchenPage() {
         {!isAudioUnlocked && (
           <div className="fixed inset-0 z-[999] bg-white flex items-center justify-center p-6 sm:p-10">
             <div className="w-full max-w-sm text-center">
-              <div className="w-24 h-24 bg-orange-100 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
-                <ChefHat size={48} className={`text-[#FF4D00] ${isUnlocking ? 'animate-spin' : 'animate-bounce'}`} />
+              <div className="w-24 h-24 bg-[#F0F4EF] rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
+                <ChefHat size={48} className={`text-[#7C9070] ${isUnlocking ? 'animate-spin' : 'animate-bounce'}`} />
               </div>
-              <h2 className="text-3xl font-black text-gray-800 mb-4">ระบบเสียงห้องครัว</h2>
-              <p className="text-gray-500 font-bold mb-10 leading-relaxed px-4">
+              <h1 className="text-4xl font-black text-[#2D3436] tracking-tight">ระบบครัว</h1>
+              <p className="text-black font-bold mb-10 leading-relaxed px-4">
                 กรุณากดปุ่มเพื่อเปิดเสียงแจ้งเตือน<br />
                 เมื่อมีออเดอร์ใหม่ส่งมาจากแอดมิน<br />
                 (เพื่อให้ทำงานได้บนมือถือ)
@@ -353,7 +353,7 @@ export default function KitchenPage() {
               <button
                 onClick={unlockAudio}
                 disabled={isUnlocking}
-                className={`w-full py-6 rounded-[2rem] font-black text-xl shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 ${isUnlocking ? 'bg-gray-200 text-gray-400' : 'bg-[#FF4D00] text-white shadow-orange-200 hover:scale-[1.02]'}`}
+                className={`w-full py-6 rounded-[2rem] font-black text-xl shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 ${isUnlocking ? 'bg-slate-200 text-[#BBC3C6]' : 'bg-[#7C9070] text-white shadow-[#7C9070]/20 hover:scale-[1.02]'}`}
               >
                 {isUnlocking ? 'กำลังเปิดเสียง...' : 'เปิดระบบเสียงห้องครัว ✨'}
               </button>
@@ -362,28 +362,28 @@ export default function KitchenPage() {
         )}
 
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
+          <div className="bg-white p-6 rounded-3xl border-2 border-[#E8E4D8] shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between mb-2">
-              <Timer size={20} className="text-indigo-500" />
-              <div className="text-3xl font-black text-slate-900">{orders.filter(o => o.status === 'กำลังเตรียม').length}</div>
+              <Timer size={28} className="text-[#7C9070]" />
+              <div className="text-5xl font-black text-black">{orders.filter(o => o.status === 'กำลังเตรียม').length}</div>
             </div>
-            <div className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">รอดำเนินการ</div>
+            <div className="text-black text-sm font-black uppercase tracking-wider">รอดำเนินการ</div>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
+          <div className="bg-white p-6 rounded-3xl border-2 border-[#E8E4D8] shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between mb-2">
-              <ChefHat size={20} className="text-indigo-400" />
-              <div className="text-3xl font-black text-slate-900">{orders.filter(o => o.status === 'กำลังทำ').length}</div>
+              <ChefHat size={28} className="text-[#7C9070]" />
+              <div className="text-5xl font-black text-black">{orders.filter(o => o.status === 'กำลังทำ').length}</div>
             </div>
-            <div className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">กำลังทำ</div>
+            <div className="text-black text-sm font-black uppercase tracking-wider">กำลังทำ</div>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-emerald-100 shadow-sm hover:shadow-md transition-all">
+          <div className="bg-white p-6 rounded-3xl border-2 border-emerald-100 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between mb-2">
-              <CheckCircle2 size={20} className="text-emerald-500" />
-              <div className="text-3xl font-black text-slate-900">{orders.filter(o => isFinished(o.status)).length}</div>
+              <CheckCircle2 size={28} className="text-emerald-500" />
+              <div className="text-5xl font-black text-black">{orders.filter(o => isFinished(o.status)).length}</div>
             </div>
-            <div className="text-emerald-600 text-[11px] font-bold uppercase tracking-wider">เสร็จแล้ว</div>
+            <div className="text-emerald-600 text-sm font-black uppercase tracking-wider">เสร็จแล้ว</div>
           </div>
         </div>
       </header>
@@ -403,14 +403,14 @@ export default function KitchenPage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === tab
-                ? 'bg-slate-900 text-white shadow-md'
-                : 'bg-white text-slate-400 hover:bg-slate-50 border border-slate-100'
+              className={`px-8 py-4 rounded-2xl font-black text-lg transition-all flex items-center gap-2 whitespace-nowrap border-2 ${activeTab === tab
+                ? 'bg-black text-white border-black shadow-lg'
+                : 'bg-white text-black hover:bg-orange-50 border-orange-100'
                 }`}
             >
               {tab}
               {count > 0 && (
-                <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold ${activeTab === tab ? 'bg-white/25' : 'bg-red-100 text-red-600'
+                <span className={`text-base px-3 py-1 rounded-full font-black ${activeTab === tab ? 'bg-white/20' : 'bg-red-600 text-white'
                   }`}>
                   {count}
                 </span>
@@ -426,8 +426,8 @@ export default function KitchenPage() {
           <div className="py-32 text-center">
             <div className="bg-white rounded-3xl p-12 border-2 border-dashed border-gray-100 shadow-sm max-w-md mx-auto">
               <ClipboardList size={64} className="text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600 font-bold text-lg">ไม่พบรายการสั่งอาหาร</p>
-              <p className="text-gray-400 text-sm mt-2">กำลังรอรับออเดอร์ใหม่...</p>
+              <p className="text-black font-bold text-lg">ไม่พบรายการสั่งอาหาร</p>
+              <p className="text-black text-sm mt-2">กำลังรอรับออเดอร์ใหม่...</p>
             </div>
           </div>
         ) : (
@@ -441,7 +441,7 @@ export default function KitchenPage() {
                 {/* Header */}
                 <div className="p-6 flex justify-between items-center bg-white">
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-slate-900 rounded-3xl flex items-center justify-center text-3xl font-black text-white shadow-lg">
+                    <div className="w-20 h-20 bg-[#7C9070] rounded-3xl flex items-center justify-center text-white shadow-lg shadow-[#7C9070]/20">
                       {order.table_no}
                     </div>
                     <div>
@@ -453,51 +453,46 @@ export default function KitchenPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-gray-400 text-sm font-bold flex items-center gap-1.5">
+                      <p className="text-black text-sm font-bold flex items-center gap-1.5">
                         <Clock size={14} />
                         {new Date(order.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                   </div>
 
-                  <div className={`px-4 py-2 rounded-full text-xs font-black ${isFinished(order.status)
-                    ? 'bg-emerald-100 text-emerald-600'
-                    : order.status === 'กำลังทำ'
-                      ? 'bg-indigo-100 text-indigo-500'
-                      : 'bg-slate-50 text-slate-400'
-                    }`}>
+                  <div className={`p-4 rounded-2xl border-2 transition-all ${isAudioUnlocked ? 'bg-[#F0F4EF] border-[#7C9070] text-[#7C9070]' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
                     {isFinished(order.status) ? '✓ เสร็จแล้ว' : order.status}
                   </div>
                 </div>
 
                 {/* Items List */}
-                <div className="p-4 space-y-3 bg-white mx-4 my-2 rounded-3xl border border-gray-50 shadow-sm">
+                <div className="p-4 space-y-4 bg-white mx-4 my-2 rounded-3xl border border-slate-100 shadow-sm">
                   {order.items?.map((item, idx) => (
-                    <div key={idx} className="flex flex-col bg-white p-4 rounded-3xl">
+                    <div key={idx} className="flex flex-col bg-[#F0F4EF] p-5 rounded-3xl border border-[#7C9070]/10">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <span className="font-black text-gray-900 text-xl block">
+                          <span className="font-black text-[#2D3436] text-3xl block mb-2">
                             {item.name}
                           </span>
                           <div className="flex flex-wrap gap-2 items-center mt-2">
                             {item.isSpecial && (
-                              <span className="text-indigo-500 font-black text-[10px] uppercase bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 flex items-center gap-1">
-                                <span className="text-sm">⭐</span> พิเศษ
+                              <span className="text-white font-black text-sm uppercase bg-red-600 px-4 py-1.5 rounded-full shadow-sm flex items-center gap-1">
+                                ⭐ พิเศษ
                               </span>
                             )}
                             {item.selectedNoodle && (
-                              <span className="text-[10px] bg-slate-50 text-slate-500 px-3 py-1 rounded-full font-black flex items-center gap-1 border border-slate-50">
-                                <Utensils size={12} strokeWidth={3} className="text-indigo-400" /> {item.selectedNoodle}
+                              <span className="text-sm bg-white text-[#2D3436] px-4 py-1.5 rounded-full font-black flex items-center gap-1 border border-[#E8E4D8] shadow-sm">
+                                <Utensils size={14} strokeWidth={3} className="text-[#7C9070]" /> {item.selectedNoodle}
                               </span>
                             )}
                           </div>
                           {item.note && (
-                            <p className="text-[10px] text-indigo-400 font-bold mt-2 bg-indigo-50/50 p-2 rounded-xl border border-indigo-50">
+                            <p className="text-lg text-[#7C9070] font-black mt-3 bg-white p-3 rounded-xl border-2 border-[#F0F4EF] shadow-inner">
                               💬 {item.note}
                             </p>
                           )}
                         </div>
-                        <span className="bg-slate-900 text-white px-4 py-1.5 rounded-xl text-sm font-black ml-4 shrink-0 shadow-md">
+                        <span className="bg-[#2D3436] text-white px-5 py-2 rounded-2xl text-xl font-black ml-4 shrink-0 shadow-lg">
                           ×{item.quantity}
                         </span>
                       </div>
@@ -508,41 +503,41 @@ export default function KitchenPage() {
                 {/* Action Buttons */}
                 <div className="p-6 bg-white">
                   <div className="flex justify-between items-center mb-6">
-                    <span className="text-xs text-gray-400 font-black uppercase tracking-widest">ยอดรวม</span>
-                    <span className="text-3xl font-black text-black">
+                    <span className="text-xs text-[#636E72] font-black uppercase tracking-widest">ยอดรวม</span>
+                    <span className="text-3xl font-black text-[#2D3436]">
                       ฿{Number(order.total_price || 0).toLocaleString()}
                     </span>
                   </div>
 
                   {isFinished(order.status) ? (
-                    <div className="bg-[#10B981] text-white py-5 rounded-[1.8rem] text-center font-black text-lg flex items-center justify-center gap-2 shadow-lg shadow-green-100">
+                    <div className="bg-green-500 text-white py-5 rounded-[1.8rem] text-center font-black text-lg flex items-center justify-center gap-2 shadow-lg shadow-green-100">
                       <CheckCircle2 size={24} strokeWidth={3} /> เสร็จแล้ว
                     </div>
                   ) : (
                     <div className="grid grid-cols-3 gap-3">
                       <button
                         onClick={() => updateStatus(order.id, 'กำลังเตรียม')}
-                        className={`py-4 rounded-2xl font-black text-sm active:scale-95 transition-all ${order.status === 'กำลังเตรียม'
-                          ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-100'
-                          : 'bg-white text-slate-400 border border-slate-50'
+                        className={`py-5 rounded-2xl font-black text-xl active:scale-95 transition-all border-2 ${order.status === 'กำลังเตรียม'
+                          ? 'bg-[#2D3436] text-white border-[#2D3436] shadow-xl'
+                          : 'bg-white text-[#2D3436] border-slate-100'
                           }`}
                       >
                         รอ
                       </button>
                       <button
                         onClick={() => updateStatus(order.id, 'กำลังทำ')}
-                        className={`py-4 rounded-2xl font-black text-sm active:scale-95 transition-all ${order.status === 'กำลังทำ'
-                          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
-                          : 'bg-white text-slate-400 border border-slate-50'
+                        className={`py-5 rounded-2xl font-black text-xl active:scale-95 transition-all border-2 ${order.status === 'กำลังทำ'
+                          ? 'bg-[#7C9070] text-white border-[#7C9070] shadow-xl'
+                          : 'bg-white text-[#2D3436] border-slate-100'
                           }`}
                       >
-                        กำลังทำ
+                        ทำ
                       </button>
                       <button
                         onClick={() => updateStatus(order.id, 'เสร็จแล้ว')}
-                        className={`py-4 rounded-2xl font-black text-sm active:scale-95 transition-all ${order.status === 'เสร็จแล้ว'
-                          ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-100'
-                          : 'bg-white text-slate-400 border border-slate-50'
+                        className={`py-5 rounded-2xl font-black text-xl active:scale-95 transition-all border-2 ${order.status === 'เสร็จแล้ว'
+                          ? 'bg-green-600 text-white border-green-600 shadow-xl'
+                          : 'bg-white text-[#2D3436] border-slate-100'
                           }`}
                       >
                         ✓ เสร็จ
