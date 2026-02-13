@@ -550,7 +550,7 @@ function RestaurantAppContent() {
   if (view === 'cart') {
     return (
       <div className="w-full max-w-md md:max-w-2xl mx-auto bg-[#fffcf8] min-h-screen pb-40 relative">
-        <header className="bg-gradient-to-r from-[#FF4D00] to-[#FF7800] text-black p-6 pt-10 flex items-center gap-4 rounded-b-[30px] shadow-sm">
+        <header className="bg-[#7C9070] text-black p-6 pt-10 flex items-center gap-4 rounded-b-[30px] shadow-sm">
           <button onClick={() => setView('menu')} className="bg-black/5 p-2 rounded-full backdrop-blur-sm transition-colors hover:bg-black/10 text-black"><ArrowLeft size={24} /></button>
           <div>
             <h1 className="text-xl font-black text-black">ตะกร้าสินค้า</h1>
@@ -567,21 +567,21 @@ function RestaurantAppContent() {
             <div className="text-center py-20 text-black">ไม่มีสินค้าในตะกร้า</div>
           ) : (
             cart.map((item, idx) => (
-              <div key={idx} className="bg-white p-3 rounded-2xl shadow-sm flex gap-4 relative border border-orange-100/50">
+              <div key={idx} className="bg-white p-3 rounded-2xl shadow-sm flex gap-4 relative border border-[#E8E4D8]">
                 <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden shrink-0"><img src={item.image_url} className="w-full h-full object-cover" /></div>
                 <div className="flex-1 pr-8">
-                  <h3 className="font-black text-[15px]">{item.name} {item.isSpecial && <span className="text-[#FF4D00]">(พิเศษ)</span>}</h3>
+                  <h3 className="font-black text-[15px]">{item.name} {item.isSpecial && <span className="text-[#7C9070]">(พิเศษ)</span>}</h3>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {item.selectedNoodle && <span className="text-[9px] bg-[#FFF7ED] text-[#FF4D00] px-2 py-0.5 rounded-full font-black border border-orange-100">{item.selectedNoodle}</span>}
+                    {item.selectedNoodle && <span className="text-[9px] bg-[#F0F4EF] text-[#7C9070] px-2 py-0.5 rounded-full font-black border border-[#E8E4D8]">{item.selectedNoodle}</span>}
                     {item.note && <span className="text-[9px] bg-gray-100 text-black px-2 py-0.5 rounded-full">*{item.note}</span>}
                   </div>
                   <p className="text-black font-black text-xl mt-1">฿{item.totalItemPrice}</p>
                 </div>
                 <button onClick={() => removeFromCart(item.id, item.note, item.selectedNoodle, item.isSpecial)} className="absolute top-3 right-3 text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
-                <div className="absolute bottom-3 right-3 flex items-center gap-3 bg-white rounded-full p-1 border border-orange-100">
-                  <button onClick={() => updateQuantity(item.id, -1, item.note, item.selectedNoodle, item.isSpecial)} className="bg-[#FF4D00] text-black rounded-full p-1 shadow-sm"><Minus size={14} /></button>
+                <div className="absolute bottom-3 right-3 flex items-center gap-3 bg-white rounded-full p-1 border border-[#E8E4D8]">
+                  <button onClick={() => updateQuantity(item.id, -1, item.note, item.selectedNoodle, item.isSpecial)} className="bg-[#7C9070] text-white rounded-full p-1 shadow-sm"><Minus size={14} /></button>
                   <span className="font-black text-sm text-black">{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item.id, 1, item.note, item.selectedNoodle, item.isSpecial)} className="bg-[#FF4D00] text-black rounded-full p-1 shadow-sm"><Plus size={14} /></button>
+                  <button onClick={() => updateQuantity(item.id, 1, item.note, item.selectedNoodle, item.isSpecial)} className="bg-[#7C9070] text-white rounded-full p-1 shadow-sm"><Plus size={14} /></button>
                 </div>
               </div>
             ))
@@ -596,7 +596,7 @@ function RestaurantAppContent() {
             <button
               onClick={submitOrder}
               disabled={isCurrentlyBilling}
-              className={`w-full py-4 rounded-2xl font-black text-lg shadow-md transition-all active:scale-95 ${isCurrentlyBilling ? 'bg-gray-200 text-black' : 'bg-[#FF4D00] text-black'}`}
+              className={`w-full py-4 rounded-2xl font-black text-lg shadow-md transition-all active:scale-95 ${isCurrentlyBilling ? 'bg-gray-200 text-black' : 'bg-[#7C9070] text-white'}`}
             >
               {isCurrentlyBilling ? 'งดสั่งอาหาร (กำลังเช็คบิล)' : `สั่งอาหาร (${totalItemsCount} รายการ)`}
             </button>
@@ -609,14 +609,14 @@ function RestaurantAppContent() {
   if (view === 'orders') {
     return (
       <div className="w-full max-w-md md:max-w-2xl mx-auto bg-[#fffcf8] min-h-screen pb-40 relative">
-        <header className="bg-gradient-to-r from-[#FF4D00] to-[#FF7800] text-black p-6 pt-10 flex items-center gap-4 rounded-b-[30px] shadow-sm">
+        <header className="bg-[#7C9070] text-black p-6 pt-10 flex items-center gap-4 rounded-b-[30px] shadow-sm">
           <button onClick={() => setView('menu')} className="bg-black/5 p-2 rounded-full backdrop-blur-sm transition-colors hover:bg-black/10 text-black"><ArrowLeft size={24} /></button>
           <div><h1 className="text-xl font-black text-black">รายการที่สั่ง</h1><p className="text-[10px] text-black/60 font-bold uppercase tracking-wider">โต๊ะ {tableNo} • {orders.length} ออเดอร์</p></div>
         </header>
         <main className="p-4 space-y-6">
           <div className="grid grid-cols-2 gap-4">
-            <div className={`bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center transition-all ${preparingCount > 0 ? 'ring-2 ring-[#FF4D00]' : 'opacity-50'}`}>
-              <div className="flex items-center gap-2 mb-1"><Utensils size={18} className="text-[#FF4D00]" /><span className="font-black text-lg text-black">{preparingCount}</span></div>
+            <div className={`bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center transition-all ${preparingCount > 0 ? 'ring-2 ring-[#7C9070]' : 'opacity-50'}`}>
+              <div className="flex items-center gap-2 mb-1"><Utensils size={18} className="text-[#7C9070]" /><span className="font-black text-lg text-black">{preparingCount}</span></div>
               <span className="text-[10px] text-black uppercase font-bold">กำลังเตรียม</span>
             </div>
             <div className={`bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center transition-all ${servedCount > 0 ? 'ring-2 ring-green-500' : 'opacity-50'}`}>
@@ -625,7 +625,7 @@ function RestaurantAppContent() {
             </div>
           </div>
           <div>
-            <h2 className="flex items-center gap-2 font-black text-[#FF4D00] mb-4"><ClipboardList size={18} /> ติดตามสถานะอาหาร</h2>
+            <h2 className="flex items-center gap-2 font-black text-[#7C9070] mb-4"><ClipboardList size={18} /> ติดตามสถานะอาหาร</h2>
             <div className="space-y-3">
               {orders.length === 0 ? (
                 <p className="text-center py-10 text-black italic">ยังไม่มีรายการที่สั่ง</p>
@@ -634,18 +634,18 @@ function RestaurantAppContent() {
                   <div key={`${order.id}-${idx}`} className="bg-white p-3 rounded-[24px] shadow-sm flex gap-4 items-center border border-gray-50 relative overflow-hidden transition-all">
                     <div className="w-16 h-16 bg-gray-100 rounded-2xl overflow-hidden shrink-0"><img src={item.image_url} className="w-full h-full object-cover" /></div>
                     <div className="flex-1">
-                      <h3 className="font-black text-[15px] mb-0.5">{item.name} {item.isSpecial && <span className="text-[#FF4D00] text-[10px]">(พิเศษ)</span>}</h3>
+                      <h3 className="font-black text-[15px] mb-0.5">{item.name} {item.isSpecial && <span className="text-[#7C9070] text-[10px]">(พิเศษ)</span>}</h3>
                       <p className="text-[10px] text-black font-medium">
                         {item.selectedNoodle && `${item.selectedNoodle} • `}x{item.quantity} รายการ • {formatTime(order.created_at)}
                         {(order as any).queue_no && ` • คิวที่ ${(order as any).queue_no}`}
                       </p>
                     </div>
-                    <div className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-colors ${order.status === 'เสร็จแล้ว' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-[#FFF7ED] border-orange-100 text-[#FF4D00]'
+                    <div className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-colors ${order.status === 'เสร็จแล้ว' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-[#F0F4EF] border-[#E8E4D8] text-[#7C9070]'
                       }`}>
                       {order.status === 'เสร็จแล้ว' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
                       <span className="text-[10px] font-black">{order.status === 'กำลังเตรียม' ? 'กำลังเตรียม' : order.status}</span>
                     </div>
-                    <div className={`absolute left-0 top-0 bottom-0 w-1 transition-colors ${order.status === 'เสร็จแล้ว' ? 'bg-green-500' : 'bg-[#FF4D00]'}`}></div>
+                    <div className={`absolute left-0 top-0 bottom-0 w-1 transition-colors ${order.status === 'เสร็จแล้ว' ? 'bg-green-500' : 'bg-[#7C9070]'}`}></div>
                   </div>
                 )))
               )}
@@ -660,11 +660,11 @@ function RestaurantAppContent() {
           <div className="flex gap-3">
             <button
               onClick={() => !isCurrentlyBilling && setView('menu')}
-              className={`flex-1 border-2 py-4 rounded-2xl font-black transition-all active:scale-95 ${isCurrentlyBilling ? 'border-gray-100 text-gray-300' : 'border-[#FF4D00] text-black bg-[#FFF7ED]'}`}
+              className={`flex-1 border-2 py-4 rounded-2xl font-black transition-all active:scale-95 ${isCurrentlyBilling ? 'border-gray-100 text-gray-300' : 'border-[#7C9070] text-[#7C9070] bg-[#F0F4EF]'}`}
             >
               สั่งเพิ่ม
             </button>
-            <button onClick={() => setView('bill')} className="flex-1 bg-[#FF4D00] text-black py-4 rounded-2xl font-black shadow-md transition-all active:scale-95">ดูบิล</button>
+            <button onClick={() => setView('bill')} className="flex-1 bg-[#7C9070] text-white py-4 rounded-2xl font-black shadow-md transition-all active:scale-95">ดูบิล</button>
           </div>
         </div>
       </div>
@@ -674,13 +674,13 @@ function RestaurantAppContent() {
   if (view === 'bill') {
     return (
       <div className="w-full max-w-md md:max-w-2xl mx-auto bg-[#fffcf8] min-h-screen pb-10 relative font-sans text-black">
-        <header className="bg-gradient-to-r from-[#FF4D00] to-[#FF7800] text-black p-6 pt-10 flex items-center gap-4 rounded-b-[30px] shadow-sm">
+        <header className="bg-[#7C9070] text-black p-6 pt-10 flex items-center gap-4 rounded-b-[30px] shadow-sm">
           <button onClick={() => setView('orders')} className="bg-black/5 p-2 rounded-full backdrop-blur-sm transition-colors hover:bg-black/10 text-black"><ArrowLeft size={24} /></button>
           <div><h1 className="text-xl font-black text-black">เช็คบิล</h1><p className="text-[10px] text-black/60 font-bold uppercase tracking-wider">โต๊ะ {tableNo} • ร้านป้ากุ้ง</p></div>
         </header>
         <main className="p-6">
           <div className="bg-white rounded-[32px] overflow-hidden shadow-sm border border-gray-100">
-            <div className="bg-[#FF4D00] p-4 text-white flex justify-center items-center gap-2"><Receipt size={20} /><span className="font-bold">ใบเสร็จชั่วคราว</span></div>
+            <div className="bg-[#7C9070] p-4 text-white flex justify-center items-center gap-2"><Receipt size={20} /><span className="font-bold">ใบเสร็จชั่วคราว</span></div>
             <div className="p-8 text-center border-b border-dashed border-gray-200">
               <h2 className="text-2xl font-black mb-1 text-black">ร้านป้ากุ้ง</h2>
               <p className="text-xs text-black">โต๊ะ {tableNo}</p>
@@ -720,12 +720,12 @@ function RestaurantAppContent() {
             <button
               onClick={callForBill}
               disabled={preparingCount > 0 || isCurrentlyBilling}
-              className={`w-full py-5 rounded-[24px] font-black text-lg shadow-md flex items-center justify-center gap-3 transition-all active:scale-95 ${preparingCount > 0 || isCurrentlyBilling ? 'bg-gray-200 text-black ring-4 ring-gray-50' : 'bg-[#FF4D00] text-black hover:scale-[1.02] shadow-orange-100'}`}
+              className={`w-full py-5 rounded-[24px] font-black text-lg shadow-md flex items-center justify-center gap-3 transition-all active:scale-95 ${preparingCount > 0 || isCurrentlyBilling ? 'bg-gray-200 text-black ring-4 ring-gray-50' : 'bg-[#7C9070] text-white hover:scale-[1.02] shadow-emerald-100'}`}
             >
               <div className={preparingCount > 0 || isCurrentlyBilling ? 'bg-gray-300 p-1 rounded-lg' : 'bg-white/40 p-1 rounded-lg'}><Clock size={20} /></div>
               {isCurrentlyBilling ? 'กำลังมาเช็คบิลแล้วค่ะ...' : 'เรียกพนักงานเช็คบิล'}
             </button>
-            <button onClick={() => setView('menu')} className="w-full text-center font-black text-[#FF7800]">กลับไปหน้าเมนู</button>
+            <button onClick={() => setView('menu')} className="w-full text-center font-black text-[#7C9070]">กลับไปหน้าเมนู</button>
           </div>
         </main >
       </div >
