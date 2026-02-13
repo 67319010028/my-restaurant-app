@@ -61,8 +61,10 @@ function RestaurantAppContent() {
   const totalBillAmount = orders.reduce((sum, order) => sum + (Number(order.total_price) || 0), 0);
   const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const isCurrentlyBilling = orders.some(o => o.status === 'เรียกเช็คบิล');
-  const preparingCount = orders.filter(o => o.status === 'รอ' || o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ').length;
-  const servedCount = orders.filter(o => o.status === 'เสร็จแล้ว').length;
+  const totalItemsInOrders = orders.reduce((sum, order) => sum + (order.items?.reduce((s: number, i: any) => s + (Number(i.quantity) || 0), 0) || 0), 0);
+  const finishedItemsInOrders = orders.filter(o => o.status === 'เสร็จแล้ว').reduce((sum, order) => sum + (order.items?.reduce((s: number, i: any) => s + (Number(i.quantity) || 0), 0) || 0), 0);
+  const preparingCount = totalItemsInOrders - finishedItemsInOrders;
+  const servedCount = finishedItemsInOrders;
   const filteredProducts = selectedCat ? products.filter(p => p.category === selectedCat) : products;
 
   // --- Effects ---
@@ -611,16 +613,16 @@ function RestaurantAppContent() {
       <div className="w-full max-w-md md:max-w-2xl mx-auto bg-[#fffcf8] min-h-screen pb-40 relative">
         <header className="bg-[#7C9070] text-black p-6 pt-10 flex items-center gap-4 rounded-b-[30px] shadow-sm">
           <button onClick={() => setView('menu')} className="bg-black/5 p-2 rounded-full backdrop-blur-sm transition-colors hover:bg-black/10 text-black"><ArrowLeft size={24} /></button>
-          <div><h1 className="text-xl font-black text-black">รายการที่สั่ง</h1><p className="text-[10px] text-black font-bold uppercase tracking-wider">โต๊ะ {tableNo} • {orders.length} ออเดอร์</p></div>
+          <div><h1 className="text-xl font-black text-black">รายการที่สั่ง</h1><p className="text-[10px] text-black font-bold uppercase tracking-wider">โต๊ะ {tableNo} • {totalItemsInOrders} รายการ</p></div>
         </header>
         <main className="p-4 space-y-6">
           <div className="grid grid-cols-2 gap-4">
-            <div className={`bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center transition-all ${preparingCount > 0 ? 'ring-2 ring-[#7C9070]' : 'opacity-50'}`}>
-              <div className="flex items-center gap-2 mb-1"><Utensils size={18} className="text-[#7C9070]" /><span className="font-black text-lg text-black">{preparingCount}</span></div>
+            <div className={`bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center transition-all ${totalItemsInOrders - finishedItemsInOrders > 0 ? 'ring-2 ring-[#7C9070]' : 'opacity-50'}`}>
+              <div className="flex items-center gap-2 mb-1"><Utensils size={18} className="text-[#7C9070]" /><span className="font-black text-lg text-black">{totalItemsInOrders - finishedItemsInOrders}</span></div>
               <span className="text-[10px] text-black uppercase font-bold">กำลังเตรียม</span>
             </div>
-            <div className={`bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center transition-all ${servedCount > 0 ? 'ring-2 ring-green-500' : 'opacity-50'}`}>
-              <div className="flex items-center gap-2 mb-1"><CheckCircle2 size={18} className="text-green-500" /><span className="font-black text-lg text-black">{servedCount}</span></div>
+            <div className={`bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center transition-all ${finishedItemsInOrders > 0 ? 'ring-2 ring-green-500' : 'opacity-50'}`}>
+              <div className="flex items-center gap-2 mb-1"><CheckCircle2 size={18} className="text-green-500" /><span className="font-black text-lg text-black">{finishedItemsInOrders}</span></div>
               <span className="text-[10px] text-black uppercase font-bold">เสิร์ฟแล้ว</span>
             </div>
           </div>
@@ -637,7 +639,6 @@ function RestaurantAppContent() {
                       <h3 className="font-black text-[15px] text-black mb-0.5">{item.name} {item.isSpecial && <span className="text-[#7C9070] text-[10px]">(พิเศษ)</span>}</h3>
                       <p className="text-[10px] text-black font-medium">
                         {item.selectedNoodle && `${item.selectedNoodle} • `}x{item.quantity} รายการ • {formatTime(order.created_at)}
-                        {(order as any).queue_no && ` • คิวที่ ${(order as any).queue_no}`}
                       </p>
                     </div>
                     <div className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-colors ${order.status === 'เสร็จแล้ว' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-[#F0F4EF] border-[#E8E4D8] text-[#7C9070]'
@@ -656,6 +657,17 @@ function RestaurantAppContent() {
           <div className="flex justify-between items-center mb-5 px-2">
             <span className="text-black font-bold">ยอดรวมทั้งหมด</span>
             <span className="text-3xl font-black text-black">฿{totalBillAmount}</span>
+          </div>
+          <div className="mb-4 text-center">
+            {finishedItemsInOrders < totalItemsInOrders ? (
+              <p className="text-sm font-black text-[#7C9070] animate-pulse">
+                กำลังทำ (เสร็จแล้ว {finishedItemsInOrders}/{totalItemsInOrders} รายการ)
+              </p>
+            ) : totalItemsInOrders > 0 ? (
+              <p className="text-sm font-black text-green-600">
+                เสร็จสิ้น ({finishedItemsInOrders}/{totalItemsInOrders}) กรุณามารับอาหาร
+              </p>
+            ) : null}
           </div>
           <div className="flex gap-3">
             <button
