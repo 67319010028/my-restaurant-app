@@ -1113,7 +1113,7 @@ export default function AdminApp() {
                   <Calendar size={40} strokeWidth={2.5} />
                 </div>
                 <div className="flex-1 text-center md:text-left">
-                  <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
+                  <p className="text-xs font-black text-black uppercase tracking-[0.2em] mb-2">
                     {salesViewMode === 'daily' ? 'ช่วงเวลาที่เลือก' : 'สรุปยอดรายเดือน'}
                   </p>
                   <div className="relative group inline-block">
@@ -1193,10 +1193,10 @@ export default function AdminApp() {
                               'bg-violet-50 text-violet-600'}`}>
                           {React.cloneElement(card.icon as any, { size: 24, strokeWidth: 2.5 })}
                         </div>
-                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{card.label}</p>
+                        <p className="text-xs font-black text-black uppercase tracking-widest mb-1">{card.label}</p>
                         <p className="text-3xl font-black text-slate-900 mb-2">{card.value}</p>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{card.sub}</span>
+                          <span className="text-[10px] font-bold text-black uppercase tracking-wider">{card.sub}</span>
                         </div>
                       </div>
                     ))}
@@ -1208,7 +1208,7 @@ export default function AdminApp() {
                       <div className="px-10 py-7 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
                         <div>
                           <h3 className="text-xl font-black text-slate-900">แนวโน้มรายได้</h3>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">แนวโน้มรายได้ (7 วันล่าสุด)</p>
+                          <p className="text-[10px] text-black font-bold uppercase tracking-wider">แนวโน้มรายได้ (7 วันล่าสุด)</p>
                         </div>
                         <div className="bg-emerald-50 text-emerald-600 p-2 rounded-xl">
                           <TrendingUp size={20} />
@@ -1278,7 +1278,7 @@ export default function AdminApp() {
                               </svg>
                               <div className="flex justify-between mt-6 px-1">
                                 {last7Days.map((d, i) => (
-                                  <span key={i} className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
+                                  <span key={i} className="text-[9px] font-black text-black uppercase tracking-widest">
                                     {new Date(d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}
                                   </span>
                                 ))}
@@ -1294,7 +1294,7 @@ export default function AdminApp() {
                       <div className="px-10 py-7 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
                         <div>
                           <h3 className="text-xl font-black text-slate-900">เมนูยอดนิยม</h3>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">5 อันดับเมนูขายดี</p>
+                          <p className="text-[10px] text-black font-bold uppercase tracking-wider">5 อันดับเมนูขายดี</p>
                         </div>
                         <div className="bg-indigo-50 text-indigo-600 p-2 rounded-xl">
                           <PlusCircle size={20} />
@@ -1303,7 +1303,7 @@ export default function AdminApp() {
                       <div className="p-8">
                         <table className="w-full">
                           <thead>
-                            <tr className="text-[10px] text-slate-400 font-black uppercase tracking-widest border-b border-slate-50">
+                            <tr className="text-[10px] text-black font-black uppercase tracking-widest border-b border-slate-50">
                               <th className="text-left pb-4">อันดับ</th>
                               <th className="text-left pb-4">ชื่อเมนู</th>
                               <th className="text-center pb-4">จำนวน</th>
@@ -1326,7 +1326,7 @@ export default function AdminApp() {
                                 .map(([name, stats], idx) => (
                                   <tr key={name} className="group hover:bg-slate-50/50 transition-colors">
                                     <td className="py-4">
-                                      <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black ${idx === 0 ? 'bg-emerald-500 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>
+                                      <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black ${idx === 0 ? 'bg-emerald-500 text-white shadow-lg' : 'bg-slate-100 text-black'}`}>
                                         {idx + 1}
                                       </span>
                                     </td>
@@ -1346,7 +1346,7 @@ export default function AdminApp() {
                   <div className="bg-white rounded-[3rem] shadow-[0_8px_40px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
                     <div className="px-10 py-7 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
                       <h3 className="text-xl font-black text-slate-900">ประวัติการขายล่าสุด</h3>
-                      <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-slate-100 shadow-sm text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-slate-100 shadow-sm text-[10px] font-black text-black uppercase tracking-widest">
                         <ListFilter size={14} /> 10 บิลล่าสุด
                       </div>
                     </div>
@@ -1397,7 +1397,7 @@ export default function AdminApp() {
                               .map((bill: any) => (
                                 <div key={bill.id} className="py-4 flex items-center justify-between group hover:bg-slate-50/50 transition-colors px-4 -mx-4 rounded-2xl">
                                   <div className="flex items-center gap-6">
-                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest w-12 text-center">
+                                    <div className="text-[10px] font-black text-black uppercase tracking-widest w-12 text-center">
                                       {formatOrderTime(bill.settlement_time)}
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -1407,7 +1407,7 @@ export default function AdminApp() {
                                       <div className="flex flex-col">
                                         <span className="text-xs font-bold text-black">โต๊ะ {bill.table_no}</span>
                                         {bill.order_count > 1 && (
-                                          <span className="text-[8px] text-slate-400 font-black uppercase">รวม {bill.order_count} ออเดอร์</span>
+                                          <span className="text-[8px] text-black font-black uppercase">รวม {bill.order_count} ออเดอร์</span>
                                         )}
                                       </div>
                                     </div>

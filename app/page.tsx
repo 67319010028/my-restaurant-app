@@ -554,7 +554,7 @@ function RestaurantAppContent() {
           <button onClick={() => setView('menu')} className="bg-black/5 p-2 rounded-full backdrop-blur-sm transition-colors hover:bg-black/10 text-black"><ArrowLeft size={24} /></button>
           <div>
             <h1 className="text-xl font-black text-black">ตะกร้าสินค้า</h1>
-            <p className="text-[10px] text-black/60 font-bold uppercase tracking-wider">โต๊ะ {tableNo} • {cart.length} รายการ</p>
+            <p className="text-[10px] text-black font-bold uppercase tracking-wider">โต๊ะ {tableNo} • {cart.length} รายการ</p>
           </div>
         </header>
         <main className="p-4 space-y-4">
@@ -570,7 +570,7 @@ function RestaurantAppContent() {
               <div key={idx} className="bg-white p-3 rounded-2xl shadow-sm flex gap-4 relative border border-[#E8E4D8]">
                 <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden shrink-0"><img src={item.image_url} className="w-full h-full object-cover" /></div>
                 <div className="flex-1 pr-8">
-                  <h3 className="font-black text-[15px]">{item.name} {item.isSpecial && <span className="text-[#7C9070]">(พิเศษ)</span>}</h3>
+                  <h3 className="font-black text-[15px] text-black">{item.name} {item.isSpecial && <span className="text-[#7C9070]">(พิเศษ)</span>}</h3>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {item.selectedNoodle && <span className="text-[9px] bg-[#F0F4EF] text-[#7C9070] px-2 py-0.5 rounded-full font-black border border-[#E8E4D8]">{item.selectedNoodle}</span>}
                     {item.note && <span className="text-[9px] bg-gray-100 text-black px-2 py-0.5 rounded-full">*{item.note}</span>}
@@ -611,7 +611,7 @@ function RestaurantAppContent() {
       <div className="w-full max-w-md md:max-w-2xl mx-auto bg-[#fffcf8] min-h-screen pb-40 relative">
         <header className="bg-[#7C9070] text-black p-6 pt-10 flex items-center gap-4 rounded-b-[30px] shadow-sm">
           <button onClick={() => setView('menu')} className="bg-black/5 p-2 rounded-full backdrop-blur-sm transition-colors hover:bg-black/10 text-black"><ArrowLeft size={24} /></button>
-          <div><h1 className="text-xl font-black text-black">รายการที่สั่ง</h1><p className="text-[10px] text-black/60 font-bold uppercase tracking-wider">โต๊ะ {tableNo} • {orders.length} ออเดอร์</p></div>
+          <div><h1 className="text-xl font-black text-black">รายการที่สั่ง</h1><p className="text-[10px] text-black font-bold uppercase tracking-wider">โต๊ะ {tableNo} • {orders.length} ออเดอร์</p></div>
         </header>
         <main className="p-4 space-y-6">
           <div className="grid grid-cols-2 gap-4">
@@ -634,7 +634,7 @@ function RestaurantAppContent() {
                   <div key={`${order.id}-${idx}`} className="bg-white p-3 rounded-[24px] shadow-sm flex gap-4 items-center border border-gray-50 relative overflow-hidden transition-all">
                     <div className="w-16 h-16 bg-gray-100 rounded-2xl overflow-hidden shrink-0"><img src={item.image_url} className="w-full h-full object-cover" /></div>
                     <div className="flex-1">
-                      <h3 className="font-black text-[15px] mb-0.5">{item.name} {item.isSpecial && <span className="text-[#7C9070] text-[10px]">(พิเศษ)</span>}</h3>
+                      <h3 className="font-black text-[15px] text-black mb-0.5">{item.name} {item.isSpecial && <span className="text-[#7C9070] text-[10px]">(พิเศษ)</span>}</h3>
                       <p className="text-[10px] text-black font-medium">
                         {item.selectedNoodle && `${item.selectedNoodle} • `}x{item.quantity} รายการ • {formatTime(order.created_at)}
                         {(order as any).queue_no && ` • คิวที่ ${(order as any).queue_no}`}
@@ -676,7 +676,7 @@ function RestaurantAppContent() {
       <div className="w-full max-w-md md:max-w-2xl mx-auto bg-[#fffcf8] min-h-screen pb-10 relative font-sans text-black">
         <header className="bg-[#7C9070] text-black p-6 pt-10 flex items-center gap-4 rounded-b-[30px] shadow-sm">
           <button onClick={() => setView('orders')} className="bg-black/5 p-2 rounded-full backdrop-blur-sm transition-colors hover:bg-black/10 text-black"><ArrowLeft size={24} /></button>
-          <div><h1 className="text-xl font-black text-black">เช็คบิล</h1><p className="text-[10px] text-black/60 font-bold uppercase tracking-wider">โต๊ะ {tableNo} • ร้านป้ากุ้ง</p></div>
+          <div><h1 className="text-xl font-black text-black">เช็คบิล</h1><p className="text-[10px] text-black font-bold uppercase tracking-wider">โต๊ะ {tableNo} • ร้านป้ากุ้ง</p></div>
         </header>
         <main className="p-6">
           <div className="bg-white rounded-[32px] overflow-hidden shadow-sm border border-gray-100">
