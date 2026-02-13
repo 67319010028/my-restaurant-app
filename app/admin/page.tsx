@@ -1359,41 +1359,33 @@ export default function AdminApp() {
                       ) : (
                         <div className="divide-y divide-slate-50">
                           {(() => {
-                            // Group orders by table_no and session (within 15 minutes window)
-                            const groupedBills: any[] = [];
-                            const sortedOrders = [...filteredSales].sort((a, b) =>
-                              new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()
-                            );
+                            // Group orders strictly by table_no
+                            const tableGroups: Record<string, any> = {};
 
-                            sortedOrders.forEach(order => {
+                            filteredSales.forEach(order => {
+                              const tableKey = order.table_no;
                               const orderTime = new Date(order.updated_at || order.created_at).getTime();
-                              // Find if this order fits into an existing bill (same table + within 15 mins)
-                              const existingBill = groupedBills.find(bill =>
-                                bill.table_no === order.table_no &&
-                                Math.abs(new Date(bill.settlement_time).getTime() - orderTime) < 15 * 60 * 1000
-                              );
 
-                              if (existingBill) {
-                                existingBill.total_price += (Number(order.total_price) || 0);
-                                existingBill.order_count += 1;
-                                // Use the most recent time as settlement time
-                                if (orderTime > new Date(existingBill.settlement_time).getTime()) {
-                                  existingBill.settlement_time = order.updated_at || order.created_at;
+                              if (tableGroups[tableKey]) {
+                                tableGroups[tableKey].total_price += (Number(order.total_price) || 0);
+                                tableGroups[tableKey].order_count += 1;
+                                // Keep most recent time
+                                if (orderTime > new Date(tableGroups[tableKey].settlement_time).getTime()) {
+                                  tableGroups[tableKey].settlement_time = order.updated_at || order.created_at;
                                 }
                               } else {
-                                groupedBills.push({
+                                tableGroups[tableKey] = {
                                   id: order.id,
                                   table_no: order.table_no,
                                   total_price: Number(order.total_price) || 0,
                                   settlement_time: order.updated_at || order.created_at,
                                   order_count: 1
-                                });
+                                };
                               }
                             });
 
-                            return groupedBills
+                            return Object.values(tableGroups)
                               .sort((a: any, b: any) => new Date(b.settlement_time).getTime() - new Date(a.settlement_time).getTime())
-                              .slice(0, 10)
                               .map((bill: any) => (
                                 <div key={bill.id} className="py-4 flex items-center justify-between group hover:bg-slate-50/50 transition-colors px-4 -mx-4 rounded-2xl">
                                   <div className="flex items-center gap-6">
@@ -1406,9 +1398,7 @@ export default function AdminApp() {
                                       </div>
                                       <div className="flex flex-col">
                                         <span className="text-xs font-bold text-black">โต๊ะ {bill.table_no}</span>
-                                        {bill.order_count > 1 && (
-                                          <span className="text-[8px] text-black font-black uppercase">รวม {bill.order_count} ออเดอร์</span>
-                                        )}
+                                        <span className="text-[8px] text-black font-black uppercase">รวม {bill.order_count} ออเดอร์</span>
                                       </div>
                                     </div>
                                   </div>
