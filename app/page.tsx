@@ -62,7 +62,12 @@ function RestaurantAppContent() {
   const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const isCurrentlyBilling = orders.some(o => o.status === 'เรียกเช็คบิล');
   const totalItemsInOrders = orders.reduce((sum, order) => sum + (order.items?.reduce((s: number, i: any) => s + (Number(i.quantity) || 0), 0) || 0), 0);
-  const finishedItemsInOrders = orders.filter(o => o.status === 'เสร็จแล้ว').reduce((sum, order) => sum + (order.items?.reduce((s: number, i: any) => s + (Number(i.quantity) || 0), 0) || 0), 0);
+  const finishedItemsInOrders = orders.reduce((sum, order) => {
+    if (order.status === 'เสร็จแล้ว') {
+      return sum + (order.items?.reduce((s: number, i: any) => s + (Number(i.quantity) || 0), 0) || 0);
+    }
+    return sum + (order.items?.reduce((s: number, i: any) => s + (i.isDone ? (Number(i.quantity) || 0) : 0), 0) || 0);
+  }, 0);
   const preparingCount = totalItemsInOrders - finishedItemsInOrders;
   const servedCount = finishedItemsInOrders;
   const filteredProducts = selectedCat ? products.filter(p => p.category === selectedCat) : products;
@@ -494,7 +499,7 @@ function RestaurantAppContent() {
   const callForBill = async () => {
     // Prevent billing if there are unfinished orders
     if (preparingCount > 0) {
-      alert(`ยังเช็คบิลไม่ได้คะ กรุณารออาหารอีก ${preparingCount} รายการเสิร์ฟให้ครบก่อนนะคะ ✨`);
+      alert(`ยังเช็คบิลไม่ได้คะ กรุณารออาหารอีก ${preparingCount} รายการเสร็จให้ครบก่อนนะคะ `);
       return;
     }
 
@@ -616,14 +621,28 @@ function RestaurantAppContent() {
           <div><h1 className="text-xl font-black text-black">รายการที่สั่ง</h1><p className="text-[10px] text-black font-bold uppercase tracking-wider">โต๊ะ {tableNo} • {totalItemsInOrders} รายการ</p></div>
         </header>
         <main className="p-4 space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className={`bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center transition-all ${totalItemsInOrders - finishedItemsInOrders > 0 ? 'ring-2 ring-[#7C9070]' : 'opacity-50'}`}>
-              <div className="flex items-center gap-2 mb-1"><Utensils size={18} className="text-[#7C9070]" /><span className="font-black text-lg text-black">{totalItemsInOrders - finishedItemsInOrders}</span></div>
-              <span className="text-[10px] text-black uppercase font-bold">กำลังเตรียม</span>
+          <div className="bg-white p-6 rounded-[32px] shadow-sm border border-[#E8E4D8] space-y-4">
+            <h2 className="text-center font-black text-xl text-[#2D3436]">ความคืบหน้าออเดอร์</h2>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1 text-center bg-[#F0F4EF] p-4 rounded-2xl border border-[#7C9070]/10">
+                <p className="text-3xl font-black text-[#7C9070]">{finishedItemsInOrders}</p>
+                <p className="text-[10px] font-black text-[#7C9070] uppercase tracking-widest mt-1">เสร็จไปแล้ว</p>
+              </div>
+              <div className="flex-1 text-center bg-orange-50 p-4 rounded-2xl border border-orange-100">
+                <p className="text-3xl font-black text-orange-600">{totalItemsInOrders - finishedItemsInOrders}</p>
+                <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mt-1">กำลังทำ</p>
+              </div>
             </div>
-            <div className={`bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center transition-all ${finishedItemsInOrders > 0 ? 'ring-2 ring-green-500' : 'opacity-50'}`}>
-              <div className="flex items-center gap-2 mb-1"><CheckCircle2 size={18} className="text-green-500" /><span className="font-black text-lg text-black">{finishedItemsInOrders}</span></div>
-              <span className="text-[10px] text-black uppercase font-bold">เสิร์ฟแล้ว</span>
+            <div className="pt-2">
+              <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden flex">
+                <div
+                  className="bg-[#7C9070] h-full transition-all duration-500"
+                  style={{ width: `${totalItemsInOrders > 0 ? (finishedItemsInOrders / totalItemsInOrders) * 100 : 0}%` }}
+                ></div>
+              </div>
+              <p className="text-[11px] font-black text-[#7C9070] text-center mt-3">
+                เสร็จไปแล้ว {finishedItemsInOrders} จาน และกำลังทำอีก {totalItemsInOrders - finishedItemsInOrders} จาน
+              </p>
             </div>
           </div>
           <div>
@@ -641,12 +660,14 @@ function RestaurantAppContent() {
                         {item.selectedNoodle && `${item.selectedNoodle} • `}x{item.quantity} รายการ • {formatTime(order.created_at)}
                       </p>
                     </div>
-                    <div className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-colors ${order.status === 'เสร็จแล้ว' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-[#F0F4EF] border-[#E8E4D8] text-[#7C9070]'
+                    <div className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-colors ${(order.status === 'เสร็จแล้ว' || item.isDone) ? 'bg-green-50 border-green-100 text-green-600' : 'bg-[#F0F4EF] border-[#E8E4D8] text-[#7C9070]'
                       }`}>
-                      {order.status === 'เสร็จแล้ว' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
-                      <span className="text-[10px] font-black">{order.status === 'กำลังเตรียม' ? 'กำลังเตรียม' : order.status}</span>
+                      {(order.status === 'เสร็จแล้ว' || item.isDone) ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                      <span className="text-[10px] font-black">
+                        {(order.status === 'เสร็จแล้ว' || item.isDone) ? 'เสร็จแล้ว' : (order.status === 'กำลังเตรียม' ? 'กำลังเตรียม' : order.status)}
+                      </span>
                     </div>
-                    <div className={`absolute left-0 top-0 bottom-0 w-1 transition-colors ${order.status === 'เสร็จแล้ว' ? 'bg-green-500' : 'bg-[#7C9070]'}`}></div>
+                    <div className={`absolute left-0 top-0 bottom-0 w-1 transition-colors ${(order.status === 'เสร็จแล้ว' || item.isDone) ? 'bg-green-500' : 'bg-[#7C9070]'}`}></div>
                   </div>
                 )))
               )}
@@ -658,17 +679,19 @@ function RestaurantAppContent() {
             <span className="text-black font-bold">ยอดรวมทั้งหมด</span>
             <span className="text-3xl font-black text-black">฿{totalBillAmount}</span>
           </div>
-          <div className="mb-4 text-center">
-            {finishedItemsInOrders < totalItemsInOrders ? (
-              <p className="text-sm font-black text-[#7C9070] animate-pulse">
-                กำลังทำ (เสร็จแล้ว {finishedItemsInOrders}/{totalItemsInOrders} รายการ)
-              </p>
-            ) : totalItemsInOrders > 0 ? (
-              <p className="text-sm font-black text-green-600">
-                เสร็จสิ้น ({finishedItemsInOrders}/{totalItemsInOrders}) กรุณามารับอาหาร
-              </p>
-            ) : null}
-          </div>
+          {!isCurrentlyBilling && totalItemsInOrders > 0 && (
+            <div className="mb-4 text-center bg-[#F9F7F2] py-3 rounded-2xl border border-[#E8E4D8]">
+              {finishedItemsInOrders < totalItemsInOrders ? (
+                <p className="text-sm font-black text-[#7C9070]">
+                  เสร็จไปแล้ว {finishedItemsInOrders} จาน และกำลังทำอีก {totalItemsInOrders - finishedItemsInOrders} จาน
+                </p>
+              ) : (
+                <p className="text-sm font-black text-green-600">
+                  เสร็จครบแล้ว {finishedItemsInOrders}/{totalItemsInOrders} รายการ ✨
+                </p>
+              )}
+            </div>
+          )}
           <div className="flex gap-3">
             <button
               onClick={() => !isCurrentlyBilling && setView('menu')}
@@ -726,7 +749,7 @@ function RestaurantAppContent() {
                 <p className="text-orange-600 font-black text-sm flex items-center justify-center gap-2">
                   <Clock size={16} /> ยังเช็คบิลไม่ได้ค่ะ
                 </p>
-                <p className="text-[10px] text-orange-400 font-bold uppercase tracking-wider">กรุณารออาหารเสิร์ฟครบทุกรายการก่อนนะคะ ({preparingCount} รายการ)</p>
+                <p className="text-[10px] text-orange-400 font-bold uppercase tracking-wider">กรุณารออาหารเสร็จครบทุกรายการก่อนนะคะ ({preparingCount} รายการ)</p>
               </div>
             ) : null}
             <button
@@ -735,7 +758,7 @@ function RestaurantAppContent() {
               className={`w-full py-5 rounded-[24px] font-black text-lg shadow-md flex items-center justify-center gap-3 transition-all active:scale-95 ${preparingCount > 0 || isCurrentlyBilling ? 'bg-gray-200 text-black ring-4 ring-gray-50' : 'bg-[#7C9070] text-white hover:scale-[1.02] shadow-emerald-100'}`}
             >
               <div className={preparingCount > 0 || isCurrentlyBilling ? 'bg-gray-300 p-1 rounded-lg' : 'bg-white/40 p-1 rounded-lg'}><Clock size={20} /></div>
-              {isCurrentlyBilling ? 'กำลังมาเช็คบิลแล้วค่ะ...' : 'เรียกพนักงานเช็คบิล'}
+              {isCurrentlyBilling ? 'กำลังมาเช็คบิลแล้วค่ะ' : 'เรียกพนักงานเช็คบิล'}
             </button>
             <button onClick={() => setView('menu')} className="w-full text-center font-black text-[#7C9070]">กลับไปหน้าเมนู</button>
           </div>
@@ -777,7 +800,7 @@ function RestaurantAppContent() {
             โต๊ะ {tableNo}
           </div>
           <p className="text-[#2D3436] font-bold mb-12 max-w-[280px] mx-auto leading-relaxed">
-            กรุณากดปุ่มด้านล่างเพื่อเริ่มสั่งอาหาร<br />ขอให้มีความสุขกับการรับประทานนะคะ ✨
+            กรุณากดปุ่มด้านล่างเพื่อเริ่มสั่งอาหาร<br />ขอให้มีความสุขกับการรับประทานนะคะ
           </p>
           <button
             onClick={handleCheckIn}
@@ -899,7 +922,7 @@ function RestaurantAppContent() {
 
             <div className="bg-[#F9F7F2] border-2 border-[#E8E4D8] rounded-[2rem] p-5 mb-8 flex items-start gap-4 focus-within:border-[#7C9070] transition-colors">
               <FileText className="text-[#636E72] shrink-0 mt-1" size={28} />
-              <input type="text" placeholder="ระบุความต้องการเพิ่มเติม..." className="bg-transparent w-full text-xl font-bold outline-none text-[#2D3436] placeholder-[#BBC3C6]" value={tempNote} onChange={(e) => setTempNote(e.target.value)} />
+              <input type="text" placeholder="ระบุความต้องการเพิ่มเติม" className="bg-transparent w-full text-xl font-bold outline-none text-[#2D3436] placeholder-[#BBC3C6]" value={tempNote} onChange={(e) => setTempNote(e.target.value)} />
             </div>
 
             <div className="flex items-center justify-between mb-10">

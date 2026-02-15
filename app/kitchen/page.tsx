@@ -9,11 +9,13 @@ import {
 
 // กำหนด Interface เพื่อความปลอดภัยของข้อมูล
 interface OrderItem {
+  id?: string | number;
   name: string;
   quantity: number;
   isSpecial?: boolean;
   selectedNoodle?: string;
   note?: string;
+  isDone?: boolean;
 }
 
 interface Order {
@@ -268,7 +270,7 @@ export default function KitchenPage() {
     // Sync LocalStorage
     if (typeof window !== 'undefined') localStorage.setItem('demo_admin_orders', JSON.stringify(updated));
 
-    // Broadcast update to Admin tab
+    // Broadcast update to Admin/Customer tab
     const broadcastChannel = new BroadcastChannel('restaurant_demo_channel');
     broadcastChannel.postMessage({
       type: 'ORDER_UPDATE',
@@ -288,6 +290,40 @@ export default function KitchenPage() {
       }
     } catch (e) {
       console.warn('Supabase update exception (Demo Mode active):', e);
+    }
+  };
+
+  const toggleItemStatus = async (orderId: number, itemIdx: number) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order || !order.items) return;
+
+    const newItems = [...order.items];
+    newItems[itemIdx] = { ...newItems[itemIdx], isDone: !newItems[itemIdx].isDone };
+
+    // Optimistic Update
+    const updated = orders.map(o => o.id === orderId ? { ...o, items: newItems } : o);
+    setOrders(updated);
+
+    if (typeof window !== 'undefined') localStorage.setItem('demo_admin_orders', JSON.stringify(updated));
+
+    // Broadcast to Customer
+    const broadcastChannel = new BroadcastChannel('restaurant_demo_channel');
+    broadcastChannel.postMessage({
+      type: 'ORDER_UPDATE',
+      id: orderId,
+      items: newItems,
+      table_no: order.table_no
+    });
+
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ items: newItems })
+        .eq('id', orderId);
+
+      if (error) console.warn('Supabase item update failed:', error);
+    } catch (e) {
+      console.warn('Supabase item update exception:', e);
     }
   };
 
@@ -468,10 +504,15 @@ export default function KitchenPage() {
                 {/* Items List */}
                 <div className="p-4 space-y-4 bg-white mx-4 my-2 rounded-3xl border border-slate-100 shadow-sm">
                   {order.items?.map((item, idx) => (
-                    <div key={idx} className="flex flex-col bg-[#F0F4EF] p-5 rounded-3xl border border-[#7C9070]/10">
+                    <div
+                      key={idx}
+                      onClick={() => toggleItemStatus(order.id, idx)}
+                      className={`flex flex-col p-5 rounded-3xl border transition-all cursor-pointer relative overflow-hidden ${item.isDone ? 'bg-green-50 border-green-200' : 'bg-[#F0F4EF] border-[#7C9070]/10 hover:border-[#7C9070]/30'
+                        }`}
+                    >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <span className="font-black text-[#2D3436] text-3xl block mb-2">
+                          <span className={`font-black text-3xl block mb-2 transition-all ${item.isDone ? 'text-green-700 line-through' : 'text-[#2D3436]'}`}>
                             {item.name}
                           </span>
                           <div className="flex flex-wrap gap-2 items-center mt-2">
@@ -492,10 +533,20 @@ export default function KitchenPage() {
                             </p>
                           )}
                         </div>
-                        <span className="bg-[#2D3436] text-white px-5 py-2 rounded-2xl text-xl font-black ml-4 shrink-0 shadow-lg">
-                          ×{item.quantity}
-                        </span>
+                        <div className="flex flex-col items-end gap-3">
+                          <span className={`${item.isDone ? 'bg-green-600' : 'bg-[#2D3436]'} text-white px-5 py-2 rounded-2xl text-xl font-black shrink-0 shadow-lg transition-colors`}>
+                            ×{item.quantity}
+                          </span>
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${item.isDone ? 'bg-green-500 text-white scale-110' : 'bg-white text-gray-200 border-2 border-gray-100'}`}>
+                            <Check size={28} strokeWidth={4} />
+                          </div>
+                        </div>
                       </div>
+                      {item.isDone && (
+                        <div className="absolute top-2 right-2 text-green-200 opacity-20">
+                          <CheckCircle2 size={100} />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
