@@ -625,32 +625,6 @@ function RestaurantAppContent() {
           <div><h1 className="text-xl font-black text-black">รายการที่สั่ง</h1><p className="text-[10px] text-black font-bold uppercase tracking-wider">โต๊ะ {tableNo} • {totalItemsInOrders} รายการ</p></div>
         </header>
         <main className="p-4 space-y-6">
-          {!isCurrentlyBilling && (
-            <div className="bg-white p-6 rounded-[32px] shadow-sm border border-[#E8E4D8] space-y-4">
-              <h2 className="text-center font-black text-xl text-[#2D3436]">ความคืบหน้าออเดอร์</h2>
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex-1 text-center bg-[#F0F4EF] p-4 rounded-2xl border border-[#7C9070]/10">
-                  <p className="text-3xl font-black text-[#7C9070]">{finishedItemsInOrders}</p>
-                  <p className="text-[10px] font-black text-[#7C9070] uppercase tracking-widest mt-1">เสร็จไปแล้ว</p>
-                </div>
-                <div className="flex-1 text-center bg-orange-50 p-4 rounded-2xl border border-orange-100">
-                  <p className="text-3xl font-black text-orange-600">{totalItemsInOrders - finishedItemsInOrders}</p>
-                  <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mt-1">กำลังทำ</p>
-                </div>
-              </div>
-              <div className="pt-2">
-                <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden flex">
-                  <div
-                    className="bg-[#7C9070] h-full transition-all duration-500"
-                    style={{ width: `${totalItemsInOrders > 0 ? (finishedItemsInOrders / totalItemsInOrders) * 100 : 0}%` }}
-                  ></div>
-                </div>
-                <p className="text-[11px] font-black text-[#7C9070] text-center mt-3">
-                  เสร็จไปแล้ว {finishedItemsInOrders} จาน และกำลังทำอีก {totalItemsInOrders - finishedItemsInOrders} จาน
-                </p>
-              </div>
-            </div>
-          )}
           <div>
             <h2 className="flex items-center gap-2 font-black text-[#7C9070] mb-4"><ClipboardList size={18} /> ติดตามสถานะอาหาร</h2>
             <div className="space-y-3">
@@ -900,22 +874,25 @@ function RestaurantAppContent() {
               </div>
             )}
 
-            <div className="mb-6">
-              <p className="text-sm font-black text-[#636E72] mb-3 uppercase tracking-wider">ตัวเลือกเพิ่มเติม</p>
-              <button
-                onClick={() => setIsSpecial(!isSpecial)}
-                className={`w-full flex justify-between items-center p-4 rounded-2xl border-2 transition-all ${isSpecial ? 'border-[#7C9070] bg-[#F0F4EF]' : 'border-slate-100'
-                  }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-xl border-4 flex items-center justify-center ${isSpecial ? 'border-[#7C9070] bg-[#7C9070]' : 'border-slate-200'}`}>
-                    {isSpecial && <CheckCircle2 size={20} className="text-white" />}
+            {/* แสดงตัวเลือก "เพิ่มพิเศษ" เฉพาะเมนูเส้นเท่านั้น */}
+            {activeProduct?.has_noodle && (
+              <div className="mb-6">
+                <p className="text-sm font-black text-[#636E72] mb-3 uppercase tracking-wider">ตัวเลือกเพิ่มเติม</p>
+                <button
+                  onClick={() => setIsSpecial(!isSpecial)}
+                  className={`w-full flex justify-between items-center p-4 rounded-2xl border-2 transition-all ${isSpecial ? 'border-[#7C9070] bg-[#F0F4EF]' : 'border-slate-100'
+                    }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-xl border-4 flex items-center justify-center ${isSpecial ? 'border-[#7C9070] bg-[#7C9070]' : 'border-slate-200'}`}>
+                      {isSpecial && <CheckCircle2 size={20} className="text-white" />}
+                    </div>
+                    <span className={`font-black text-xl text-[#2D3436]`}>เพิ่มพิเศษ (เพิ่มปริมาณ)</span>
                   </div>
-                  <span className={`font-black text-xl text-[#2D3436]`}>เพิ่มพิเศษ (เพิ่มปริมาณ)</span>
-                </div>
-                <span className="font-black text-xl text-[#7C9070]">+ ฿10</span>
-              </button>
-            </div>
+                  <span className="font-black text-xl text-[#7C9070]">+ ฿10</span>
+                </button>
+              </div>
+            )}
 
             <div className="bg-[#F9F7F2] border-2 border-[#E8E4D8] rounded-[2rem] p-5 mb-8 flex items-start gap-4 focus-within:border-[#7C9070] transition-colors">
               <FileText className="text-[#636E72] shrink-0 mt-1" size={28} />
