@@ -530,8 +530,8 @@ export default function KitchenPage() {
                         className={`flex flex-col p-5 rounded-3xl border transition-all relative overflow-hidden ${isDone ? 'bg-green-50 border-green-200' : 'bg-[#F0F4EF] border-[#7C9070]/10'
                           }`}
                       >
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                          <div className="flex-1 w-full">
                             <span className={`font-black text-3xl block mb-2 transition-all ${isDone ? 'text-green-700 line-through opacity-50' : 'text-[#2D3436]'}`}>
                               {item.name}
                             </span>
@@ -554,7 +554,7 @@ export default function KitchenPage() {
                             )}
                           </div>
 
-                          <div className="flex flex-col items-end gap-3 shrink-0 ml-4">
+                          <div className="flex items-center justify-between sm:flex-col sm:items-end w-full sm:w-auto gap-3 shrink-0">
                             <div className="flex items-center gap-3 bg-white/80 backdrop-blur-sm p-2 rounded-2xl border border-slate-100 shadow-sm">
                               <button
                                 onClick={(e) => { e.stopPropagation(); updateItemFinishedQuantity(order.id, idx, -1); }}
