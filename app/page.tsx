@@ -615,36 +615,38 @@ function RestaurantAppContent() {
 
   if (view === 'orders') {
     return (
-      <div className="w-full max-w-md md:max-w-2xl mx-auto bg-[#fffcf8] min-h-screen pb-96 relative">
+      <div className="w-full max-w-md md:max-w-2xl mx-auto bg-[#fffcf8] min-h-screen pb-40 relative">
         <header className="bg-[#7C9070] text-black p-6 pt-10 flex items-center gap-4 rounded-b-[30px] shadow-sm">
           <button onClick={() => setView('menu')} className="bg-black/5 p-2 rounded-full backdrop-blur-sm transition-colors hover:bg-black/10 text-black"><ArrowLeft size={24} /></button>
           <div><h1 className="text-xl font-black text-black">รายการที่สั่ง</h1><p className="text-[10px] text-black font-bold uppercase tracking-wider">โต๊ะ {tableNo} • {totalItemsInOrders} รายการ</p></div>
         </header>
         <main className="p-4 space-y-6">
-          <div className="bg-white p-6 rounded-[32px] shadow-sm border border-[#E8E4D8] space-y-4">
-            <h2 className="text-center font-black text-xl text-[#2D3436]">ความคืบหน้าออเดอร์</h2>
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex-1 text-center bg-[#F0F4EF] p-4 rounded-2xl border border-[#7C9070]/10">
-                <p className="text-3xl font-black text-[#7C9070]">{finishedItemsInOrders}</p>
-                <p className="text-[10px] font-black text-[#7C9070] uppercase tracking-widest mt-1">เสร็จไปแล้ว</p>
+          {!isCurrentlyBilling && (
+            <div className="bg-white p-6 rounded-[32px] shadow-sm border border-[#E8E4D8] space-y-4">
+              <h2 className="text-center font-black text-xl text-[#2D3436]">ความคืบหน้าออเดอร์</h2>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1 text-center bg-[#F0F4EF] p-4 rounded-2xl border border-[#7C9070]/10">
+                  <p className="text-3xl font-black text-[#7C9070]">{finishedItemsInOrders}</p>
+                  <p className="text-[10px] font-black text-[#7C9070] uppercase tracking-widest mt-1">เสร็จไปแล้ว</p>
+                </div>
+                <div className="flex-1 text-center bg-orange-50 p-4 rounded-2xl border border-orange-100">
+                  <p className="text-3xl font-black text-orange-600">{totalItemsInOrders - finishedItemsInOrders}</p>
+                  <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mt-1">กำลังทำ</p>
+                </div>
               </div>
-              <div className="flex-1 text-center bg-orange-50 p-4 rounded-2xl border border-orange-100">
-                <p className="text-3xl font-black text-orange-600">{totalItemsInOrders - finishedItemsInOrders}</p>
-                <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mt-1">กำลังทำ</p>
+              <div className="pt-2">
+                <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden flex">
+                  <div
+                    className="bg-[#7C9070] h-full transition-all duration-500"
+                    style={{ width: `${totalItemsInOrders > 0 ? (finishedItemsInOrders / totalItemsInOrders) * 100 : 0}%` }}
+                  ></div>
+                </div>
+                <p className="text-[11px] font-black text-[#7C9070] text-center mt-3">
+                  เสร็จไปแล้ว {finishedItemsInOrders} จาน และกำลังทำอีก {totalItemsInOrders - finishedItemsInOrders} จาน
+                </p>
               </div>
             </div>
-            <div className="pt-2">
-              <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden flex">
-                <div
-                  className="bg-[#7C9070] h-full transition-all duration-500"
-                  style={{ width: `${totalItemsInOrders > 0 ? (finishedItemsInOrders / totalItemsInOrders) * 100 : 0}%` }}
-                ></div>
-              </div>
-              <p className="text-[11px] font-black text-[#7C9070] text-center mt-3">
-                เสร็จไปแล้ว {finishedItemsInOrders} จาน และกำลังทำอีก {totalItemsInOrders - finishedItemsInOrders} จาน
-              </p>
-            </div>
-          </div>
+          )}
           <div>
             <h2 className="flex items-center gap-2 font-black text-[#7C9070] mb-4"><ClipboardList size={18} /> ติดตามสถานะอาหาร</h2>
             <div className="space-y-3">
@@ -679,6 +681,19 @@ function RestaurantAppContent() {
             <span className="text-black font-bold">ยอดรวมทั้งหมด</span>
             <span className="text-3xl font-black text-black">฿{totalBillAmount}</span>
           </div>
+          {!isCurrentlyBilling && totalItemsInOrders > 0 && (
+            <div className="mb-4 text-center bg-[#F9F7F2] py-3 rounded-2xl border border-[#E8E4D8]">
+              {finishedItemsInOrders < totalItemsInOrders ? (
+                <p className="text-sm font-black text-[#7C9070]">
+                  เสร็จไปแล้ว {finishedItemsInOrders} จาน และกำลังทำอีก {totalItemsInOrders - finishedItemsInOrders} จาน
+                </p>
+              ) : (
+                <p className="text-sm font-black text-green-600">
+                  เสร็จครบแล้ว {finishedItemsInOrders}/{totalItemsInOrders} รายการ
+                </p>
+              )}
+            </div>
+          )}
           <div className="flex gap-3">
             <button
               onClick={() => !isCurrentlyBilling && setView('menu')}
