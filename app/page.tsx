@@ -615,7 +615,7 @@ function RestaurantAppContent() {
 
   if (view === 'orders') {
     return (
-      <div className="w-full max-w-md md:max-w-2xl mx-auto bg-[#fffcf8] min-h-screen pb-40 relative">
+      <div className="w-full max-w-md md:max-w-2xl mx-auto bg-[#fffcf8] min-h-screen pb-96 relative">
         <header className="bg-[#7C9070] text-black p-6 pt-10 flex items-center gap-4 rounded-b-[30px] shadow-sm">
           <button onClick={() => setView('menu')} className="bg-black/5 p-2 rounded-full backdrop-blur-sm transition-colors hover:bg-black/10 text-black"><ArrowLeft size={24} /></button>
           <div><h1 className="text-xl font-black text-black">รายการที่สั่ง</h1><p className="text-[10px] text-black font-bold uppercase tracking-wider">โต๊ะ {tableNo} • {totalItemsInOrders} รายการ</p></div>
@@ -679,19 +679,6 @@ function RestaurantAppContent() {
             <span className="text-black font-bold">ยอดรวมทั้งหมด</span>
             <span className="text-3xl font-black text-black">฿{totalBillAmount}</span>
           </div>
-          {!isCurrentlyBilling && totalItemsInOrders > 0 && (
-            <div className="mb-4 text-center bg-[#F9F7F2] py-3 rounded-2xl border border-[#E8E4D8]">
-              {finishedItemsInOrders < totalItemsInOrders ? (
-                <p className="text-sm font-black text-[#7C9070]">
-                  เสร็จไปแล้ว {finishedItemsInOrders} จาน และกำลังทำอีก {totalItemsInOrders - finishedItemsInOrders} จาน
-                </p>
-              ) : (
-                <p className="text-sm font-black text-green-600">
-                  เสร็จครบแล้ว {finishedItemsInOrders}/{totalItemsInOrders} รายการ ✨
-                </p>
-              )}
-            </div>
-          )}
           <div className="flex gap-3">
             <button
               onClick={() => !isCurrentlyBilling && setView('menu')}
