@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import {
   Clock, CheckCircle2, Timer,
-  ChefHat, Utensils, ClipboardList, BellRing, Check
+  ChefHat, Utensils, ClipboardList, BellRing, Check, Plus, Minus
 } from 'lucide-react';
 
 // กำหนด Interface เพื่อความปลอดภัยของข้อมูล
@@ -12,6 +12,7 @@ interface OrderItem {
   id?: string | number;
   name: string;
   quantity: number;
+  finished_quantity?: number; // New field for partial tracking
   isSpecial?: boolean;
   selectedNoodle?: string;
   note?: string;
@@ -293,12 +294,18 @@ export default function KitchenPage() {
     }
   };
 
-  const toggleItemStatus = async (orderId: number, itemIdx: number) => {
+  const updateItemFinishedQuantity = async (orderId: number, itemIdx: number, delta: number) => {
     const order = orders.find(o => o.id === orderId);
     if (!order || !order.items) return;
 
     const newItems = [...order.items];
-    newItems[itemIdx] = { ...newItems[itemIdx], isDone: !newItems[itemIdx].isDone };
+    const item = { ...newItems[itemIdx] };
+    const currentFinished = item.finished_quantity || 0;
+    const newFinished = Math.max(0, Math.min(item.quantity, currentFinished + delta));
+
+    item.finished_quantity = newFinished;
+    item.isDone = newFinished === item.quantity;
+    newItems[itemIdx] = item;
 
     // Optimistic Update
     const updated = orders.map(o => o.id === orderId ? { ...o, items: newItems } : o);
@@ -325,6 +332,15 @@ export default function KitchenPage() {
     } catch (e) {
       console.warn('Supabase item update exception:', e);
     }
+  };
+
+  const toggleItemStatus = async (orderId: number, itemIdx: number) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order || !order.items) return;
+
+    const item = order.items[itemIdx];
+    const newFinished = item.isDone ? 0 : item.quantity;
+    await updateItemFinishedQuantity(orderId, itemIdx, newFinished - (item.finished_quantity || 0));
   };
 
   const filteredOrders = orders.filter(order => {
@@ -428,7 +444,7 @@ export default function KitchenPage() {
       <div className="px-6 flex gap-3 mb-6 overflow-x-auto no-scrollbar py-3">
         {['ทั้งหมด', 'รอ', 'กำลังทำ', 'เสร็จแล้ว'].map((tab) => {
           const count = orders.filter(o => {
-            if (tab === 'ทั้งหมด') return o.status !== 'เสร็จสิ้น' && o.status !== 'รอ';
+            if (tab === 'ทั้งหมด') return o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ' || o.status === 'เสร็จแล้ว' || o.status === 'เรียกเช็คบิล';
             if (tab === 'รอ') return o.status === 'กำลังเตรียม';
             if (tab === 'กำลังทำ') return o.status === 'กำลังทำ';
             if (tab === 'เสร็จแล้ว') return isFinished(o.status);
@@ -502,53 +518,85 @@ export default function KitchenPage() {
                 </div>
 
                 {/* Items List */}
-                <div className="p-4 space-y-4 bg-white mx-4 my-2 rounded-3xl border border-slate-100 shadow-sm">
-                  {order.items?.map((item, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => toggleItemStatus(order.id, idx)}
-                      className={`flex flex-col p-5 rounded-3xl border transition-all cursor-pointer relative overflow-hidden ${item.isDone ? 'bg-green-50 border-green-200' : 'bg-[#F0F4EF] border-[#7C9070]/10 hover:border-[#7C9070]/30'
-                        }`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <span className={`font-black text-3xl block mb-2 transition-all ${item.isDone ? 'text-green-700 line-through' : 'text-[#2D3436]'}`}>
-                            {item.name}
-                          </span>
-                          <div className="flex flex-wrap gap-2 items-center mt-2">
-                            {item.isSpecial && (
-                              <span className="text-white font-black text-sm uppercase bg-red-600 px-4 py-1.5 rounded-full shadow-sm flex items-center gap-1">
-                                ⭐ พิเศษ
-                              </span>
-                            )}
-                            {item.selectedNoodle && (
-                              <span className="text-sm bg-white text-[#2D3436] px-4 py-1.5 rounded-full font-black flex items-center gap-1 border border-[#E8E4D8] shadow-sm">
-                                <Utensils size={14} strokeWidth={3} className="text-[#7C9070]" /> {item.selectedNoodle}
-                              </span>
+                <div className="p-4 space-y-4 bg-white mx-4 my-2 rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                  {order.items?.map((item, idx) => {
+                    const finished = item.finished_quantity || 0;
+                    const total = item.quantity;
+                    const isDone = item.isDone || finished === total;
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`flex flex-col p-5 rounded-3xl border transition-all relative overflow-hidden ${isDone ? 'bg-green-50 border-green-200' : 'bg-[#F0F4EF] border-[#7C9070]/10'
+                          }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <span className={`font-black text-3xl block mb-2 transition-all ${isDone ? 'text-green-700 line-through opacity-50' : 'text-[#2D3436]'}`}>
+                              {item.name}
+                            </span>
+                            <div className="flex flex-wrap gap-2 items-center mt-2">
+                              {item.isSpecial && (
+                                <span className="text-white font-black text-xs uppercase bg-red-600 px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1">
+                                  ⭐ พิเศษ
+                                </span>
+                              )}
+                              {item.selectedNoodle && (
+                                <span className="text-xs bg-white text-[#2D3436] px-3 py-1.5 rounded-full font-black flex items-center gap-1 border border-[#E8E4D8] shadow-sm">
+                                  <Utensils size={12} strokeWidth={3} className="text-[#7C9070]" /> {item.selectedNoodle}
+                                </span>
+                              )}
+                            </div>
+                            {item.note && (
+                              <p className="text-base text-[#7C9070] font-black mt-3 bg-white p-3 rounded-xl border-2 border-[#F0F4EF] shadow-inner">
+                                💬 {item.note}
+                              </p>
                             )}
                           </div>
-                          {item.note && (
-                            <p className="text-lg text-[#7C9070] font-black mt-3 bg-white p-3 rounded-xl border-2 border-[#F0F4EF] shadow-inner">
-                              💬 {item.note}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-end gap-3">
-                          <span className={`${item.isDone ? 'bg-green-600' : 'bg-[#2D3436]'} text-white px-5 py-2 rounded-2xl text-xl font-black shrink-0 shadow-lg transition-colors`}>
-                            ×{item.quantity}
-                          </span>
-                          <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${item.isDone ? 'bg-green-500 text-white scale-110' : 'bg-white text-gray-200 border-2 border-gray-100'}`}>
-                            <Check size={28} strokeWidth={4} />
+
+                          <div className="flex flex-col items-end gap-3 shrink-0 ml-4">
+                            <div className="flex items-center gap-3 bg-white/80 backdrop-blur-sm p-2 rounded-2xl border border-slate-100 shadow-sm">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); updateItemFinishedQuantity(order.id, idx, -1); }}
+                                className="w-10 h-10 rounded-xl bg-white border-2 border-[#E8E4D8] text-slate-400 flex items-center justify-center hover:bg-slate-50 active:scale-90 transition-all"
+                              >
+                                <Minus size={18} strokeWidth={3} />
+                              </button>
+                              <div className="flex flex-col items-center min-w-[50px]">
+                                <span className={`text-2xl font-black ${isDone ? 'text-green-600' : 'text-slate-900'}`}>
+                                  {finished}
+                                </span>
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-t border-slate-100 mt-0.5 pt-0.5">
+                                  จาก {total}
+                                </span>
+                              </div>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); updateItemFinishedQuantity(order.id, idx, 1); }}
+                                className="w-10 h-10 rounded-xl bg-[#7C9070] text-white flex items-center justify-center shadow-lg shadow-[#7C9070]/20 active:scale-90 transition-all hover:bg-[#6c7d61]"
+                              >
+                                <Plus size={18} strokeWidth={3} />
+                              </button>
+                            </div>
+
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleItemStatus(order.id, idx); }}
+                              className={`w-full py-2.5 rounded-xl font-black text-xs uppercase tracking-tighter transition-all flex items-center justify-center gap-2 border-2 ${isDone
+                                ? 'bg-green-500 text-white border-green-500'
+                                : 'bg-white text-[#7C9070] border-[#7C9070] shadow-sm'}`}
+                            >
+                              {isDone ? <CheckCircle2 size={16} /> : <Check size={16} />}
+                              {isDone ? 'เสร็จครบแล้ว' : 'เสร็จทั้งหมด'}
+                            </button>
                           </div>
                         </div>
+                        {isDone && (
+                          <div className="absolute top-2 right-2 text-green-200 opacity-10 -rotate-12">
+                            <CheckCircle2 size={120} />
+                          </div>
+                        )}
                       </div>
-                      {item.isDone && (
-                        <div className="absolute top-2 right-2 text-green-200 opacity-20">
-                          <CheckCircle2 size={100} />
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Action Buttons */}

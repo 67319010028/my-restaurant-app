@@ -66,7 +66,11 @@ function RestaurantAppContent() {
     if (order.status === 'เสร็จแล้ว') {
       return sum + (order.items?.reduce((s: number, i: any) => s + (Number(i.quantity) || 0), 0) || 0);
     }
-    return sum + (order.items?.reduce((s: number, i: any) => s + (i.isDone ? (Number(i.quantity) || 0) : 0), 0) || 0);
+    // Sum finished_quantity if it exists, otherwise use quantity if isDone is true
+    return sum + (order.items?.reduce((s: number, i: any) => {
+      if (i.finished_quantity !== undefined) return s + (Number(i.finished_quantity) || 0);
+      return s + (i.isDone ? (Number(i.quantity) || 0) : 0);
+    }, 0) || 0);
   }, 0);
   const preparingCount = totalItemsInOrders - finishedItemsInOrders;
   const servedCount = finishedItemsInOrders;
@@ -662,11 +666,15 @@ function RestaurantAppContent() {
                         {item.selectedNoodle && `${item.selectedNoodle} • `}x{item.quantity} รายการ • {formatTime(order.created_at)}
                       </p>
                     </div>
-                    <div className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-colors ${(order.status === 'เสร็จแล้ว' || item.isDone) ? 'bg-green-50 border-green-100 text-green-600' : 'bg-[#F0F4EF] border-[#E8E4D8] text-[#7C9070]'
+                    <div className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-colors ${(order.status === 'เสร็จแล้ว' || item.isDone || (item.finished_quantity === item.quantity)) ? 'bg-green-50 border-green-100 text-green-600' : 'bg-[#F0F4EF] border-[#E8E4D8] text-[#7C9070]'
                       }`}>
-                      {(order.status === 'เสร็จแล้ว' || item.isDone) ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                      {(order.status === 'เสร็จแล้ว' || item.isDone || (item.finished_quantity === item.quantity)) ? <CheckCircle2 size={12} /> : <Clock size={12} />}
                       <span className="text-[10px] font-black">
-                        {(order.status === 'เสร็จแล้ว' || item.isDone) ? 'เสร็จแล้ว' : (order.status === 'กำลังเตรียม' ? 'กำลังเตรียม' : order.status)}
+                        {(order.status === 'เสร็จแล้ว' || item.isDone || (item.finished_quantity === item.quantity))
+                          ? 'เสร็จแล้ว'
+                          : item.finished_quantity > 0
+                            ? `เสร็จแล้ว ${item.finished_quantity}/${item.quantity}`
+                            : (order.status === 'กำลังเตรียม' ? 'กำลังเตรียม' : order.status)}
                       </span>
                     </div>
                     <div className={`absolute left-0 top-0 bottom-0 w-1 transition-colors ${(order.status === 'เสร็จแล้ว' || item.isDone) ? 'bg-green-500' : 'bg-[#7C9070]'}`}></div>
