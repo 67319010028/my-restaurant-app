@@ -627,6 +627,34 @@ function RestaurantAppContent() {
         <main className="p-4 space-y-6">
           <div>
             <h2 className="flex items-center gap-2 font-black text-[#7C9070] mb-4"><ClipboardList size={18} /> ติดตามสถานะอาหาร</h2>
+
+            {/* Progress Summary */}
+            {orders.length > 0 && (
+              <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-50 mb-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 flex-1">
+                    <div className="bg-green-50 p-2 rounded-xl">
+                      <CheckCircle2 size={20} className="text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">เสร็จแล้ว</p>
+                      <p className="text-xl font-black text-green-600">{finishedItemsInOrders} จาน</p>
+                    </div>
+                  </div>
+                  <div className="w-px h-12 bg-gray-200"></div>
+                  <div className="flex items-center gap-2 flex-1">
+                    <div className="bg-[#F0F4EF] p-2 rounded-xl">
+                      <Clock size={20} className="text-[#7C9070]" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">กำลังทำ</p>
+                      <p className="text-xl font-black text-[#7C9070]">{preparingCount} จาน</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-3">
               {orders.length === 0 ? (
                 <p className="text-center py-10 text-black italic">ยังไม่มีรายการที่สั่ง</p>
