@@ -638,7 +638,7 @@ function RestaurantAppContent() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 font-medium">เสร็จแล้ว</p>
-                      <p className="text-xl font-black text-green-600">{finishedItemsInOrders} จาน</p>
+                      <p className="text-xl font-black text-green-600">{finishedItemsInOrders} รายการ</p>
                     </div>
                   </div>
                   <div className="w-px h-12 bg-gray-200"></div>
@@ -648,7 +648,7 @@ function RestaurantAppContent() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 font-medium">กำลังทำ</p>
-                      <p className="text-xl font-black text-[#7C9070]">{preparingCount} จาน</p>
+                      <p className="text-xl font-black text-[#7C9070]">{preparingCount} รายการ</p>
                     </div>
                   </div>
                 </div>
