@@ -804,11 +804,11 @@ export default function AdminApp() {
                         onClick={() => setSelectedTableDetail(table)}
                         className={`${statusClass} h-48 rounded-[2.5rem] border-2 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl active:scale-95 flex flex-col items-center justify-center gap-3 relative overflow-hidden group`}
                       >
-                        <span className="text-6xl font-black tracking-tighter">{table.table_number}</span>
+                        <span className="text-2xl font-black tracking-tighter">{table.table_number}</span>
                         <div className="flex flex-col items-center">
-                          <span className={`text-sm font-black uppercase tracking-[0.2em] mb-1 ${labelClass}`}>{statusText}</span>
-                          <p className={`text-xs font-bold inline-flex items-center gap-1.5 opacity-80 ${labelClass}`}>
-                            <Users size={16} /> {table.capacity} ที่นั่ง
+                          <span className={`text-2xl font-black uppercase tracking-[0.2em] mb-1 ${labelClass}`}>{statusText}</span>
+                          <p className={`text-2xl font-bold inline-flex items-center gap-1.5 opacity-80 ${labelClass}`}>
+                            <Users size={22} /> {table.capacity} ที่นั่ง
                           </p>
                         </div>
                         {isOccupied && !isBilling && (
