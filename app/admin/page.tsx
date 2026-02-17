@@ -1008,8 +1008,15 @@ export default function AdminApp() {
                                     <div key={o.id} className="bg-white p-4 rounded-2xl shadow-sm border border-red-50 flex justify-between items-center">
                                       <div className="flex-1">
                                         {o.items?.map((item: any, i: number) => (
-                                          <div key={i} className="text-[11px] font-bold text-slate-600 mb-0.5">
-                                            {item.quantity}x {item.name} {item.selectedNoodle && `(${item.selectedNoodle})`}
+                                          <div key={i} className="mb-2">
+                                            <div className="text-[11px] font-bold text-slate-600 mb-0.5">
+                                              {item.quantity}x {item.name} {item.selectedNoodle && `(${item.selectedNoodle})`}
+                                            </div>
+                                            {item.note && (
+                                              <div className="text-[10px] text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-md inline-block">
+                                                {item.note}
+                                              </div>
+                                            )}
                                           </div>
                                         ))}
                                       </div>
@@ -1031,12 +1038,19 @@ export default function AdminApp() {
                           {tableOrders.map((order) => (
                             <div key={order.id} className="space-y-3 border-b border-slate-50 pb-6 last:border-0 last:pb-0">
                               {order.items?.map((item: any, i: number) => (
-                                <div key={i} className="flex justify-between items-center text-sm">
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-slate-400 font-black">{item.quantity}×</span>
-                                    <span className="text-slate-900 font-bold leading-tight">{item.name} {item.isSpecial && '(พิเศษ)'}</span>
+                                <div key={i} className="mb-3 last:mb-0">
+                                  <div className="flex justify-between items-center text-sm">
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-slate-400 font-black">{item.quantity}×</span>
+                                      <span className="text-slate-900 font-bold leading-tight">{item.name} {item.isSpecial && '(พิเศษ)'}</span>
+                                    </div>
+                                    <span className="font-black text-slate-900">฿{(item.totalItemPrice || item.price) * item.quantity}</span>
                                   </div>
-                                  <span className="font-black text-slate-900">฿{(item.totalItemPrice || item.price) * item.quantity}</span>
+                                  {item.note && (
+                                    <div className="text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-lg inline-block mt-1 ml-8">
+                                      {item.note}
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -1498,12 +1512,19 @@ export default function AdminApp() {
                           </div>
                           <div className="space-y-2">
                             {order.items?.map((item: any, idx: number) => (
-                              <div key={idx} className="flex justify-between items-center text-sm font-bold">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-gray-400">{item.quantity}x</span>
-                                  <span>{item.name} {item.selectedNoodle && `(${item.selectedNoodle})`}</span>
+                              <div key={idx} className="mb-2">
+                                <div className="flex justify-between items-center text-sm font-bold">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-gray-400">{item.quantity}x</span>
+                                    <span>{item.name} {item.selectedNoodle && `(${item.selectedNoodle})`}</span>
+                                  </div>
+                                  <span className="text-[#7C9070]">฿{item.price * item.quantity}</span>
                                 </div>
-                                <span className="text-[#7C9070]">฿{item.price * item.quantity}</span>
+                                {item.note && (
+                                  <div className="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded-md inline-block ml-6 mt-1">
+                                    {item.note}
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>

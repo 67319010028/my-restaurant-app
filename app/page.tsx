@@ -584,8 +584,12 @@ function RestaurantAppContent() {
                   <h3 className="font-black text-[15px] text-black">{item.name} {item.isSpecial && <span className="text-[#7C9070]">(พิเศษ)</span>}</h3>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {item.selectedNoodle && <span className="text-[9px] bg-[#F0F4EF] text-[#7C9070] px-2 py-0.5 rounded-full font-black border border-[#E8E4D8]">{item.selectedNoodle}</span>}
-                    {item.note && <span className="text-[9px] bg-gray-100 text-black px-2 py-0.5 rounded-full">*{item.note}</span>}
                   </div>
+                  {item.note && (
+                    <p className="text-[11px] text-orange-600 font-bold mt-2 bg-orange-50 px-2 py-1 rounded-lg inline-block">
+                      {item.note}
+                    </p>
+                  )}
                   <p className="text-black font-black text-xl mt-1">฿{item.totalItemPrice}</p>
                 </div>
                 <button onClick={() => removeFromCart(item.id, item.note, item.selectedNoodle, item.isSpecial)} className="absolute top-3 right-3 text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
@@ -660,13 +664,18 @@ function RestaurantAppContent() {
                 <p className="text-center py-10 text-black italic">ยังไม่มีรายการที่สั่ง</p>
               ) : (
                 orders.map((order) => order.items?.map((item: any, idx: number) => (
-                  <div key={`${order.id}-${idx}`} className="bg-white p-3 rounded-[24px] shadow-sm flex gap-4 items-center border border-gray-50 relative overflow-hidden transition-all">
+                  <div key={`${order.id}-${idx}`} className="bg-white p-3 rounded-[24px] shadow-sm flex gap-4 items-start border border-gray-50 relative overflow-hidden transition-all">
                     <div className="w-16 h-16 bg-gray-100 rounded-2xl overflow-hidden shrink-0"><img src={item.image_url} className="w-full h-full object-cover" /></div>
                     <div className="flex-1">
                       <h3 className="font-black text-[15px] text-black mb-0.5">{item.name} {item.isSpecial && <span className="text-[#7C9070] text-[10px]">(พิเศษ)</span>}</h3>
                       <p className="text-[10px] text-black font-medium">
                         {item.selectedNoodle && `${item.selectedNoodle} • `}x{item.quantity} รายการ • {formatTime(order.created_at)}
                       </p>
+                      {item.note && (
+                        <p className="text-[10px] text-blue-600 font-bold mt-1 bg-blue-50 px-2 py-0.5 rounded-md inline-block">
+                          {item.note}
+                        </p>
+                      )}
                     </div>
                     <div className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-colors ${(order.status === 'เสร็จแล้ว' || item.isDone || (item.finished_quantity === item.quantity)) ? 'bg-green-50 border-green-100 text-green-600' : 'bg-[#F0F4EF] border-[#E8E4D8] text-[#7C9070]'
                       }`}>
@@ -724,15 +733,22 @@ function RestaurantAppContent() {
                 <p className="text-center text-black text-sm">ยังไม่มีรายการอาหาร</p>
               ) : (
                 orders.map((order) => order.items?.map((item: any, idx: number) => (
-                  <div key={`${order.id}-${idx}`} className="flex justify-between items-start text-sm">
-                    <div className="flex gap-3">
-                      <span className="text-black">{item.quantity}x</span>
-                      <div className="flex flex-col">
-                        <span className="font-black text-black">{item.name} {item.isSpecial && '(พิเศษ)'}</span>
-                        {item.selectedNoodle && <span className="text-[10px] text-black">{item.selectedNoodle}</span>}
+                  <div key={`${order.id}-${idx}`} className="mb-3 last:mb-0">
+                    <div className="flex justify-between items-start text-sm">
+                      <div className="flex gap-3">
+                        <span className="text-black">{item.quantity}x</span>
+                        <div className="flex flex-col">
+                          <span className="font-black text-black">{item.name} {item.isSpecial && '(พิเศษ)'}</span>
+                          {item.selectedNoodle && <span className="text-[10px] text-black">{item.selectedNoodle}</span>}
+                        </div>
                       </div>
+                      <span className="font-black text-black">฿{(item.totalItemPrice || item.price) * item.quantity}</span>
                     </div>
-                    <span className="font-black text-black">฿{(item.totalItemPrice || item.price) * item.quantity}</span>
+                    {item.note && (
+                      <div className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-md inline-block mt-1 ml-8">
+                        {item.note}
+                      </div>
+                    )}
                   </div>
                 )))
               )}

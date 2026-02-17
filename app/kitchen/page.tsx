@@ -653,7 +653,7 @@ export default function KitchenPage() {
 
                           {item.note && (
                             <p className="text-sm text-[#7C9070] font-bold mt-1 bg-[#F9F7F2] px-2 py-1 rounded-lg inline-block">
-                              💬 {item.note}
+                              {item.note}
                             </p>
                           )}
                         </div>
