@@ -729,29 +729,42 @@ function RestaurantAppContent() {
               <p className="text-xs text-black">โต๊ะ {tableNo}</p>
             </div>
             <div className="p-6 space-y-4">
-              {orders.length === 0 ? (
-                <p className="text-center text-black text-sm">ยังไม่มีรายการอาหาร</p>
-              ) : (
-                orders.map((order) => order.items?.map((item: any, idx: number) => (
-                  <div key={`${order.id}-${idx}`} className="mb-3 last:mb-0">
-                    <div className="flex justify-between items-start text-sm">
-                      <div className="flex gap-3">
-                        <span className="text-black">{item.quantity}x</span>
-                        <div className="flex flex-col">
-                          <span className="font-black text-black">{item.name} {item.isSpecial && '(พิเศษ)'}</span>
-                          {item.selectedNoodle && <span className="text-[10px] text-black">{item.selectedNoodle}</span>}
+              {(() => {
+                const groupedBillItems = orders.flatMap(o => o.items || []).reduce((acc: any[], item: any) => {
+                  const key = `${item.id}-${item.selectedNoodle}-${item.isSpecial}-${item.note}`;
+                  const existing = acc.find(i => i.key === key);
+                  if (existing) {
+                    existing.quantity += item.quantity;
+                  } else {
+                    acc.push({ ...item, key });
+                  }
+                  return acc;
+                }, []);
+
+                return groupedBillItems.length === 0 ? (
+                  <p className="text-center text-black text-sm">ยังไม่มีรายการอาหาร</p>
+                ) : (
+                  groupedBillItems.map((item, idx) => (
+                    <div key={idx} className="mb-3 last:mb-0">
+                      <div className="flex justify-between items-start text-sm">
+                        <div className="flex gap-3">
+                          <span className="text-black font-bold">{item.quantity}x</span>
+                          <div className="flex flex-col">
+                            <span className="font-black text-black">{item.name} {item.isSpecial && '(พิเศษ)'}</span>
+                            {item.selectedNoodle && <span className="text-[10px] text-black/60 font-medium">{item.selectedNoodle}</span>}
+                          </div>
                         </div>
+                        <span className="font-black text-black">฿{(item.totalItemPrice || item.price) * item.quantity}</span>
                       </div>
-                      <span className="font-black text-black">฿{(item.totalItemPrice || item.price) * item.quantity}</span>
+                      {item.note && (
+                        <div className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-md inline-block mt-1 ml-8">
+                          {item.note}
+                        </div>
+                      )}
                     </div>
-                    {item.note && (
-                      <div className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-md inline-block mt-1 ml-8">
-                        {item.note}
-                      </div>
-                    )}
-                  </div>
-                )))
-              )}
+                  ))
+                );
+              })()}
               <div className="pt-6 mt-6 border-t border-gray-100 flex justify-between items-center">
                 <span className="text-black font-bold">รวมทั้งหมด</span>
                 <span className="text-3xl font-black text-black">฿{totalBillAmount}</span>

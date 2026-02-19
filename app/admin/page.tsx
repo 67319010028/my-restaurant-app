@@ -332,12 +332,13 @@ export default function AdminApp() {
   /* --- CRUD Operations (Effective Local State) --- */
   const updateOrderStatus = async (id: number, newStatus: string, tableNo?: string) => {
     // 1. Prepare updated orders array
+    const now = new Date().toISOString();
     let updatedOrders;
     if (newStatus === 'เสร็จสิ้น' && tableNo) {
-      // ✅ If paying, close ALL orders for that table
-      updatedOrders = orders.map(o => o.table_no === tableNo ? { ...o, status: newStatus } : o);
+      // ✅ If paying, close ONLY active orders for that table
+      updatedOrders = orders.map(o => (o.table_no === tableNo && o.status !== 'เสร็จสิ้น') ? { ...o, status: newStatus, updated_at: now } : o);
     } else {
-      updatedOrders = orders.map(o => o.id === id ? { ...o, status: newStatus } : o);
+      updatedOrders = orders.map(o => o.id === id ? { ...o, status: newStatus, updated_at: now } : o);
     }
 
     // 2. Local State & Storage Update
@@ -360,14 +361,20 @@ export default function AdminApp() {
         const tableOrders = orders.filter(o => o.table_no === tableNo && o.status !== 'เสร็จสิ้น');
         const totalAmount = tableOrders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
 
-        // 4.1 Update all orders for this table to 'เสร็จสิ้น'
-        await supabase.from('orders').update({ status: newStatus }).eq('table_no', tableNo).neq('status', 'เสร็จสิ้น');
+        // 4.1 Update all orders for this table to 'เสร็จสิ้น' with SAME updated_at for grouping
+        await supabase.from('orders').update({
+          status: newStatus,
+          updated_at: now
+        }).eq('table_no', tableNo).neq('status', 'เสร็จสิ้น');
 
         // 4.3 Reset Table Status to 'available'
         await supabase.from('tables').update({ status: 'available' }).eq('table_number', tableNo);
         fetchTables(); // Refresh floor plan
       } else {
-        await supabase.from('orders').update({ status: newStatus }).eq('id', id);
+        await supabase.from('orders').update({
+          status: newStatus,
+          updated_at: now
+        }).eq('id', id);
 
         // Update table status based on newStatus
         const tNo = tableNo || orders.find(o => o.id === id)?.table_no;
@@ -980,11 +987,6 @@ export default function AdminApp() {
                           <div className="bg-white/10 p-3 rounded-2xl"><Utensils size={24} /></div>
                           <div>
                             <span className="font-black text-xl block leading-none">โต๊ะ {tableNo}</span>
-                            {tableOrders[0]?.queue_no && (
-                              <span className="text-[10px] font-black uppercase text-orange-400 tracking-widest mt-1 block">
-                                คิวที่ #{tableOrders[0].queue_no}
-                              </span>
-                            )}
                           </div>
                         </div>
                         <div className="text-right">
@@ -1190,8 +1192,27 @@ export default function AdminApp() {
                 return salesViewMode === 'daily' ? orderDateStr === selectedSalesDate : orderMonthStr === selectedSalesMonth;
               });
 
-              const totalRevenue = filteredSales.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
-              const totalOrders = filteredSales.length;
+              const groupedSalesForMetrics = filteredSales
+                .sort((a, b) => new Date(a.updated_at || a.created_at).getTime() - new Date(b.updated_at || b.created_at).getTime())
+                .reduce((acc: any[], order) => {
+                  const orderTime = new Date(order.updated_at || order.created_at).getTime();
+                  const existing = acc.find(item =>
+                    item.table_no === order.table_no &&
+                    Math.abs(new Date(item.updated_at || item.created_at).getTime() - orderTime) < 25 * 60 * 1000
+                  );
+                  if (existing) {
+                    existing.total_price = (Number(existing.total_price) || 0) + (Number(order.total_price) || 0);
+                    if (orderTime > new Date(existing.updated_at || existing.created_at).getTime()) {
+                      existing.updated_at = order.updated_at;
+                    }
+                  } else {
+                    acc.push({ ...order });
+                  }
+                  return acc;
+                }, []);
+
+              const totalRevenue = groupedSalesForMetrics.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
+              const totalOrders = groupedSalesForMetrics.length;
               const avgTicket = totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(0) : 0;
 
               return (
@@ -1376,68 +1397,67 @@ export default function AdminApp() {
                       ) : (
                         <div className="divide-y divide-slate-50">
                           {(() => {
-                            // Group sales by table number
-                            const groupedSales: Record<string, any> = {};
-                            filteredSales.forEach(order => {
-                              const key = `${order.table_no}`;
-                              if (!groupedSales[key]) {
-                                groupedSales[key] = {
-                                  ...order,
-                                  total_price: 0,
-                                  items: [],
-                                  order_ids: [order.id],
-                                  last_updated: order.updated_at || order.created_at
-                                };
-                              } else {
-                                groupedSales[key].order_ids.push(order.id);
-                                if (new Date(order.updated_at || order.created_at) > new Date(groupedSales[key].last_updated)) {
-                                  groupedSales[key].last_updated = order.updated_at || order.created_at;
-                                }
-                              }
-                              groupedSales[key].total_price += Number(order.total_price) || 0;
-                              groupedSales[key].items = [...groupedSales[key].items, ...(order.items || [])];
-                            });
+                            const groupedSales = filteredSales
+                              .sort((a, b) => new Date(a.updated_at || a.created_at).getTime() - new Date(b.updated_at || b.created_at).getTime())
+                              .reduce((acc: any[], order) => {
+                                const orderTime = new Date(order.updated_at || order.created_at).getTime();
+                                const existing = acc.find(item =>
+                                  item.table_no === order.table_no &&
+                                  Math.abs(new Date(item.updated_at || item.created_at).getTime() - orderTime) < 25 * 60 * 1000
+                                );
 
-                            return Object.values(groupedSales)
-                              .sort((a, b) => new Date(b.last_updated).getTime() - new Date(a.last_updated).getTime())
-                              .map((group) => (
-                                <div
-                                  key={group.table_no}
-                                  onClick={() => setSelectedOrderForDetail(group)}
-                                  className="py-6 flex items-center justify-between group hover:bg-slate-50/80 transition-all px-6 -mx-4 rounded-[2.5rem] cursor-pointer active:scale-[0.98]"
-                                >
-                                  <div className="flex items-center gap-6">
-                                    <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-sm font-black text-white shadow-lg group-hover:scale-110 transition-transform">
-                                      {group.table_no}
-                                    </div>
-                                    <div className="flex flex-col">
-                                      <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-base font-black text-slate-900">โต๊ะ {group.table_no}</span>
-                                        <span className="text-[9px] bg-emerald-50 px-2 py-0.5 rounded-lg font-black text-emerald-600 tracking-wider">
-                                          {group.order_ids.length > 1 ? `รวม ${group.order_ids.length} บิล` : `บิลเดียว`}
-                                        </span>
-                                      </div>
-                                      <div className="flex items-center gap-3">
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1">
-                                          <Clock size={10} /> {formatOrderTime(group.last_updated)}
-                                        </span>
-                                        <span className="text-[10px] text-emerald-500 font-black uppercase tracking-[0.1em] flex items-center gap-1">
-                                          <CheckCircle2 size={10} /> ชำระเงินแล้ว
-                                        </span>
-                                      </div>
-                                    </div>
+                                if (existing) {
+                                  existing.total_price = (Number(existing.total_price) || 0) + (Number(order.total_price) || 0);
+                                  existing.items = [...(existing.items || []), ...(order.items || [])];
+                                  existing.combinedIds = [...(existing.combinedIds || []), order.id];
+                                  if (orderTime > new Date(existing.updated_at || existing.created_at).getTime()) {
+                                    existing.updated_at = order.updated_at;
+                                  }
+                                } else {
+                                  acc.push({ ...order, combinedIds: [order.id] });
+                                }
+                                return acc;
+                              }, [])
+                              .sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime());
+
+                            return groupedSales.map((order) => (
+                              <div
+                                key={order.key || order.id}
+                                onClick={() => setSelectedOrderForDetail(order)}
+                                className="py-6 flex items-center justify-between group hover:bg-slate-50/80 transition-all px-6 -mx-4 rounded-[2.5rem] cursor-pointer active:scale-[0.98]"
+                              >
+                                <div className="flex items-center gap-6">
+                                  <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-sm font-black text-white shadow-lg group-hover:scale-110 transition-transform">
+                                    {order.table_no}
                                   </div>
-                                  <div className="flex items-center gap-10">
-                                    <div className="text-right">
-                                      <p className="text-xl font-black text-slate-900 tracking-tighter">฿{(Number(group.total_price) || 0).toLocaleString()}</p>
-                                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-0.5">ยอดสุทธิรวม</p>
+                                  <div className="flex flex-col">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-base font-black text-slate-900">โต๊ะ {order.table_no}</span>
+                                      <span className="text-[9px] bg-slate-100 px-2 py-0.5 rounded-lg font-black text-slate-500 tracking-wider">
+                                        {`${order.combinedIds?.length || 1} ออเดอร์`}
+                                      </span>
                                     </div>
-                                    <div className="bg-slate-50 p-3 rounded-2xl text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-all">
-                                      <Eye size={20} />
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1">
+                                        <Clock size={10} /> {formatOrderTime(order.updated_at || order.created_at)}
+                                      </span>
+                                      <span className="text-[10px] text-emerald-500 font-black uppercase tracking-[0.1em] flex items-center gap-1">
+                                        <CheckCircle2 size={10} /> ชำระเงินแล้ว
+                                      </span>
                                     </div>
                                   </div>
                                 </div>
-                              ));
+                                <div className="flex items-center gap-10">
+                                  <div className="text-right">
+                                    <p className="text-xl font-black text-slate-900 tracking-tighter">฿{(Number(order.total_price) || 0).toLocaleString()}</p>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-0.5">ยอดสุทธิ</p>
+                                  </div>
+                                  <div className="bg-slate-50 p-3 rounded-2xl text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-all">
+                                    <Eye size={20} />
+                                  </div>
+                                </div>
+                              </div>
+                            ));
                           })()}
                         </div>
                       )}
@@ -1494,11 +1514,6 @@ export default function AdminApp() {
                               <span className="bg-emerald-50 text-emerald-600 text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest">
                                 {order.status}
                               </span>
-                              {order.queue_no && (
-                                <span className="bg-blue-50 text-blue-600 text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest">
-                                  คิวที่ {order.queue_no}
-                                </span>
-                              )}
                               <span className="text-[10px] text-gray-400 font-bold">
                                 {formatOrderTime(order.created_at)}
                               </span>
