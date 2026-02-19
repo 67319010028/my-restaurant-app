@@ -1038,26 +1038,45 @@ export default function AdminApp() {
 
                         <div className="space-y-6 mb-8">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">สรุปรายการสั่งซื้อ</p>
-                          {tableOrders.map((order) => (
-                            <div key={order.id} className="space-y-3 border-b border-slate-50 pb-6 last:border-0 last:pb-0">
-                              {order.items?.map((item: any, i: number) => (
-                                <div key={i} className="mb-3 last:mb-0">
-                                  <div className="flex justify-between items-center text-sm">
-                                    <div className="flex items-center gap-3">
-                                      <span className="text-slate-400 font-black">{item.quantity}×</span>
-                                      <span className="text-slate-900 font-bold leading-tight">{item.name} {item.isSpecial && '(พิเศษ)'}</span>
-                                    </div>
-                                    <span className="font-black text-slate-900">฿{(item.totalItemPrice || item.price) * item.quantity}</span>
+                          {(() => {
+                            const mergedItems: any[] = [];
+                            tableOrders.forEach(order => {
+                              order.items?.forEach((item: any) => {
+                                const existing = mergedItems.find(m =>
+                                  m.name === item.name &&
+                                  m.selectedNoodle === item.selectedNoodle &&
+                                  m.isSpecial === item.isSpecial &&
+                                  m.note === item.note
+                                );
+                                if (existing) {
+                                  existing.quantity += (Number(item.quantity) || 0);
+                                  existing.totalItemPrice = (existing.totalItemPrice || existing.price) || 0;
+                                } else {
+                                  mergedItems.push({ ...item });
+                                }
+                              });
+                            });
+
+                            return mergedItems.map((item, i) => (
+                              <div key={i} className="mb-3 last:mb-0">
+                                <div className="flex justify-between items-center text-sm">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-slate-400 font-black">{item.quantity}×</span>
+                                    <span className="text-slate-900 font-bold leading-tight">{item.name} {item.isSpecial && '(พิเศษ)'}</span>
                                   </div>
-                                  {item.note && (
-                                    <div className="text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-lg inline-block mt-1 ml-8">
-                                      {item.note}
-                                    </div>
-                                  )}
+                                  <span className="font-black text-slate-900">฿{((item.totalItemPrice || item.price) * item.quantity).toLocaleString()}</span>
                                 </div>
-                              ))}
-                            </div>
-                          ))}
+                                {item.selectedNoodle && (
+                                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mt-0.5 ml-8">#{item.selectedNoodle}</p>
+                                )}
+                                {item.note && (
+                                  <div className="text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-lg inline-block mt-1 ml-8">
+                                    {item.note}
+                                  </div>
+                                )}
+                              </div>
+                            ));
+                          })()}
                         </div>
 
                         <div className="flex justify-between items-end pt-6 border-t border-slate-100 mb-8">
@@ -1615,31 +1634,48 @@ export default function AdminApp() {
                 <div className="space-y-4">
                   <h4 className="text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-2">รายการที่สั่ง</h4>
                   <div className="space-y-3">
-                    {selectedOrderForDetail.items?.map((item: any, idx: number) => (
-                      <div key={idx} className="bg-white border border-slate-100 rounded-[1.8rem] p-5 flex justify-between items-center shadow-sm">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center font-black text-slate-900 border border-slate-100">
-                            {item.quantity}
+                    {(() => {
+                      const mergedDetailItems: any[] = [];
+                      selectedOrderForDetail.items?.forEach((item: any) => {
+                        const existing = mergedDetailItems.find(m =>
+                          m.name === item.name &&
+                          m.selectedNoodle === item.selectedNoodle &&
+                          m.isSpecial === item.isSpecial &&
+                          m.note === item.note
+                        );
+                        if (existing) {
+                          existing.quantity += (Number(item.quantity) || 0);
+                        } else {
+                          mergedDetailItems.push({ ...item });
+                        }
+                      });
+
+                      return mergedDetailItems.map((item: any, idx: number) => (
+                        <div key={idx} className="bg-white border border-slate-100 rounded-[1.8rem] p-5 flex justify-between items-center shadow-sm">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center font-black text-slate-900 border border-slate-100">
+                              {item.quantity}
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-900 leading-tight">
+                                {item.name} {item.isSpecial && '(พิเศษ)'}
+                              </p>
+                              {item.selectedNoodle && (
+                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mt-0.5">#{item.selectedNoodle}</p>
+                              )}
+                              {item.note && (
+                                <div className="text-[9px] text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-md inline-block mt-1">
+                                  {item.note}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-bold text-slate-900 leading-tight">
-                              {item.name} {item.isSpecial && '(พิเศษ)'}
-                            </p>
-                            {item.selectedNoodle && (
-                              <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mt-0.5">#{item.selectedNoodle}</p>
-                            )}
-                            {item.note && (
-                              <div className="text-[9px] text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-md inline-block mt-1">
-                                {item.note}
-                              </div>
-                            )}
+                          <div className="text-right">
+                            <p className="font-black text-slate-900 tracking-tight">฿{((item.totalItemPrice || item.price) * item.quantity).toLocaleString()}</p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-black text-slate-900 tracking-tight">฿{((item.totalItemPrice || item.price) * item.quantity).toLocaleString()}</p>
-                        </div>
-                      </div>
-                    ))}
+                      ));
+                    })()}
                   </div>
                 </div>
               </div>
