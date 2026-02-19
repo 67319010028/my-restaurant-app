@@ -1375,44 +1375,70 @@ export default function AdminApp() {
                         </div>
                       ) : (
                         <div className="divide-y divide-slate-50">
-                          {filteredSales
-                            .sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime())
-                            .map((order) => (
-                              <div
-                                key={order.id}
-                                onClick={() => setSelectedOrderForDetail(order)}
-                                className="py-6 flex items-center justify-between group hover:bg-slate-50/80 transition-all px-6 -mx-4 rounded-[2.5rem] cursor-pointer active:scale-[0.98]"
-                              >
-                                <div className="flex items-center gap-6">
-                                  <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-sm font-black text-white shadow-lg group-hover:scale-110 transition-transform">
-                                    {order.table_no}
-                                  </div>
-                                  <div className="flex flex-col">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="text-base font-black text-slate-900">โต๊ะ {order.table_no}</span>
-                                      <span className="text-[9px] bg-slate-100 px-2 py-0.5 rounded-lg font-black text-slate-500 tracking-wider">รหัสบิล: #{order.id}</span>
+                          {(() => {
+                            // Group sales by table number
+                            const groupedSales: Record<string, any> = {};
+                            filteredSales.forEach(order => {
+                              const key = `${order.table_no}`;
+                              if (!groupedSales[key]) {
+                                groupedSales[key] = {
+                                  ...order,
+                                  total_price: 0,
+                                  items: [],
+                                  order_ids: [order.id],
+                                  last_updated: order.updated_at || order.created_at
+                                };
+                              } else {
+                                groupedSales[key].order_ids.push(order.id);
+                                if (new Date(order.updated_at || order.created_at) > new Date(groupedSales[key].last_updated)) {
+                                  groupedSales[key].last_updated = order.updated_at || order.created_at;
+                                }
+                              }
+                              groupedSales[key].total_price += Number(order.total_price) || 0;
+                              groupedSales[key].items = [...groupedSales[key].items, ...(order.items || [])];
+                            });
+
+                            return Object.values(groupedSales)
+                              .sort((a, b) => new Date(b.last_updated).getTime() - new Date(a.last_updated).getTime())
+                              .map((group) => (
+                                <div
+                                  key={group.table_no}
+                                  onClick={() => setSelectedOrderForDetail(group)}
+                                  className="py-6 flex items-center justify-between group hover:bg-slate-50/80 transition-all px-6 -mx-4 rounded-[2.5rem] cursor-pointer active:scale-[0.98]"
+                                >
+                                  <div className="flex items-center gap-6">
+                                    <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-sm font-black text-white shadow-lg group-hover:scale-110 transition-transform">
+                                      {group.table_no}
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1">
-                                        <Clock size={10} /> {formatOrderTime(order.updated_at || order.created_at)}
-                                      </span>
-                                      <span className="text-[10px] text-emerald-500 font-black uppercase tracking-[0.1em] flex items-center gap-1">
-                                        <CheckCircle2 size={10} /> ชำระเงินแล้ว
-                                      </span>
+                                    <div className="flex flex-col">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-base font-black text-slate-900">โต๊ะ {group.table_no}</span>
+                                        <span className="text-[9px] bg-emerald-50 px-2 py-0.5 rounded-lg font-black text-emerald-600 tracking-wider">
+                                          {group.order_ids.length > 1 ? `รวม ${group.order_ids.length} บิล` : `บิลเดียว`}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1">
+                                          <Clock size={10} /> {formatOrderTime(group.last_updated)}
+                                        </span>
+                                        <span className="text-[10px] text-emerald-500 font-black uppercase tracking-[0.1em] flex items-center gap-1">
+                                          <CheckCircle2 size={10} /> ชำระเงินแล้ว
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-10">
+                                    <div className="text-right">
+                                      <p className="text-xl font-black text-slate-900 tracking-tighter">฿{(Number(group.total_price) || 0).toLocaleString()}</p>
+                                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-0.5">ยอดสุทธิรวม</p>
+                                    </div>
+                                    <div className="bg-slate-50 p-3 rounded-2xl text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-all">
+                                      <Eye size={20} />
                                     </div>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-10">
-                                  <div className="text-right">
-                                    <p className="text-xl font-black text-slate-900 tracking-tighter">฿{(Number(order.total_price) || 0).toLocaleString()}</p>
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-0.5">ยอดสุทธิ</p>
-                                  </div>
-                                  <div className="bg-slate-50 p-3 rounded-2xl text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-all">
-                                    <Eye size={20} />
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
+                              ));
+                          })()}
                         </div>
                       )}
                     </div>

@@ -463,77 +463,72 @@ export default function KitchenPage() {
   return (
     <div className="min-h-screen bg-[#F9F7F2] font-sans pb-32 text-[#2D3436]">
 
-      {/* Header & Status Summary Row */}
-      <header className="p-6 bg-white/90 backdrop-blur-xl sticky top-0 z-10 shadow-sm border-b border-slate-100">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="bg-slate-900 p-3 rounded-2xl shadow-xl">
-            <ChefHat size={32} className="text-white" />
-          </div>
-          <div>
-            <h1 className="text-4xl font-black text-black">ร้านป้ากุ้ง (ครัว)</h1>
-            <p className="text-sm text-black font-bold uppercase tracking-widest flex items-center gap-2">
-              <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-              ระบบจัดการห้องครัว
-            </p>
-          </div>
-          <button
-            onClick={async () => {
-              await supabase.auth.signOut();
-              router.push('/staff');
-            }}
-            className="text-red-600 font-black text-xs uppercase tracking-wider bg-red-100 px-6 py-2 rounded-full ml-auto border border-red-200"
-          >
-            ออกจากระบบ
-          </button>
-        </div>
-
-        {/* Audio Unlock Banner Overlay */}
-        {!isAudioUnlocked && (
-          <div className="fixed inset-0 z-[999] bg-white flex items-center justify-center p-6 sm:p-10">
-            <div className="w-full max-w-sm text-center">
-              <div className="w-24 h-24 bg-[#F0F4EF] rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
-                <ChefHat size={48} className={`text-[#7C9070] ${isUnlocking ? 'animate-spin' : 'animate-bounce'}`} />
+      {/* Premium Header Container */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-2xl border-b border-slate-200/60 shadow-[0_1px_40px_rgba(0,0,0,0.02)]">
+        <div className="max-w-7xl mx-auto px-6 py-5">
+          <div className="flex items-center justify-between gap-6">
+            <div className="flex items-center gap-5">
+              <div className="bg-slate-900 w-16 h-16 rounded-[1.8rem] flex items-center justify-center shadow-2xl relative group overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <ChefHat size={32} className="text-white relative z-10" />
               </div>
-              <h1 className="text-4xl font-black text-[#2D3436] tracking-tight">ระบบครัว</h1>
-              <p className="text-black font-bold mb-10 leading-relaxed px-4">
-                กรุณากดปุ่มเพื่อเปิดเสียงแจ้งเตือน<br />
-                เมื่อมีออเดอร์ใหม่ส่งมาจากแอดมิน<br />
-                (เพื่อให้ทำงานได้บนมือถือ)
-              </p>
+              <div>
+                <h1 className="text-4xl font-black text-slate-900 tracking-tighter">ครัวป้ากุ้ง</h1>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">ระบบจัดการครัวแบบเรียลไทม์</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="hidden md:flex items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+              <div className="px-5 py-2">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">ยอดจดออเดอร์</p>
+                <p className="text-xl font-black text-slate-900 leading-none">{orders.length}</p>
+              </div>
+              <div className="w-px h-8 bg-slate-200"></div>
               <button
-                onClick={unlockAudio}
-                disabled={isUnlocking}
-                className={`w-full py-6 rounded-[2rem] font-black text-xl shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 ${isUnlocking ? 'bg-slate-200 text-[#BBC3C6]' : 'bg-[#7C9070] text-white shadow-[#7C9070]/20 hover:scale-[1.02]'}`}
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  router.push('/staff');
+                }}
+                className="bg-white hover:bg-red-50 text-red-500 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all border border-slate-100 shadow-sm"
               >
-                {isUnlocking ? 'กำลังเปิดเสียง...' : 'เปิดระบบเสียงห้องครัว ✨'}
+                ออกจากระบบ
               </button>
             </div>
-          </div>
-        )}
 
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white p-6 rounded-3xl border-2 border-[#E8E4D8] shadow-sm hover:shadow-md transition-all">
-            <div className="flex items-center justify-between mb-2">
-              <Timer size={28} className="text-[#7C9070]" />
-              <div className="text-5xl font-black text-black">{orders.filter(o => o.status === 'กำลังเตรียม').length}</div>
-            </div>
-            <div className="text-black text-sm font-black uppercase tracking-wider">รอดำเนินการ</div>
-          </div>
-
-          <div className="bg-white p-6 rounded-3xl border-2 border-[#E8E4D8] shadow-sm hover:shadow-md transition-all">
-            <div className="flex items-center justify-between mb-2">
-              <ChefHat size={28} className="text-[#7C9070]" />
-              <div className="text-5xl font-black text-black">{orders.filter(o => o.status === 'กำลังทำ').length}</div>
-            </div>
-            <div className="text-black text-sm font-black uppercase tracking-wider">กำลังทำ</div>
+            {/* Mobile Logout (Small Icon) */}
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                router.push('/staff');
+              }}
+              className="md:hidden bg-red-50 text-red-500 p-4 rounded-2xl border border-red-100 shadow-sm"
+            >
+              <BellRing size={20} />
+            </button>
           </div>
 
-          <div className="bg-white p-6 rounded-3xl border-2 border-emerald-100 shadow-sm hover:shadow-md transition-all">
-            <div className="flex items-center justify-between mb-2">
-              <CheckCircle2 size={28} className="text-emerald-500" />
-              <div className="text-5xl font-black text-black">{orders.filter(o => isFinished(o.status)).length}</div>
-            </div>
-            <div className="text-emerald-600 text-sm font-black uppercase tracking-wider">เสร็จแล้ว</div>
+          <div className="grid grid-cols-3 gap-4 mt-8">
+            {[
+              { label: 'รอดำเนินการ', count: orders.filter(o => o.status === 'กำลังเตรียม').length, icon: <Timer size={20} />, color: 'slate' },
+              { label: 'กำลังทำ', count: orders.filter(o => o.status === 'กำลังทำ').length, icon: <ChefHat size={20} />, color: 'indigo' },
+              { label: 'เสร็จแล้ว', count: orders.filter(o => isFinished(o.status)).length, icon: <CheckCircle2 size={20} />, color: 'emerald' },
+            ].map((stat, i) => (
+              <div key={i} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:translate-y-[-2px] transition-all group">
+                <div className="flex items-center justify-between mb-3">
+                  <div className={`p-2 rounded-xl bg-${stat.color}-50 text-${stat.color}-600 group-hover:bg-${stat.color}-600 group-hover:text-white transition-colors`}>
+                    {stat.icon}
+                  </div>
+                  <div className="text-4xl font-black text-slate-900 tracking-tighter">{stat.count}</div>
+                </div>
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">{stat.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </header>
@@ -588,25 +583,31 @@ export default function KitchenPage() {
                 className="bg-[#F8F9FB] rounded-[2.5rem] overflow-hidden shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom duration-500"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                {/* Header */}
-                <div className="p-6 flex justify-between items-center bg-white">
-                  <div className="flex items-center gap-4">
-                    <div className="w-20 h-20 bg-[#7C9070] rounded-3xl flex items-center justify-center text-white shadow-lg shadow-[#7C9070]/20">
-                      {order.table_no}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-gray-900 font-black text-xl">โต๊ะ {order.table_no}</h3>
+                {/* Header Section */}
+                <div className="p-7 bg-white">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="flex items-center gap-5">
+                      <div className="w-16 h-16 bg-slate-900 rounded-[1.8rem] flex items-center justify-center text-white text-2xl font-black shadow-xl shrink-0">
+                        {order.table_no}
                       </div>
-                      <p className="text-black text-sm font-bold flex items-center gap-1.5">
-                        <Clock size={14} />
-                        {new Date(order.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                      <div>
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">โต๊ะ {order.table_no}</h3>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5">
+                            <Clock size={12} /> {new Date(order.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className={`p-4 rounded-2xl border-2 transition-all ${isAudioUnlocked ? 'bg-[#F0F4EF] border-[#7C9070] text-[#7C9070]' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
-                    {isFinished(order.status) ? '✓ เสร็จแล้ว' : order.status}
+                    <div className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${isFinished(order.status)
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                      : order.status === 'กำลังทำ'
+                        ? 'bg-indigo-50 text-indigo-600 border-indigo-100'
+                        : 'bg-slate-50 text-slate-400 border-slate-100'
+                      }`}>
+                      {order.status === 'กำลังเตรียม' ? 'รอดำเนินการ' : order.status === 'กำลังทำ' ? 'ภายในครัว' : 'เสร็จแล้ว'}
+                    </div>
                   </div>
                 </div>
 
@@ -618,53 +619,114 @@ export default function KitchenPage() {
                     const isDone = item.isDone || finished === total || item.status === 'done';
                     const isCooking = item.status === 'cooking' && !isDone;
 
-                    const isMulti = total > 1;
-
                     return (
                       <div
                         key={idx}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleItemStatus(order.id, idx);
-                        }}
-                        className={`flex flex-col sm:flex-row sm:items-start justify-between p-3 border-b last:border-0 border-slate-50 cursor-pointer transition-colors active:scale-[0.99] ${isDone ? 'bg-green-50' : isCooking ? 'bg-orange-50' : 'hover:bg-gray-50'
+                        className={`flex flex-col p-5 border-2 rounded-[2rem] transition-all relative ${isDone ? 'bg-emerald-50/50 border-emerald-100 opacity-80' : isCooking ? 'bg-orange-50/50 border-orange-100' : 'bg-white border-slate-50 shadow-sm'
                           }`}
                       >
-                        <div className="flex-1">
-                          <span className={`font-black text-xl block mb-1 transition-all flex items-center gap-2 ${isDone ? 'text-green-700 line-through opacity-50' : 'text-[#2D3436]'
-                            }`}>
-                            {item.name}
-                          </span>
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-1">
+                              <span className={`font-black text-2xl transition-all ${isDone ? 'text-emerald-700 line-through' : 'text-[#2D3436]'
+                                }`}>
+                                {item.name}
+                              </span>
+                              <div className={`px-4 py-1.5 rounded-2xl text-lg font-black shrink-0 shadow-sm ${isDone ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-white'
+                                }`}>
+                                x{item.quantity}
+                              </div>
+                            </div>
 
-                          <div className="flex flex-wrap gap-2 items-center mb-2">
-                            {item.isSpecial && (
-                              <span className="text-white font-black text-[10px] uppercase bg-red-600 px-2 py-0.5 rounded-md shadow-sm">
-                                ⭐ พิเศษ
-                              </span>
-                            )}
-                            {item.selectedNoodle && (
-                              <span className="text-[10px] bg-slate-50 text-[#555] px-2 py-0.5 rounded-md font-bold border border-slate-100">
-                                {item.selectedNoodle}
-                              </span>
+                            <div className="flex flex-wrap gap-2 items-center">
+                              {item.isSpecial && (
+                                <span className="text-white font-black text-[10px] uppercase bg-red-600 px-3 py-1 rounded-lg">
+                                  ⭐ พิเศษ
+                                </span>
+                              )}
+                              {item.selectedNoodle && (
+                                <span className="text-[11px] bg-slate-100 text-[#555] px-3 py-1 rounded-lg font-black border border-slate-200">
+                                  {item.selectedNoodle}
+                                </span>
+                              )}
+                            </div>
+
+                            {item.note && (
+                              <p className="text-sm text-[#7C9070] font-bold mt-3 bg-white/60 border border-[#7C9070]/10 px-4 py-2 rounded-2xl inline-block shadow-sm">
+                                บันทึก: {item.note}
+                              </p>
                             )}
                           </div>
-
-
-
-                          {item.note && (
-                            <p className="text-sm text-[#7C9070] font-bold mt-1 bg-[#F9F7F2] px-2 py-1 rounded-lg inline-block">
-                              {item.note}
-                            </p>
-                          )}
                         </div>
 
-                        <div className="flex items-center gap-3 sm:flex-col sm:items-end mt-2 sm:mt-0">
-                          <div className={`px-3 py-1 rounded-xl text-lg font-black shrink-0 shadow-sm transition-colors ${isDone ? 'bg-green-600 text-white' : 'bg-[#2D3436] text-white'
-                            }`}>
-                            x{item.quantity}
-                          </div>
+                        <div className="flex flex-col gap-4">
+                          {/* Workflow Actions */}
+                          {!isDone && (
+                            <div className="flex items-center gap-3">
+                              {item.status !== 'cooking' ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const newItems = [...order.items];
+                                    newItems[idx] = { ...item, status: 'cooking' };
+                                    setOrders(prev => prev.map(o => o.id === order.id ? { ...o, items: newItems, status: o.status === 'กำลังเตรียม' ? 'กำลังทำ' : o.status } : o));
+                                    supabase.from('orders').update({ items: newItems }).eq('id', order.id);
+                                  }}
+                                  className="flex-1 bg-indigo-50 text-indigo-600 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center justify-center gap-2 shadow-sm"
+                                >
+                                  <ChefHat size={16} /> เริ่มลงมือทำ
+                                </button>
+                              ) : (
+                                <div className="flex-1 flex gap-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      updateItemFinishedQuantity(order.id, idx, 1);
+                                    }}
+                                    className="flex-[2] bg-emerald-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-emerald-100 hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-2"
+                                  >
+                                    <CheckCircle2 size={16} /> ทำเสร็จ +1 จาน
+                                  </button>
+                                  {total > 1 && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleItemStatus(order.id, idx);
+                                      }}
+                                      className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-tighter hover:bg-black transition-all"
+                                    >
+                                      เสร็จสิ้น
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
 
+                          {/* Standard Progress UI (Always visible if more than 1) */}
+                          {total > 1 && (
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center px-1">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ความคืบหน้า ({finished}/{total} จาน)</p>
+                                <p className="text-[10px] font-black text-emerald-600">{Math.round((finished / total) * 100)}%</p>
+                              </div>
+                              <div className="h-4 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50 flex p-0.5">
+                                {Array.from({ length: total }).map((_, i) => (
+                                  <div
+                                    key={i}
+                                    className={`flex-1 mx-0.5 rounded-sm transition-all duration-500 ${i < finished ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-slate-200/50'
+                                      }`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
 
+                          {isDone && (
+                            <div className="bg-emerald-50 text-emerald-600 py-4 rounded-2xl font-black text-xs text-center flex items-center justify-center gap-2 border border-emerald-100 shadow-sm animate-in fade-in duration-500">
+                              <CheckCircle2 size={16} /> ทำเสร็จเรียบร้อยแล้ว
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
