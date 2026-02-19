@@ -62,6 +62,9 @@ export default function AdminApp() {
   // Minimalist State: Hide/Show Payment History
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
 
+  // State for Sales Detail Popup
+  const [selectedOrderForDetail, setSelectedOrderForDetail] = useState<any | null>(null);
+
   // Notification sound function (Pure Web Audio API - iOS Friendly)
   const playNotificationSound = () => {
     if (!audioContextRef.current) return;
@@ -1372,61 +1375,44 @@ export default function AdminApp() {
                         </div>
                       ) : (
                         <div className="divide-y divide-slate-50">
-                          {(() => {
-                            // Group orders strictly by table_no
-                            const tableGroups: Record<string, any> = {};
-
-                            filteredSales.forEach(order => {
-                              const tableKey = order.table_no;
-                              const orderTime = new Date(order.updated_at || order.created_at).getTime();
-
-                              if (tableGroups[tableKey]) {
-                                tableGroups[tableKey].total_price += (Number(order.total_price) || 0);
-                                tableGroups[tableKey].order_count += 1;
-                                // Keep most recent time
-                                if (orderTime > new Date(tableGroups[tableKey].settlement_time).getTime()) {
-                                  tableGroups[tableKey].settlement_time = order.updated_at || order.created_at;
-                                }
-                              } else {
-                                tableGroups[tableKey] = {
-                                  id: order.id,
-                                  table_no: order.table_no,
-                                  total_price: Number(order.total_price) || 0,
-                                  settlement_time: order.updated_at || order.created_at,
-                                  order_count: 1
-                                };
-                              }
-                            });
-
-                            return Object.values(tableGroups)
-                              .sort((a: any, b: any) => new Date(b.settlement_time).getTime() - new Date(a.settlement_time).getTime())
-                              .map((bill: any) => (
-                                <div key={bill.id} className="py-4 flex items-center justify-between group hover:bg-slate-50/50 transition-colors px-4 -mx-4 rounded-2xl">
-                                  <div className="flex items-center gap-6">
-                                    <div className="text-[10px] font-black text-black uppercase tracking-widest w-12 text-center">
-                                      {formatOrderTime(bill.settlement_time)}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-xs font-black text-white shadow-sm">
-                                        {bill.table_no}
-                                      </div>
-                                      <div className="flex flex-col">
-                                        <span className="text-xs font-bold text-black">โต๊ะ {bill.table_no}</span>
-                                        <span className="text-[8px] text-black font-black uppercase">รวม {bill.order_count} ออเดอร์</span>
-                                      </div>
-                                    </div>
+                          {filteredSales
+                            .sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime())
+                            .map((order) => (
+                              <div
+                                key={order.id}
+                                onClick={() => setSelectedOrderForDetail(order)}
+                                className="py-6 flex items-center justify-between group hover:bg-slate-50/80 transition-all px-6 -mx-4 rounded-[2.5rem] cursor-pointer active:scale-[0.98]"
+                              >
+                                <div className="flex items-center gap-6">
+                                  <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-sm font-black text-white shadow-lg group-hover:scale-110 transition-transform">
+                                    {order.table_no}
                                   </div>
-                                  <div className="flex items-center gap-8">
-                                    <div className="text-right">
-                                      <p className="text-sm font-black text-slate-900">฿{bill.total_price.toLocaleString()}</p>
+                                  <div className="flex flex-col">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-base font-black text-slate-900">โต๊ะ {order.table_no}</span>
+                                      <span className="text-[9px] bg-slate-100 px-2 py-0.5 rounded-lg font-black text-slate-500 tracking-wider">รหัสบิล: #{order.id}</span>
                                     </div>
-                                    <div className="w-4 h-4 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-                                      <Check size={10} strokeWidth={4} />
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1">
+                                        <Clock size={10} /> {formatOrderTime(order.updated_at || order.created_at)}
+                                      </span>
+                                      <span className="text-[10px] text-emerald-500 font-black uppercase tracking-[0.1em] flex items-center gap-1">
+                                        <CheckCircle2 size={10} /> ชำระเงินแล้ว
+                                      </span>
                                     </div>
                                   </div>
                                 </div>
-                              ));
-                          })()}
+                                <div className="flex items-center gap-10">
+                                  <div className="text-right">
+                                    <p className="text-xl font-black text-slate-900 tracking-tighter">฿{(Number(order.total_price) || 0).toLocaleString()}</p>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-0.5">ยอดสุทธิ</p>
+                                  </div>
+                                  <div className="bg-slate-50 p-3 rounded-2xl text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-all">
+                                    <Eye size={20} />
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
                         </div>
                       )}
                     </div>
@@ -1557,7 +1543,99 @@ export default function AdminApp() {
         )
       }
 
-      {/* MODAL เพิ่ม/แก้ไขเมนู (คงเดิมทุกอย่าง) */}
+      {/* ✅ MODAL: ORDER DETAIL (Sales Summary) */}
+      {selectedOrderForDetail && (
+        <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-xl rounded-[3rem] overflow-hidden shadow-2xl animate-in zoom-in duration-300 max-h-[85vh] flex flex-col">
+            <div className="bg-slate-900 p-8 text-white flex justify-between items-start">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="bg-white/10 p-3 rounded-2xl"><ClipboardList size={28} /></div>
+                  <h3 className="text-3xl font-black">รายละเอียดออเดอร์</h3>
+                </div>
+                <div className="flex gap-2">
+                  <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+                    โต๊ะ {selectedOrderForDetail.table_no}
+                  </span>
+                  <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+                    รหัสบิล: #{selectedOrderForDetail.id}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedOrderForDetail(null)}
+                className="bg-white/10 hover:bg-white/20 transition-colors p-3 rounded-full"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-8">
+              <div className="space-y-6">
+                <div className="flex justify-between items-center bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <Clock size={20} className="text-slate-400" />
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">เวลาทำรายการ</p>
+                      <p className="font-bold text-slate-900">{formatOrderTime(selectedOrderForDetail.updated_at || selectedOrderForDetail.created_at)}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">สถานะบิล</p>
+                    <p className="font-black text-emerald-600 uppercase italic">ชำระเงินเรียบร้อย</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-2">รายการที่สั่ง</h4>
+                  <div className="space-y-3">
+                    {selectedOrderForDetail.items?.map((item: any, idx: number) => (
+                      <div key={idx} className="bg-white border border-slate-100 rounded-[1.8rem] p-5 flex justify-between items-center shadow-sm">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center font-black text-slate-900 border border-slate-100">
+                            {item.quantity}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900 leading-tight">
+                              {item.name} {item.isSpecial && '(พิเศษ)'}
+                            </p>
+                            {item.selectedNoodle && (
+                              <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mt-0.5">#{item.selectedNoodle}</p>
+                            )}
+                            {item.note && (
+                              <div className="text-[9px] text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-md inline-block mt-1">
+                                {item.note}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-black text-slate-900 tracking-tight">฿{((item.totalItemPrice || item.price) * item.quantity).toLocaleString()}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-8 bg-slate-50 border-t border-slate-200">
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">ยอดรวมชำระ</p>
+                  <p className="text-4xl font-black text-slate-900 tracking-tighter">฿{(Number(selectedOrderForDetail.total_price) || 0).toLocaleString()}</p>
+                </div>
+                <button
+                  onClick={() => setSelectedOrderForDetail(null)}
+                  className="bg-slate-900 text-white px-10 py-4 rounded-[1.5rem] font-black text-sm shadow-xl active:scale-95 transition-all"
+                >
+                  ปิดหน้ารายละเอียด
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {
         isModalOpen && (
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex justify-end">
