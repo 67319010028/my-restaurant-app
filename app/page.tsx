@@ -86,8 +86,6 @@ function RestaurantAppContent() {
     const sessionKey = `checkin_done_${tableNo}`;
     if (localStorage.getItem(sessionKey) === 'true') {
       setIsCheckedIn(true);
-      // Ensure DB still knows this table is occupied
-      supabase.from('tables').update({ status: 'occupied' }).eq('table_number', tableNo).then();
     }
 
     // BroadcastChannel for Demo Realtime Sync
@@ -373,6 +371,19 @@ function RestaurantAppContent() {
         setIsValidTable(false);
       } else {
         setIsValidTable(true);
+        // ✅ Sync Check-in state with actual DB status
+        if (data.status === 'available') {
+          console.log("DB says table is available. Cleaning local state.");
+          setIsCheckedIn(false);
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem(`checkin_done_${tableNo}`);
+            localStorage.removeItem(`checkin_at_${tableNo}`);
+            localStorage.removeItem(`table_billing_${tableNo}`);
+            localStorage.setItem(`demo_session_clear_${tableNo}`, 'true');
+          }
+        } else if (localStorage.getItem(`checkin_done_${tableNo}`) === 'true') {
+          setIsCheckedIn(true);
+        }
       }
     } catch (e) {
       setIsValidTable(false);

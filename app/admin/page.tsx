@@ -376,6 +376,7 @@ export default function AdminApp() {
         // 4.3 Reset Table Status to 'available'
         await supabase.from('tables').update({ status: 'available' }).eq('table_number', tableNo);
         fetchTables(); // Refresh floor plan
+        fetchOrders(); // ✅ Refresh orders to clear finished ones from view
       } else {
         await supabase.from('orders').update({
           status: newStatus,
