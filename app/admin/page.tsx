@@ -27,17 +27,24 @@ export default function AdminApp() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ✅ จัดการเรื่องวันที่ให้เป็นปัจจุบันตามเวลาไทย
+  // ✅ จัดการเรื่องวันที่ให้เป็นปัจจุบันตามเวลาไทย (init ทันที)
   const [salesViewMode, setSalesViewMode] = useState<'daily' | 'monthly'>('daily');
-  const [selectedSalesDate, setSelectedSalesDate] = useState("");
-  const [selectedSalesMonth, setSelectedSalesMonth] = useState("");
+  const [selectedSalesDate, setSelectedSalesDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  });
+  const [selectedSalesMonth, setSelectedSalesMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
 
   useEffect(() => {
+    // Keep it here as backup or for manual re-sync if needed
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    setSelectedSalesDate(today);
-    setSelectedSalesMonth(month);
+    if (!selectedSalesDate) setSelectedSalesDate(today);
+    if (!selectedSalesMonth) setSelectedSalesMonth(month);
   }, []);
 
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -340,15 +347,12 @@ export default function AdminApp() {
 
     try {
       // 1. Fetch from Real Database - Fetch desde el inicio del mes pasado para tener historial de ventas
-      const now_date = new Date();
-      // Start of previous month
-      const sinceDate = new Date(now_date.getFullYear(), now_date.getMonth() - 1, 1);
-
+      // ✅ ดึง 1000 รายการล่าสุดเพื่อให้ครอบคลุมข้อมูลปัจจุบันทั้งหมด
       const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .gte('created_at', sinceDate.toISOString())
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false })
+        .limit(1000);
 
       if (!error) {
         // ✅ If database fetch succeeded, use it (even if empty) to prevent "hanging" old data
@@ -386,8 +390,11 @@ export default function AdminApp() {
     const cleanTableNo = tableNo ? String(tableNo).trim() : '';
     let updatedOrders;
     if (newStatus === 'เสร็จสิ้น' && cleanTableNo) {
-      // ✅ If paying, close ALL active orders for that table
-      updatedOrders = orders.map(o => (String(o.table_no).trim() === cleanTableNo && !['เสร็จสิ้น', 'ยกเลิก', 'ออร์เดอร์ยกเลิก'].includes(o.status)) ? { ...o, status: newStatus, updated_at: now } : o);
+      // ✅ If paying, close ONLY active orders for that table (don't overwrite old sessions' updated_at)
+      updatedOrders = orders.map(o => (
+        String(o.table_no).trim() === cleanTableNo &&
+        !['เสร็จสิ้น', 'ยกเลิก', 'ออร์เดอร์ยกเลิก'].includes(o.status || '')
+      ) ? { ...o, status: newStatus, updated_at: now } : o);
     } else {
       updatedOrders = orders.map(o => o.id === id ? { ...o, status: newStatus, updated_at: now } : o);
     }
@@ -412,20 +419,37 @@ export default function AdminApp() {
         const tableOrders = orders.filter(o => String(o.table_no) === String(tableNo) && o.status !== 'เสร็จสิ้น');
         const totalAmount = tableOrders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
 
-        // 4.1 Update all orders for this table to 'เสร็จสิ้น' (ยกเว้นที่จบไปแล้ว)
-        // ✅ ใช้ .or() เพื่อให้แมตช์ทั้ง table_no แบบ String และ Number ใน DB
-        await supabase.from('orders').update({
-          status: newStatus,
-          updated_at: now
-        })
-          .or(`table_no.eq.${cleanTableNo},table_no.eq.${Number(cleanTableNo) || -888}`)
+        // 4.1 Update all orders for this table to 'เสร็จสิ้น'
+        // ปรับปรุง Filter ให้แม่นยำและรองรับการทำงานของ Supabase 100%
+        const { error: updateError } = await supabase.from('orders')
+          .update({
+            status: newStatus,
+            updated_at: new Date().toISOString()
+          })
+          .eq('table_no', cleanTableNo)
           .not('status', 'in', '(เสร็จสิ้น,ยกเลิก,ออร์เดอร์ยกเลิก)');
+
+        if (updateError) {
+          // Fallback: หากหาด้วย String ไม่เจอ ให้ลองหาด้วย Number
+          const tableInt = parseInt(cleanTableNo);
+          if (!isNaN(tableInt)) {
+            await supabase.from('orders')
+              .update({ status: newStatus, updated_at: new Date().toISOString() })
+              .eq('table_no', tableInt)
+              .not('status', 'in', '(เสร็จสิ้น,ยกเลิก,ออร์เดอร์ยกเลิก)');
+          }
+        }
+
+        if (updateError) console.error("Database Update Error:", updateError);
 
         // 4.2 Reset Table Status to 'available'
         await supabase.from('tables').update({ status: 'available' }).eq('table_number', cleanTableNo);
 
-        // 4.3 อัปเดตสถานะใน local state ทันที
-        setOrders(prev => prev.map(o => String(o.table_no).trim() === cleanTableNo ? { ...o, status: newStatus, updated_at: now } : o));
+        // 4.3 อัปเดตสถานะใน local state ทันที (เฉพาะรายการที่ยังไม่จบ)
+        setOrders(prev => prev.map(o => (
+          String(o.table_no).trim() === cleanTableNo &&
+          !['เสร็จสิ้น', 'ยกเลิก', 'ออร์เดอร์ยกเลิก'].includes(o.status || '')
+        ) ? { ...o, status: newStatus, updated_at: now } : o));
         setTables(prev => prev.map(t => String(t.table_number).trim() === cleanTableNo ? { ...t, status: 'available' } : t));
 
         // 4.4 รอสักครู่เพื่อให้ DB มั่นใจ แล้วค่อย fetch ใหม่
@@ -860,24 +884,27 @@ export default function AdminApp() {
                   </div>
                 ) : (
                   tables.map((table) => {
-                    const isBilling = orders.some(o => String(o.table_no) === String(table.table_number) && o.status === 'เรียกเช็คบิล');
-                    const isOccupied = orders.some(o => String(o.table_no) === String(table.table_number) && o.status !== 'เสร็จสิ้น');
+                    // 🎯 FILTER: เอาเฉพาะออเดอร์ย้อนหลังไม่เกิน 12 ชม. เพื่อป้องกันโต๊ะค้าง
+                    const twelveHoursAgo = Date.now() - 12 * 60 * 60 * 1000;
+                    const tableNo = String(table.table_number).trim();
 
-                    let statusClass = 'bg-white border-[#E8E4D8] text-[#2D3436] shadow-sm';
-                    let labelClass = 'text-[#636E72]';
-                    let accentClass = 'bg-[#F9F7F2] text-[#2D3436]';
+                    const activeOrders = orders.filter(o => {
+                      const t = new Date(o.created_at).getTime();
+                      return String(o.table_no).trim() === tableNo && t > twelveHoursAgo;
+                    });
+
+                    // ✅ ตามความต้องการเจ้าของร้าน: ถ้าเรียกเช็คบิลแล้ว ให้หน้าแผนผังขึ้นเป็น "ว่าง" ทันที
+                    // เพื่อให้ดูออกว่ามีกี่โต๊ะที่ "กำลังนั่งกินอยู่จริงๆ" โดยไม่รวมพวกที่รอจ่ายเงินแล้วจะลุก
+                    const isOccupied = activeOrders.some(o => !['เสร็จสิ้น', 'เรียกเช็คบิล', 'ยกเลิก', 'ออร์เดอร์ยกเลิก'].includes(o.status));
+
+                    let statusClass = 'bg-white border-slate-100 text-slate-900 shadow-sm';
+                    let labelClass = 'text-slate-400';
                     let statusText = 'โต๊ะว่าง';
 
-                    if (isBilling) {
-                      statusClass = 'bg-amber-400 border-amber-500 text-white shadow-xl shadow-amber-100 animate-pulse';
-                      labelClass = 'text-amber-100';
-                      accentClass = 'bg-white/20 text-white';
-                      statusText = 'เรียกเช็คบิล';
-                    } else if (isOccupied) {
+                    if (isOccupied) {
                       statusClass = 'bg-[#7C9070] border-[#7C9070] text-white shadow-xl shadow-[#7C9070]/20';
                       labelClass = 'text-[#F0F4EF]';
-                      accentClass = 'bg-white/20 text-white';
-                      statusText = 'มีลูกค้าค้าง';
+                      statusText = 'มีออเดอร์';
                     }
 
                     return (
@@ -888,14 +915,14 @@ export default function AdminApp() {
                       >
                         <span className="text-2xl font-black tracking-tighter">{table.table_number}</span>
                         <div className="flex flex-col items-center">
-                          <span className={`text-2xl font-black uppercase tracking-[0.2em] mb-1 ${labelClass}`}>{statusText}</span>
-                          <p className={`text-2xl font-bold inline-flex items-center gap-1.5 opacity-80 ${labelClass}`}>
-                            <Users size={22} /> {table.capacity} ที่นั่ง
+                          <span className={`text-xl font-black uppercase tracking-[0.2em] mb-1 ${labelClass}`}>{statusText}</span>
+                          <p className={`text-xs font-bold inline-flex items-center gap-1.5 opacity-80 ${labelClass}`}>
+                            <Users size={16} /> {table.capacity} ที่นั่ง
                           </p>
                         </div>
-                        {isOccupied && !isBilling && (
+                        {isOccupied && (
                           <div className="mt-2 bg-white/30 backdrop-blur-md px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border border-white/20 scale-90 group-hover:scale-100 transition-transform">
-                            ดูรายการสั่ง
+                            กำลังทาน
                           </div>
                         )}
                       </button>
@@ -1312,9 +1339,9 @@ export default function AdminApp() {
                 </div>
                 <button
                   onClick={() => {
-                    if (confirm("ต้องการรีเซ็ตข้อมูลการแสดงผลปัจจุบันหรือไม่?")) {
+                    if (confirm("ต้องการรีเฟรชข้อมูลและตรวจสอบยอดขายล่าสุดจากระบบใช่หรือไม่?")) {
                       localStorage.removeItem('demo_admin_orders');
-                      fetchOrders();
+                      fetchOrders(true);
                     }
                   }}
                   className="bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-orange-600 px-6 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all border border-slate-100"
@@ -1328,32 +1355,44 @@ export default function AdminApp() {
               // Wrap calculations in useMemo style logic (using a self-executing function but we should consider useMemo if it becomes a problem)
               // For now, let's keep it clean
               const salesData = (() => {
-                const filteredSales = orders.filter(o => {
-                  if (o.status !== 'เสร็จสิ้น') return false;
-                  // ✅ ใช้เวลาที่ชำระเงิน (updated_at) เป็นหลักในการลงรายงานยอดขาย
-                  const d = new Date(o.updated_at || o.created_at || Date.now());
+                const filteredSales = (orders || []).filter(o => {
+                  const s = (o.status || '').trim();
+                  // ✅ รองรับสถานะที่เกี่ยวข้องกับบิลที่จบแล้วทั้งหมด
+                  const isFinished = ['เสร็จสิ้น', 'ชำระเงินแล้ว', 'ชำระเงิน', 'เสร็จแล้ว'].includes(s);
+                  if (!isFinished) return false;
+
+                  // ✅ ใช้เวลาที่ชำระเงิน (updated_at) เป็นหลัก ถ้าไม่มีค่อยใช้เวลาสั่ง (created_at)
+                  const timestamp = o.updated_at || o.created_at;
+                  if (!timestamp) return false;
+
+                  const d = new Date(timestamp);
                   if (isNaN(d.getTime())) return false;
+
+                  // 🎯 สร้าง Key สำหรับเปรียบเทียบ โดยใช้ Local Time (YYYY-MM-DD)
+                  // ทำแบบ Manual เพื่อความชัวร์ 100% ในทุก Browser
                   const year = d.getFullYear();
                   const month = String(d.getMonth() + 1).padStart(2, '0');
                   const day = String(d.getDate()).padStart(2, '0');
                   const orderDateStr = `${year}-${month}-${day}`;
                   const orderMonthStr = `${year}-${month}`;
-                  return salesViewMode === 'daily' ? orderDateStr === selectedSalesDate : orderMonthStr === selectedSalesMonth;
+
+                  if (salesViewMode === 'daily') {
+                    return orderDateStr === selectedSalesDate;
+                  } else {
+                    return orderMonthStr === selectedSalesMonth;
+                  }
                 });
 
                 const groupedSalesForMetrics = filteredSales
-                  .sort((a, b) => new Date(a.updated_at || a.created_at).getTime() - new Date(b.updated_at || b.created_at).getTime())
                   .reduce((acc: any[], order) => {
                     const orderTime = new Date(order.updated_at || order.created_at).getTime();
+                    // ✅ สำหรับตัวเลขสรุป (Metrics): นับเป็น "จำนวนบิล" (โต๊ะเดียวกันจ่ายไล่เลี่ยกัน = 1 บิล)
                     const existing = acc.find(item =>
-                      item.table_no === order.table_no &&
-                      Math.abs(new Date(item.updated_at || item.created_at).getTime() - orderTime) < 25 * 60 * 1000
+                      String(item.table_no).trim() === String(order.table_no).trim() &&
+                      Math.abs(new Date(item.updated_at || item.created_at).getTime() - orderTime) < 60 * 1000
                     );
                     if (existing) {
                       existing.total_price = (Number(existing.total_price) || 0) + (Number(order.total_price) || 0);
-                      if (orderTime > new Date(existing.updated_at || existing.created_at).getTime()) {
-                        existing.updated_at = order.updated_at;
-                      }
                     } else {
                       acc.push({ ...order });
                     }
@@ -1364,10 +1403,10 @@ export default function AdminApp() {
                 const totalOrders = groupedSalesForMetrics.length;
                 const avgTicket = totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(0) : 0;
 
-                return { filteredSales, groupedSalesForMetrics, totalRevenue, totalOrders, avgTicket };
+                return { filteredSales, totalRevenue, totalOrders, avgTicket };
               })();
 
-              const { filteredSales, groupedSalesForMetrics, totalRevenue, totalOrders, avgTicket } = salesData;
+              const { filteredSales, totalRevenue, totalOrders, avgTicket } = salesData;
               return (
                 <>
                   {/* 1. TOP METRICS ROW */}
@@ -1416,8 +1455,9 @@ export default function AdminApp() {
                           const dailyData = last7Days.map(dateStr => {
                             const dayRevenue = orders.filter(o => {
                               if (o.status !== 'เสร็จสิ้น') return false;
-                              const od = new Date(o.created_at || '');
-                              return od.toISOString().split('T')[0] === dateStr;
+                              // ✅ ใช้เวลาที่ชำระเงิน (updated_at) เพื่อให้ตรงกับหน้าสรุปยอดขาย
+                              const d = new Date(o.updated_at || o.created_at || Date.now());
+                              return d.toISOString().split('T')[0] === dateStr;
                             }).reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
                             return dayRevenue;
                           });
@@ -1543,29 +1583,47 @@ export default function AdminApp() {
                     </div>
                     <div className="p-8">
                       {filteredSales.length === 0 ? (
-                        <div className="text-center py-20 opacity-20 flex flex-col items-center gap-4">
+                        <div className="flex flex-col items-center justify-center py-20 text-slate-300 gap-4">
                           <ClipboardList size={40} />
-                          <p className="text-xs font-bold">ไม่พบรายการในช่วงเวลาที่เลือก</p>
+                          <div className="text-center text-slate-400">
+                            <p className="text-sm font-bold">ไม่พบรายการบิลล์สำหรับวันที่เลือก</p>
+                            <p className="text-[10px] uppercase tracking-widest mt-1">
+                              (ตรวจพบข้อมูลทั้งหมด {orders.length} รายการในระบบ)
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => { setSelectedSalesDate(''); setSalesViewMode('daily'); }}
+                            className="text-indigo-500 text-xs font-bold hover:underline"
+                          >
+                            ตรวจสอบรายการทั้งหมดที่มี
+                          </button>
                         </div>
                       ) : (
                         <div className="divide-y divide-slate-50">
                           {(() => {
                             const groupedSales = filteredSales
-                              .sort((a, b) => new Date(a.updated_at || a.created_at).getTime() - new Date(b.updated_at || b.created_at).getTime())
                               .reduce((acc: any[], order) => {
-                                const orderTime = new Date(order.updated_at || order.created_at).getTime();
-                                const existing = acc.find(item =>
-                                  item.table_no === order.table_no &&
-                                  Math.abs(new Date(item.updated_at || item.created_at).getTime() - orderTime) < 25 * 60 * 1000
-                                );
+                                const d = new Date(order.updated_at || order.created_at || Date.now());
+                                const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                                const orderTime = d.getTime();
+
+                                // 🎯 DIFFERENCE: รายวัน=รวมแยกโต๊ะ/เซสชั่น | รายเดือน=รวมตามวัน ("รวมไปเลย")
+                                const existing = acc.find(item => {
+                                  if (salesViewMode === 'daily') {
+                                    return String(item.table_no).trim() === String(order.table_no).trim() &&
+                                      Math.abs(new Date(item.updated_at || item.created_at).getTime() - orderTime) < 60 * 1000;
+                                  } else {
+                                    // โหมดรายเดือน: รวมยอดตาม "วัน" (ignore table_no)
+                                    const id = new Date(item.updated_at || item.created_at || Date.now());
+                                    const idDateStr = `${id.getFullYear()}-${String(id.getMonth() + 1).padStart(2, '0')}-${String(id.getDate()).padStart(2, '0')}`;
+                                    return idDateStr === dateStr;
+                                  }
+                                });
 
                                 if (existing) {
                                   existing.total_price = (Number(existing.total_price) || 0) + (Number(order.total_price) || 0);
                                   existing.items = [...(existing.items || []), ...(order.items || [])];
                                   existing.combinedIds = [...(existing.combinedIds || []), order.id];
-                                  if (orderTime > new Date(existing.updated_at || existing.created_at).getTime()) {
-                                    existing.updated_at = order.updated_at;
-                                  }
                                 } else {
                                   acc.push({ ...order, combinedIds: [order.id] });
                                 }
@@ -1573,44 +1631,77 @@ export default function AdminApp() {
                               }, [])
                               .sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime());
 
-                            return groupedSales.map((order) => (
-                              <div
-                                key={order.key || order.id}
-                                onClick={() => setSelectedOrderForDetail(order)}
-                                className="py-6 flex items-center justify-between group hover:bg-slate-50/80 transition-all px-6 -mx-4 rounded-[2.5rem] cursor-pointer active:scale-[0.98]"
-                              >
-                                <div className="flex items-center gap-6">
-                                  <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-sm font-black text-white shadow-lg group-hover:scale-110 transition-transform">
-                                    {order.table_no}
-                                  </div>
-                                  <div className="flex flex-col">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="text-base font-black text-slate-900">โต๊ะ {order.table_no}</span>
-                                      <span className="text-[9px] bg-slate-100 px-2 py-0.5 rounded-lg font-black text-slate-500 tracking-wider">
-                                        {`${order.combinedIds?.length || 1} ออเดอร์`}
-                                      </span>
+                            const rows = groupedSales.map((order) => {
+                              const isMonthlyAgg = salesViewMode === 'monthly';
+                              const rowDate = new Date(order.updated_at || order.created_at);
+
+                              return (
+                                <div
+                                  key={order.key || order.id || Math.random()}
+                                  onClick={() => setSelectedOrderForDetail(order)}
+                                  className="py-6 flex items-center justify-between group hover:bg-slate-50/80 transition-all px-6 -mx-4 rounded-[2.5rem] cursor-pointer active:scale-[0.98]"
+                                >
+                                  <div className="flex items-center gap-6">
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-sm font-black shadow-lg group-hover:scale-110 transition-transform ${isMonthlyAgg ? 'bg-indigo-500 text-white' : 'bg-slate-900 text-white'}`}>
+                                      {isMonthlyAgg ? <Calendar size={20} /> : order.table_no}
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1">
-                                        <Clock size={10} /> {formatOrderTime(order.updated_at || order.created_at)}
-                                      </span>
-                                      <span className="text-[10px] text-emerald-500 font-black uppercase tracking-[0.1em] flex items-center gap-1">
-                                        <CheckCircle2 size={10} /> ชำระเงินแล้ว
-                                      </span>
+                                    <div className="flex flex-col">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-base font-black text-slate-900">
+                                          {isMonthlyAgg
+                                            ? `สรุปยอดขายวันที่ ${rowDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}`
+                                            : `โต๊ะ ${order.table_no}`}
+                                        </span>
+                                        <span className="text-[9px] bg-slate-100 px-2 py-0.5 rounded-lg font-black text-slate-500 tracking-wider">
+                                          {`${order.combinedIds?.length || 1} ออเดอร์`}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1">
+                                          <Clock size={10} />
+                                          {isMonthlyAgg ? 'ยอดรวมทั้งวัน' : formatOrderTime(order.updated_at || order.created_at)}
+                                        </span>
+                                        <span className="text-[10px] text-emerald-500 font-black uppercase tracking-[0.1em] flex items-center gap-1">
+                                          <CheckCircle2 size={10} /> ชำระเงินแล้ว
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-10">
+                                    <div className="text-right">
+                                      <p className="text-xl font-black text-slate-900 tracking-tighter">฿{(Number(order.total_price) || 0).toLocaleString()}</p>
+                                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-0.5">ยอดสุทธิ</p>
+                                    </div>
+                                    <div className="bg-slate-50 p-3 rounded-2xl text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-all">
+                                      <Eye size={20} />
                                     </div>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-10">
+                              );
+                            });
+
+                            if (salesViewMode === 'monthly' && groupedSales.length > 0) {
+                              rows.push(
+                                <div key="monthly-summary-footer" className="mt-6 pt-6 border-t-2 border-dashed border-slate-100 flex items-center justify-between px-6 bg-emerald-50/50 -mx-4 py-8 rounded-[2.5rem]">
+                                  <div className="flex items-center gap-6">
+                                    <div className="w-12 h-12 rounded-2xl bg-emerald-500 flex items-center justify-center text-white shadow-lg">
+                                      <TrendingUp size={24} />
+                                    </div>
+                                    <div>
+                                      <p className="text-base font-black text-emerald-900">ยอดรวมประจำเดือน</p>
+                                      <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-[0.1em]">ยอดรวมสุทธิประจำเดือน</p>
+                                    </div>
+                                  </div>
                                   <div className="text-right">
-                                    <p className="text-xl font-black text-slate-900 tracking-tighter">฿{(Number(order.total_price) || 0).toLocaleString()}</p>
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-0.5">ยอดสุทธิ</p>
-                                  </div>
-                                  <div className="bg-slate-50 p-3 rounded-2xl text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-all">
-                                    <Eye size={20} />
+                                    <p className="text-3xl font-black text-emerald-600 tracking-tighter animate-in fade-in slide-in-from-right duration-700">
+                                      ฿{totalRevenue.toLocaleString()}
+                                    </p>
+                                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mt-1">{totalOrders} บิลล์ทั้งหมด</p>
                                   </div>
                                 </div>
-                              </div>
-                            ));
+                              );
+                            }
+                            return rows;
                           })()}
                         </div>
                       )}
