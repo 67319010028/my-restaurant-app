@@ -184,8 +184,29 @@ export default function KitchenPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload: any) => {
         if (payload.eventType === 'INSERT') {
           playNotificationSound();
+          fetchOrders(true); // Force fetch on new order
+        } else if (payload.eventType === 'UPDATE') {
+          // If it's a simple status/item update, we can update locally instead of full fetch
+          const updatedOrder = payload.new;
+          if (updatedOrder.status === 'เสร็จสิ้น') {
+            // Remove from view if finished
+            setOrders(prev => prev.filter(o => o.id !== updatedOrder.id));
+          } else {
+            // Update items/status for existing order
+            setOrders(prev => {
+              const exists = prev.find(o => o.id === updatedOrder.id);
+              if (exists) {
+                return prev.map(o => o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o);
+              } else if (updatedOrder.status !== 'เสร็จสิ้น') {
+                // If it's a status change from finished back to active (rare)
+                return [...prev, updatedOrder].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+              }
+              return prev;
+            });
+          }
+        } else {
+          fetchOrders();
         }
-        fetchOrders();
       })
       .subscribe();
 
@@ -230,7 +251,25 @@ export default function KitchenPage() {
     }
   ];
 
-  const fetchOrders = async () => {
+  // Use a ref to prevent rapid consecutive fetches
+  const lastFetchTimeRef = useRef<number>(0);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const fetchOrders = async (force = false) => {
+    const now = Date.now();
+    // Debounce: prevent fetching more than once every 1000ms unless forced
+    if (!force && lastFetchTimeRef.current && (now - lastFetchTimeRef.current < 1000)) {
+      if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
+      fetchTimeoutRef.current = setTimeout(() => fetchOrders(), 1100);
+      return;
+    }
+
+    lastFetchTimeRef.current = now;
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+      fetchTimeoutRef.current = null;
+    }
+
     try {
       // 1. Fetch from Real Database
       const { data, error } = await supabase

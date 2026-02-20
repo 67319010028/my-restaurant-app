@@ -182,17 +182,29 @@ export default function AdminApp() {
       console.log('Real-time order change received:', payload);
       setLastEventTime(new Date().toLocaleTimeString('th-TH'));
 
-      // 1. Play sound on NEW order or BILL request
       if (payload.eventType === 'INSERT') {
         playNotificationSound();
+        fetchOrders(true); // Force fetch on new order
       } else if (payload.eventType === 'UPDATE') {
-        // ให้เด้งเสียงถ้าสถานะใหม่เป็น 'เรียกเช็คบิล'
-        if (payload.new.status === 'เรียกเช็คบิล') {
+        // If it's a simple status/item update, update locally instead of full fetch
+        const updatedOrder = payload.new;
+        setOrders(prev => {
+          const exists = prev.find(o => o.id === updatedOrder.id);
+          if (exists) {
+            // Update existing
+            return prev.map(o => o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o);
+          } else {
+            // Might be a new order that we missed or status change that makes it relevant
+            return [...prev, updatedOrder].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          }
+        });
+
+        if (updatedOrder.status === 'เรียกเช็คบิล') {
           playNotificationSound();
         }
+      } else {
+        fetchOrders();
       }
-      // 2. Refresh orders after any DB change
-      fetchOrders();
     }).subscribe((status) => {
       console.log('Real-time Status:', status);
       if (status === 'SUBSCRIBED') setRealtimeStatus('SUBSCRIBED');
@@ -301,10 +313,34 @@ export default function AdminApp() {
     }
   };
 
-  const fetchOrders = async () => {
+  const lastFetchTimeRef = useRef<number>(0);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const fetchOrders = async (force = false) => {
+    const now = Date.now();
+    // Debounce: prevent fetching more than once every 1500ms unless forced
+    if (!force && lastFetchTimeRef.current && (now - lastFetchTimeRef.current < 1500)) {
+      if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
+      fetchTimeoutRef.current = setTimeout(() => fetchOrders(), 1600);
+      return;
+    }
+
+    lastFetchTimeRef.current = now;
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+      fetchTimeoutRef.current = null;
+    }
+
     try {
-      // 1. Fetch from Real Database
-      const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: true });
+      // 1. Fetch from Real Database - Optimization: Only fetch orders from today for better performance
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .gte('created_at', startOfToday.toISOString())
+        .order('created_at', { ascending: true });
 
       if (!error) {
         // ✅ If database fetch succeeded, use it (even if empty) to prevent "hanging" old data
@@ -1187,41 +1223,48 @@ export default function AdminApp() {
             </div>
 
             {(() => {
-              const filteredSales = orders.filter(o => {
-                if (o.status !== 'เสร็จสิ้น') return false;
-                const d = o.created_at ? new Date(o.created_at) : new Date();
-                if (isNaN(d.getTime())) return false;
-                const year = d.getFullYear();
-                const month = String(d.getMonth() + 1).padStart(2, '0');
-                const day = String(d.getDate()).padStart(2, '0');
-                const orderDateStr = `${year}-${month}-${day}`;
-                const orderMonthStr = `${year}-${month}`;
-                return salesViewMode === 'daily' ? orderDateStr === selectedSalesDate : orderMonthStr === selectedSalesMonth;
-              });
+              // Wrap calculations in useMemo style logic (using a self-executing function but we should consider useMemo if it becomes a problem)
+              // For now, let's keep it clean
+              const salesData = (() => {
+                const filteredSales = orders.filter(o => {
+                  if (o.status !== 'เสร็จสิ้น') return false;
+                  const d = o.created_at ? new Date(o.created_at) : new Date();
+                  if (isNaN(d.getTime())) return false;
+                  const year = d.getFullYear();
+                  const month = String(d.getMonth() + 1).padStart(2, '0');
+                  const day = String(d.getDate()).padStart(2, '0');
+                  const orderDateStr = `${year}-${month}-${day}`;
+                  const orderMonthStr = `${year}-${month}`;
+                  return salesViewMode === 'daily' ? orderDateStr === selectedSalesDate : orderMonthStr === selectedSalesMonth;
+                });
 
-              const groupedSalesForMetrics = filteredSales
-                .sort((a, b) => new Date(a.updated_at || a.created_at).getTime() - new Date(b.updated_at || b.created_at).getTime())
-                .reduce((acc: any[], order) => {
-                  const orderTime = new Date(order.updated_at || order.created_at).getTime();
-                  const existing = acc.find(item =>
-                    item.table_no === order.table_no &&
-                    Math.abs(new Date(item.updated_at || item.created_at).getTime() - orderTime) < 25 * 60 * 1000
-                  );
-                  if (existing) {
-                    existing.total_price = (Number(existing.total_price) || 0) + (Number(order.total_price) || 0);
-                    if (orderTime > new Date(existing.updated_at || existing.created_at).getTime()) {
-                      existing.updated_at = order.updated_at;
+                const groupedSalesForMetrics = filteredSales
+                  .sort((a, b) => new Date(a.updated_at || a.created_at).getTime() - new Date(b.updated_at || b.created_at).getTime())
+                  .reduce((acc: any[], order) => {
+                    const orderTime = new Date(order.updated_at || order.created_at).getTime();
+                    const existing = acc.find(item =>
+                      item.table_no === order.table_no &&
+                      Math.abs(new Date(item.updated_at || item.created_at).getTime() - orderTime) < 25 * 60 * 1000
+                    );
+                    if (existing) {
+                      existing.total_price = (Number(existing.total_price) || 0) + (Number(order.total_price) || 0);
+                      if (orderTime > new Date(existing.updated_at || existing.created_at).getTime()) {
+                        existing.updated_at = order.updated_at;
+                      }
+                    } else {
+                      acc.push({ ...order });
                     }
-                  } else {
-                    acc.push({ ...order });
-                  }
-                  return acc;
-                }, []);
+                    return acc;
+                  }, []);
 
-              const totalRevenue = groupedSalesForMetrics.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
-              const totalOrders = groupedSalesForMetrics.length;
-              const avgTicket = totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(0) : 0;
+                const totalRevenue = groupedSalesForMetrics.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
+                const totalOrders = groupedSalesForMetrics.length;
+                const avgTicket = totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(0) : 0;
 
+                return { filteredSales, groupedSalesForMetrics, totalRevenue, totalOrders, avgTicket };
+              })();
+
+              const { filteredSales, groupedSalesForMetrics, totalRevenue, totalOrders, avgTicket } = salesData;
               return (
                 <>
                   {/* 1. TOP METRICS ROW */}
@@ -1471,7 +1514,7 @@ export default function AdminApp() {
                     </div>
                   </div>
                 </>
-              )
+              );
             })()}
           </main>
         )
