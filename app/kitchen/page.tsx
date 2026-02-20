@@ -238,25 +238,23 @@ export default function KitchenPage() {
         .select('*')
         .order('created_at', { ascending: true });
 
-      let baseOrders = data || [];
-
-      if (typeof window !== 'undefined') {
-        const savedOrdersStr = localStorage.getItem('demo_admin_orders');
-        let savedOrders = savedOrdersStr ? JSON.parse(savedOrdersStr) : [];
-
-        // ✅ Only merge localStorage if DB fetch returned nothing 
-        // to prevent "shadow" duplicate orders.
-        const combined = baseOrders.length > 0 ? baseOrders : savedOrders;
-
-        setOrders(combined);
-        localStorage.setItem('demo_admin_orders', JSON.stringify(combined));
-      } else {
+      if (!error) {
+        // ✅ If success, use DB data (even if empty) to clear "old" local data
+        const baseOrders = data || [];
         setOrders(baseOrders);
-      }
-
-      if (error) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('demo_admin_orders', JSON.stringify(baseOrders));
+        }
+      } else {
+        // ❌ Only fallback if error occurs
         console.warn('Supabase fetch failed, using Local/Mock Data:', error);
-        if (orders.length === 0) setOrders(MOCK_ORDERS);
+        if (typeof window !== 'undefined') {
+          const savedOrdersStr = localStorage.getItem('demo_admin_orders');
+          if (savedOrdersStr) setOrders(JSON.parse(savedOrdersStr));
+          else setOrders(MOCK_ORDERS);
+        } else {
+          setOrders(MOCK_ORDERS);
+        }
       }
     } catch (e) {
       console.error("Unexpected error fetching orders:", e);
@@ -313,8 +311,17 @@ export default function KitchenPage() {
 
     newItems[itemIdx] = item;
 
+    // ✅ Add: Calculate overall order status based on updated items
+    const allFinished = newItems.every(i => (i.finished_quantity === i.quantity) || i.isDone || i.status === 'done');
+    const someStarted = newItems.some(i => (i.finished_quantity || 0) > 0 || i.status === 'cooking' || i.status === 'done');
+
+    let newOrderStatus = order.status;
+    if (allFinished) newOrderStatus = 'เสร็จแล้ว';
+    else if (someStarted) newOrderStatus = 'กำลังทำ';
+    else newOrderStatus = 'กำลังเตรียม';
+
     // Optimistic Update
-    const updated = orders.map(o => o.id === orderId ? { ...o, items: newItems } : o);
+    const updated = orders.map(o => o.id === orderId ? { ...o, items: newItems, status: newOrderStatus } : o);
     setOrders(updated);
 
     if (typeof window !== 'undefined') localStorage.setItem('demo_admin_orders', JSON.stringify(updated));
@@ -325,13 +332,14 @@ export default function KitchenPage() {
       type: 'ORDER_UPDATE',
       id: orderId,
       items: newItems,
+      status: newOrderStatus, // Send updated status
       table_no: order.table_no
     });
 
     try {
       const { error } = await supabase
         .from('orders')
-        .update({ items: newItems })
+        .update({ items: newItems, status: newOrderStatus }) // Sync both items and status
         .eq('id', orderId);
 
       if (error) console.warn('Supabase item update failed:', error);

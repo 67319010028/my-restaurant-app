@@ -162,9 +162,9 @@ export default function AdminApp() {
         setOrders(prev => {
           const exists = prev.find(o => o.id === id);
           if (exists) {
-            return prev.map(o => o.id === id ? { ...o, status } : o);
+            // ✅ Update whole order with new data (including items array for progress tracking)
+            return prev.map(o => o.id === id ? { ...o, ...event.data } : o);
           }
-          // Don't add new orders here - let Supabase realtime handle it
           return prev;
         });
       }
@@ -306,20 +306,26 @@ export default function AdminApp() {
       // 1. Fetch from Real Database
       const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: true });
 
-      let baseOrders = data || [];
-
-      if (typeof window !== 'undefined') {
-        const savedOrdersStr = localStorage.getItem('demo_admin_orders');
-        let savedOrders = savedOrdersStr ? JSON.parse(savedOrdersStr) : [];
-
-        // ✅ Only merge localStorage if DB fetch returned nothing 
-        // to prevent "shadow" duplicate orders when using real Supabase.
-        const combined = baseOrders.length > 0 ? baseOrders : savedOrders;
-
-        setOrders(combined);
-        localStorage.setItem('demo_admin_orders', JSON.stringify(combined));
-      } else {
+      if (!error) {
+        // ✅ If database fetch succeeded, use it (even if empty) to prevent "hanging" old data
+        const baseOrders = data || [];
         setOrders(baseOrders);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('demo_admin_orders', JSON.stringify(baseOrders));
+        }
+      } else {
+        // ❌ Only fallback to localStorage if there was a real network/database error
+        console.warn("Supabase fetch error, using Cached orders:", error);
+        if (typeof window !== 'undefined') {
+          const savedOrdersStr = localStorage.getItem('demo_admin_orders');
+          if (savedOrdersStr) {
+            setOrders(JSON.parse(savedOrdersStr));
+          } else {
+            setOrders(MOCK_ORDERS);
+          }
+        } else {
+          setOrders(MOCK_ORDERS);
+        }
       }
 
       if (error) console.warn("Supabase Fetch Error", error);
