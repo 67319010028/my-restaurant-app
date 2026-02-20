@@ -567,20 +567,30 @@ function RestaurantAppContent() {
       return;
     }
 
+    // เอาเฉพาะ order IDs ของ session นี้ (ที่ยังไม่เสร็จสิ้น/ยกเลิก)
+    const activeOrders = orders.filter(o =>
+      !['เสร็จสิ้น', 'เสิร์ฟแล้ว', 'ยกเลิก', 'ออร์เดอร์ยกเลิก', 'เรียกเช็คบิล'].includes(o.status)
+    );
+
+    if (activeOrders.length === 0) {
+      alert("ไม่พบรายการอาหารที่สั่งค่ะ");
+      return;
+    }
+
+    const activeIds = activeOrders.map(o => o.id);
+
     // 1. Calculate Summary for the total bill
-    const billPrice = orders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
-    const billItems = orders.flatMap(o => o.items || []);
+    const billPrice = activeOrders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
+    const billItems = activeOrders.flatMap(o => o.items || []);
 
-    // 2. Optimistic Update for Demo Mode
-    setOrders(prev => prev.map(o => o.table_no === tableNo ? { ...o, status: 'เรียกเช็คบิล' } : o));
+    // 2. Optimistic Update - เฉพาะ order ที่ active เท่านั้น
+    setOrders(prev => prev.map(o => activeIds.includes(o.id) ? { ...o, status: 'เรียกเช็คบิล' } : o));
 
-    // 3. Broadcast to Admin (Send FULL data to ensure admin sees it even if refreshed)
+    // 3. Broadcast to Admin
     const channel = new BroadcastChannel('restaurant_demo_channel');
-    const firstOrder = orders.find(o => o.table_no === tableNo && o.status !== 'เสร็จสิ้น');
-
     channel.postMessage({
       type: 'ORDER_UPDATE',
-      id: firstOrder?.id || Date.now(),
+      id: activeOrders[0]?.id,
       status: 'เรียกเช็คบิล',
       table_no: tableNo,
       total_price: billPrice,
@@ -588,17 +598,15 @@ function RestaurantAppContent() {
     });
 
     try {
-      console.log('Sending callForBill for table:', tableNo);
-      const { data, error, count } = await supabase
+      console.log('Sending callForBill for table:', tableNo, 'IDs:', activeIds);
+      // ✅ ใช้ ID จริงของออเดอร์ session นี้ ไม่ใช่ filter แบบ table_no กว้างๆ
+      const { error } = await supabase
         .from('orders')
         .update({ status: 'เรียกเช็คบิล' })
-        .eq('table_no', tableNo)
-        .neq('status', 'เสร็จสิ้น');
+        .in('id', activeIds);
 
       // Sync to tables table
       await supabase.from('tables').update({ status: 'billing' }).eq('table_number', tableNo);
-
-      console.log('CallForBill Supabase Response:', { data, error, count });
 
       if (error) {
         console.warn("Supabase call bill failed", error);
@@ -611,6 +619,7 @@ function RestaurantAppContent() {
       console.warn("Supabase exception in call bill:", e);
     }
   };
+
 
   // --- Render Views ---
   if (view === 'cart') {

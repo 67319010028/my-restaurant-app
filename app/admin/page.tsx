@@ -1049,8 +1049,16 @@ export default function AdminApp() {
                 </div>
               ) : (
                 Array.from(new Set(orders.filter(o => o.status === 'เรียกเช็คบิล').map(o => o.table_no))).map((tableNo) => {
-                  const tableOrders = orders.filter(o => o.table_no === tableNo && o.status === 'เรียกเช็คบิล');
+                  // ดึงเฉพาะออเดอร์รอบล่าสุด: หา updated_at ล่าสุด แล้วเอาเฉพาะที่อยู่ภายใน 15 นาทีของรอบนั้น
+                  const allBillingOrders = orders.filter(o => o.table_no === tableNo && o.status === 'เรียกเช็คบิล');
+                  const latestBillingTime = Math.max(...allBillingOrders.map(o => new Date(o.updated_at || o.created_at).getTime()));
+                  const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+                  const tableOrders = allBillingOrders.filter(o => {
+                    const t = new Date(o.updated_at || o.created_at).getTime();
+                    return (latestBillingTime - t) < WINDOW_MS;
+                  });
                   const totalAmount = tableOrders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
+
 
                   return (
                     <div key={tableNo} className="bg-white rounded-[3rem] overflow-hidden shadow-[0_8px_40px_rgb(0,0,0,0.04)] border border-slate-100 animate-in fade-in slide-in-from-bottom-4 duration-500">
