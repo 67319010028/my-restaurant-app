@@ -58,9 +58,12 @@ function RestaurantAppContent() {
 
   // --- Derived State ---
   const totalCartPrice = cart.reduce((sum, item) => sum + (item.totalItemPrice * item.quantity), 0);
-  const totalBillAmount = orders.reduce((sum, order) => sum + (Number(order.total_price) || 0), 0);
+  const totalBillAmount = orders
+    .filter(o => !['เสร็จสิ้น', 'ยกเลิก', 'ออร์เดอร์ยกเลิก'].includes(o.status))
+    .reduce((sum, order) => sum + (Number(order.total_price) || 0), 0);
   const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const isCurrentlyBilling = orders.some(o => o.status === 'เรียกเช็คบิล');
+  const activeOrdersForBilling = orders.filter(o => !['เสร็จสิ้น', 'ยกเลิก', 'ออร์เดอร์ยกเลิก', 'เรียกเช็คบิล'].includes(o.status));
   const totalItemsInOrders = orders.reduce((sum, order) => sum + (order.items?.reduce((s: number, i: any) => s + (Number(i.quantity) || 0), 0) || 0), 0);
   const finishedItemsInOrders = orders.reduce((sum, order) => {
     if (order.status === 'เสร็จแล้ว') {
@@ -331,7 +334,7 @@ function RestaurantAppContent() {
         .from('orders')
         .select('*')
         .eq('table_no', tableNo)
-        .not('status', 'in', '("เสร็จสิ้น","ยกเลิก","ออร์เดอร์ยกเลิก")')
+        .not('status', 'in', '(เสร็จสิ้น,ยกเลิก,ออร์เดอร์ยกเลิก)')
         .gte('created_at', startTime) // Filter by check-in time or start of day
         .order('created_at', { ascending: true });
 
@@ -567,13 +570,15 @@ function RestaurantAppContent() {
       return;
     }
 
-    // เอาเฉพาะ order IDs ของ session นี้ (ที่ยังไม่เสร็จสิ้น/ยกเลิก)
-    const activeOrders = orders.filter(o =>
-      !['เสร็จสิ้น', 'เสิร์ฟแล้ว', 'ยกเลิก', 'ออร์เดอร์ยกเลิก', 'เรียกเช็คบิล'].includes(o.status)
-    );
+    // เอาเฉพาะออเดอร์ของ session นี้ที่ยังไม่ได้จ่ายเงินและยังไม่ได้เรียกเช็คบิล
+    const activeOrders = activeOrdersForBilling;
 
     if (activeOrders.length === 0) {
-      alert("ไม่พบรายการอาหารที่สั่งค่ะ");
+      if (isCurrentlyBilling) {
+        alert("กำลังเตรียมใบเสร็จให้คุณลูกค้าแล้วค่ะ กรุณารอสักครู่นะคะ");
+      } else {
+        alert("ไม่พบรายการอาหารที่ค้างชำระค่ะ");
+      }
       return;
     }
 

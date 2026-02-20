@@ -339,14 +339,15 @@ export default function AdminApp() {
     }
 
     try {
-      // 1. Fetch from Real Database - Optimization: Only fetch orders from today for better performance
-      const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0);
+      // 1. Fetch from Real Database - Fetch desde el inicio del mes pasado para tener historial de ventas
+      const now_date = new Date();
+      // Start of previous month
+      const sinceDate = new Date(now_date.getFullYear(), now_date.getMonth() - 1, 1);
 
       const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .gte('created_at', startOfToday.toISOString())
+        .gte('created_at', sinceDate.toISOString())
         .order('created_at', { ascending: true });
 
       if (!error) {
@@ -382,10 +383,11 @@ export default function AdminApp() {
   const updateOrderStatus = async (id: number, newStatus: string, tableNo?: string) => {
     // 1. Prepare updated orders array
     const now = new Date().toISOString();
+    const cleanTableNo = tableNo ? String(tableNo).trim() : '';
     let updatedOrders;
-    if (newStatus === 'เสร็จสิ้น' && tableNo) {
+    if (newStatus === 'เสร็จสิ้น' && cleanTableNo) {
       // ✅ If paying, close ALL active orders for that table
-      updatedOrders = orders.map(o => (String(o.table_no) === String(tableNo) && o.status !== 'เสร็จสิ้น') ? { ...o, status: newStatus, updated_at: now } : o);
+      updatedOrders = orders.map(o => (String(o.table_no).trim() === cleanTableNo && !['เสร็จสิ้น', 'ยกเลิก', 'ออร์เดอร์ยกเลิก'].includes(o.status)) ? { ...o, status: newStatus, updated_at: now } : o);
     } else {
       updatedOrders = orders.map(o => o.id === id ? { ...o, status: newStatus, updated_at: now } : o);
     }
@@ -410,19 +412,27 @@ export default function AdminApp() {
         const tableOrders = orders.filter(o => String(o.table_no) === String(tableNo) && o.status !== 'เสร็จสิ้น');
         const totalAmount = tableOrders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
 
-        // 4.1 Update all orders for this table to 'เสร็จสิ้น'
+        // 4.1 Update all orders for this table to 'เสร็จสิ้น' (ยกเว้นที่จบไปแล้ว)
+        // ✅ ใช้ .or() เพื่อให้แมตช์ทั้ง table_no แบบ String และ Number ใน DB
         await supabase.from('orders').update({
           status: newStatus,
           updated_at: now
-        }).eq('table_no', tableNo).neq('status', 'เสร็จสิ้น');
+        })
+          .or(`table_no.eq.${cleanTableNo},table_no.eq.${Number(cleanTableNo) || -888}`)
+          .not('status', 'in', '(เสร็จสิ้น,ยกเลิก,ออร์เดอร์ยกเลิก)');
 
-        // 4.2 Remove this table's orders from local state immediately so billing won't re-appear
-        setOrders(prev => prev.filter(o => String(o.table_no) !== String(tableNo)));
+        // 4.2 Reset Table Status to 'available'
+        await supabase.from('tables').update({ status: 'available' }).eq('table_number', cleanTableNo);
 
-        // 4.3 Reset Table Status to 'available'
-        await supabase.from('tables').update({ status: 'available' }).eq('table_number', tableNo);
-        fetchTables(); // Refresh floor plan
-        fetchOrders(true); // ✅ Force-refresh orders to sync with DB
+        // 4.3 อัปเดตสถานะใน local state ทันที
+        setOrders(prev => prev.map(o => String(o.table_no).trim() === cleanTableNo ? { ...o, status: newStatus, updated_at: now } : o));
+        setTables(prev => prev.map(t => String(t.table_number).trim() === cleanTableNo ? { ...t, status: 'available' } : t));
+
+        // 4.4 รอสักครู่เพื่อให้ DB มั่นใจ แล้วค่อย fetch ใหม่
+        setTimeout(async () => {
+          await fetchTables();
+          await fetchOrders(true);
+        }, 1000);
 
       } else {
         await supabase.from('orders').update({
@@ -491,7 +501,15 @@ export default function AdminApp() {
     await supabase.from('menus').update({ is_available: !currentStatus }).eq('id', id);
   };
 
-  const billingOrdersCount = orders.filter(o => o.status === 'เรียกเช็คบิล').length;
+  // ✅ กรองรายชื่อโต๊ะที่ต้องแสดงในหน้าเช็คบิล (Source of Truth คือสถานะ Table)
+  const billingTables = tables.filter(t => t.status === 'billing').map(t => String(t.table_number));
+
+  // โโต๊ะที่มีออเดอร์ค้าง และสถานะกำลังรอเช็คบิล (ใช้ logic เดียวกับหน้าแสดงผล 100%)
+  const tablesForBilling = Array.from(new Set(
+    orders.filter(o => o.status === 'เรียกเช็คบิล' && billingTables.includes(String(o.table_no))).map(o => String(o.table_no))
+  ));
+
+  const billingOrdersCount = tablesForBilling.length;
 
   const handleEditClick = (item: any) => {
     setEditingId(item.id);
@@ -1017,22 +1035,7 @@ export default function AdminApp() {
                 </div>
               </div>
               <div className="flex gap-3">
-                {orders.filter(o => o.status === 'เรียกเช็คบิล').length > 0 && (
-                  <button
-                    onClick={async () => {
-                      if (!confirm(`ต้องการล้างบิลค้างทั้งหมด ${orders.filter(o => o.status === 'เรียกเช็คบิล').length} รายการใช่หรือไม่?\n\n(สำหรับล้างข้อมูลทดสอบเก่า)`)) return;
-                      const billingIds = orders.filter(o => o.status === 'เรียกเช็คบิล').map(o => o.id);
-                      // Optimistic: remove from view
-                      setOrders(prev => prev.filter(o => !billingIds.includes(o.id)));
-                      try {
-                        await supabase.from('orders').update({ status: 'เสิร์ฟแล้ว' }).in('id', billingIds);
-                      } catch (e) { console.warn('Clear stale bills failed:', e); }
-                    }}
-                    className="bg-red-50 text-red-500 px-5 py-4 rounded-2xl font-black text-sm hover:bg-red-100 transition-all active:scale-95 border border-red-100 flex items-center gap-2"
-                  >
-                    <Trash2 size={18} /> ล้างบิลค้างทั้งหมด
-                  </button>
-                )}
+
                 <div onClick={() => fetchOrders(true)} className="bg-white p-4 rounded-2xl text-black hover:text-orange-600 cursor-pointer border border-slate-100 shadow-sm transition-all hover:shadow-md active:scale-95">
                   <ClipboardList size={28} strokeWidth={2.5} />
                 </div>
@@ -1040,23 +1043,48 @@ export default function AdminApp() {
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {Array.from(new Set(orders.filter(o => o.status === 'เรียกเช็คบิล').map(o => o.table_no))).length === 0 ? (
-                <div className="col-span-full py-32 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100 flex flex-col items-center gap-4">
-                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
-                    <Wallet size={40} />
-                  </div>
-                  <p className="text-slate-300 font-bold">ไม่มีรายการรอเช็คบิลในขณะนี้</p>
-                </div>
-              ) : (
-                Array.from(new Set(orders.filter(o => o.status === 'เรียกเช็คบิล').map(o => o.table_no))).map((tableNo) => {
-                  // ดึงเฉพาะออเดอร์รอบล่าสุด: หา updated_at ล่าสุด แล้วเอาเฉพาะที่อยู่ภายใน 15 นาทีของรอบนั้น
-                  const allBillingOrders = orders.filter(o => o.table_no === tableNo && o.status === 'เรียกเช็คบิล');
-                  const latestBillingTime = Math.max(...allBillingOrders.map(o => new Date(o.updated_at || o.created_at).getTime()));
-                  const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+              {(() => {
+                // ใช้ตัวแปรเดียวกับการนับแจ้งเตือนด้านบน เพื่อให้ข้อมูล "เด้ง" ตรงกับ "บิล" และยอดเงินถูกต้อง
+                const tablesWithBillingOrders = tablesForBilling;
+
+                // ตรวจสอบความถูกต้องของสถานะโต๊ะ และกรองเฉพาะโต๊ะที่เรียกเช็คบิลจริงๆ
+                const activeBillingTables = tablesWithBillingOrders.filter(tNo => {
+                  const table = tables.find(t => String(t.table_number) === String(tNo));
+                  return table?.status === 'billing';
+                });
+
+                if (activeBillingTables.length === 0) {
+                  return (
+                    <div className="col-span-full py-32 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100 flex flex-col items-center gap-4">
+                      <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
+                        <Wallet size={40} />
+                      </div>
+                      <p className="text-slate-300 font-bold">ไม่มีรายการรอเช็คบิลในขณะนี้</p>
+                    </div>
+                  );
+                }
+
+                return activeBillingTables.map((tableNo) => {
+                  // ✅ กรองเฉพาะออเดอร์ที่ลูกค้า "เรียกเช็คบิล" ในรอบปัจจุบันจริง ๆ
+                  // โดยการหาออเดอร์ที่มีสถานะ 'เรียกเช็คบิล' และมีรายการอาหาร (ป้องกัน junk data)
+                  const allBillingOrders = orders.filter(o =>
+                    String(o.table_no) === String(tableNo) &&
+                    o.status === 'เรียกเช็คบิล' &&
+                    o.items && o.items.length > 0
+                  );
+
+                  if (allBillingOrders.length === 0) return null;
+
+                  // 🚀 SESSION ISOLATION: หาออเดอร์ที่เป็นรอบล่าสุดจริงๆ โดยดูจาก updated_at ล่าสุด
+                  // เมื่อลูกค้ากดเรียกเช็คบิล ออเดอร์ทั้งหมดในรอบนั้นจะถูกอัปเดตพร้อมกันด้วย timestamp เดียวกัน
+                  const latestUpdateMs = Math.max(...allBillingOrders.map(o => new Date(o.updated_at || o.created_at).getTime()));
+
+                  // เอาเฉพาะออเดอร์ที่อัปเดตสถานะพร้อมๆ กัน (ภายใน 5 วินาที) เพื่อแยกเซสชั่นลูกค้าเก่าที่ค้างอยู่
                   const tableOrders = allBillingOrders.filter(o => {
                     const t = new Date(o.updated_at || o.created_at).getTime();
-                    return (latestBillingTime - t) < WINDOW_MS;
+                    return Math.abs(latestUpdateMs - t) < 5000;
                   });
+
                   const totalAmount = tableOrders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
 
 
@@ -1125,11 +1153,9 @@ export default function AdminApp() {
                             const mergedItems: Record<string, any> = {};
                             tableOrders.forEach(order => {
                               order.items?.forEach((item: any) => {
-                                // Key = ชื่อ + ชนิดเส้น + note เพื่อแยกรายการที่ต่างกัน
                                 const key = `${item.name}|${item.selectedNoodle || ''}|${item.note || ''}|${item.isSpecial ? '1' : '0'}`;
                                 if (mergedItems[key]) {
                                   mergedItems[key].quantity += Number(item.quantity) || 1;
-                                  mergedItems[key].totalItemPrice = (mergedItems[key].price || 0);
                                 } else {
                                   mergedItems[key] = { ...item, quantity: Number(item.quantity) || 1 };
                                 }
@@ -1180,17 +1206,23 @@ export default function AdminApp() {
                         <div className="flex gap-4">
                           <button
                             onClick={async () => {
-                              // Cancel ALL billing orders for this table, set back to active
-                              const tNo = tableNo as string;
                               const billingIds = tableOrders.map(o => o.id);
-                              // Optimistic update
-                              setOrders(prev => prev.map(o => billingIds.includes(o.id) ? { ...o, status: 'กำลังเตรียม' } : o));
-                              try {
-                                await supabase.from('orders').update({ status: 'กำลังเตรียม' }).in('id', billingIds);
-                                await supabase.from('tables').update({ status: 'occupied' }).eq('table_number', tNo);
-                              } catch (e) { console.warn('Cancel billing failed:', e); }
+                              if (confirm(`ยกเลิกการเรียกเช็คบิลสำหรับโต๊ะ ${tableNo}?\n(สถานะออเดอร์จะกลับเป็น 'เสิร์ฟแล้ว' และโต๊ะจะเป็น 'ใช้งานอยู่')`)) {
+                                // Update orders back to served
+                                const { error: err1 } = await supabase.from('orders').update({ status: 'เสิร์ฟแล้ว' }).in('id', billingIds);
+                                // Update table back to occupied
+                                const { error: err2 } = await supabase.from('tables').update({ status: 'occupied' }).eq('table_number', tableNo);
+
+                                if (!err1 && !err2) {
+                                  // Update Local State
+                                  setOrders(prev => prev.map(o => billingIds.includes(o.id) ? { ...o, status: 'เสิร์ฟแล้ว' } : o));
+                                  setTables(prev => prev.map(t => String(t.table_number) === String(tableNo) ? { ...t, status: 'occupied' } : t));
+                                }
+                                fetchOrders(true);
+                                fetchTables();
+                              }
                             }}
-                            className="px-6 py-5 bg-slate-50 text-slate-400 rounded-3xl font-black text-sm hover:bg-slate-100 transition-all active:scale-95"
+                            className="px-8 py-5 bg-slate-50 text-slate-400 rounded-3xl font-black text-sm hover:bg-slate-100 transition-all active:scale-95"
                           >
                             ยกเลิก
                           </button>
@@ -1205,7 +1237,7 @@ export default function AdminApp() {
                     </div>
                   );
                 })
-              )}
+              })()}
             </div>
           </main>
         )
@@ -1298,7 +1330,8 @@ export default function AdminApp() {
               const salesData = (() => {
                 const filteredSales = orders.filter(o => {
                   if (o.status !== 'เสร็จสิ้น') return false;
-                  const d = o.created_at ? new Date(o.created_at) : new Date();
+                  // ✅ ใช้เวลาที่ชำระเงิน (updated_at) เป็นหลักในการลงรายงานยอดขาย
+                  const d = new Date(o.updated_at || o.created_at || Date.now());
                   if (isNaN(d.getTime())) return false;
                   const year = d.getFullYear();
                   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -1505,7 +1538,7 @@ export default function AdminApp() {
                     <div className="px-10 py-7 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
                       <h3 className="text-xl font-black text-slate-900">ประวัติการขายล่าสุด</h3>
                       <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-slate-100 shadow-sm text-[10px] font-black text-black uppercase tracking-widest">
-                        <ListFilter size={14} /> 10 บิลล่าสุด
+                        <ListFilter size={14} /> รายการช่วงเวลาที่เลือก
                       </div>
                     </div>
                     <div className="p-8">
@@ -1618,67 +1651,113 @@ export default function AdminApp() {
               <div className="flex-1 overflow-y-auto p-8">
                 <div className="space-y-6">
                   <h4 className="text-xl font-black flex items-center gap-2 text-[#2D3436]">
-                    <ClipboardList className="text-[#7C9070]" /> รายการออเดอร์ทั้งหมด
+                    <ClipboardList className="text-[#7C9070]" /> รายการออเดอร์ (เซสชั่นปัจจุบัน)
                   </h4>
 
-                  {orders.filter(o => String(o.table_no) === String(selectedTableDetail.table_number) && o.status !== 'เสร็จสิ้น').length === 0 ? (
-                    <div className="py-20 text-center bg-gray-50 rounded-[2.5rem] border-2 border-dashed border-gray-100">
-                      <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">ยังไม่มีรายการสั่งอาหารในโต๊ะนี้</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {orders.filter(o => String(o.table_no) === String(selectedTableDetail.table_number) && o.status !== 'เสร็จสิ้น').map((order) => (
-                        <div key={order.id} className="bg-white border-2 border-indigo-50 rounded-[2rem] p-6 shadow-sm">
-                          <div className="flex justify-between items-center mb-4">
-                            <div className="flex items-center gap-2">
-                              <span className="bg-emerald-50 text-emerald-600 text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest">
-                                {order.status}
-                              </span>
-                              <span className="text-[10px] text-gray-400 font-bold">
-                                {formatOrderTime(order.created_at)}
-                              </span>
-                            </div>
-                            <div className="flex gap-2">
-                              {['รอ', 'กำลังเตรียม', 'กำลังทำ', 'เสร็จแล้ว'].includes(order.status) && (
-                                <button
-                                  onClick={() => updateOrderStatus(order.id, 'เสร็จแล้ว')}
-                                  className="bg-green-50 text-green-600 p-2 rounded-xl hover:bg-green-100 transition-colors"
-                                  title="เสร็จแล้ว"
-                                >
-                                  <CheckCircle2 size={18} />
-                                </button>
-                              )}
-                              <button
-                                onClick={() => deleteOrder(order.id)}
-                                className="bg-red-50 text-red-400 p-2 rounded-xl hover:bg-red-100 transition-colors"
-                                title="ลบออเดอร์"
-                              >
-                                <Trash2 size={18} />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            {order.items?.map((item: any, idx: number) => (
-                              <div key={idx} className="mb-2">
-                                <div className="flex justify-between items-center text-sm font-bold">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-gray-400">{item.quantity}x</span>
-                                    <span>{item.name} {item.selectedNoodle && `(${item.selectedNoodle})`}</span>
-                                  </div>
-                                  <span className="text-[#7C9070]">฿{item.price * item.quantity}</span>
+                  {(() => {
+                    const tableNo = String(selectedTableDetail.table_number).trim();
+                    // 1. กรองออเดอร์ทั้งหมดของโต๊ะนี้ที่ "กำลังนั่งทานอยู่" (กินอยู่/ยังไม่เช็คบิล)
+                    const allTableOrders = orders.filter(o =>
+                      String(o.table_no).trim() === tableNo &&
+                      !['เสร็จสิ้น', 'เรียกเช็คบิล', 'ยกเลิก', 'ออร์เดอร์ยกเลิก'].includes(o.status)
+                    );
+
+                    if (allTableOrders.length === 0) {
+                      return (
+                        <div className="py-20 text-center bg-gray-50 rounded-[2.5rem] border-2 border-dashed border-gray-100">
+                          <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">ยังไม่มีรายการสั่งอาหาร (โต๊ะว่าง/ยังไม่สั่ง)</p>
+                        </div>
+                      );
+                    }
+
+                    // 🎯 SESSION ISOLATION (ขั้นเทพ):
+                    // กรณีมีคนเรียกเช็คบิล: เอาเฉพาะออเดอร์ที่เรียกเช็คบิลพร้อมกัน (รอบเดียวกัน)
+                    const billingOrders = allTableOrders.filter(o => o.status === 'เรียกเช็คบิล');
+                    let currentSessionOrders;
+
+                    if (billingOrders.length > 0) {
+                      const latestUpdateMs = Math.max(...billingOrders.map(o => new Date(o.updated_at || o.created_at).getTime()));
+                      currentSessionOrders = allTableOrders.filter(o => {
+                        const t = new Date(o.updated_at || o.created_at).getTime();
+                        // เอาเฉพาะออเดอร์ที่อัปเดตสถานะพร้อมๆ กัน (ภายใน 10 วินาที) หรือออเดอร์ที่ถูกสั่งตามมาหลังจากการเรียกเช็คบิลนี้
+                        return Math.abs(latestUpdateMs - t) < 10000 || t >= latestUpdateMs;
+                      });
+                    } else {
+                      // กรณีไม่มีใครเรียกเช็คบิล (กำลังกิน): เอาเฉพาะออเดอร์ล่าสุดในรอบ 12 ชม.
+                      const latestOrderTime = Math.max(...allTableOrders.map(o => new Date(o.created_at).getTime()));
+                      currentSessionOrders = allTableOrders.filter(o =>
+                        (latestOrderTime - new Date(o.created_at).getTime()) < 12 * 60 * 60 * 1000
+                      );
+                    }
+
+                    const totalSessionAmount = currentSessionOrders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
+
+                    return (
+                      <div className="space-y-6">
+                        <div className="space-y-4">
+                          {currentSessionOrders.map((order) => (
+                            <div key={order.id} className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm">
+                              <div className="flex justify-between items-center mb-4">
+                                <div className="flex items-center gap-3">
+                                  <span className={`text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest ${order.status === 'เรียกเช็คบิล' ? 'bg-amber-100 text-amber-600' :
+                                    order.status === 'เสร็จแล้ว' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'
+                                    }`}>
+                                    {order.status}
+                                  </span>
+                                  <span className="text-[10px] text-gray-400 font-bold flex items-center gap-1">
+                                    <Clock size={12} /> {formatOrderTime(order.created_at)}
+                                  </span>
                                 </div>
-                                {item.note && (
-                                  <div className="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded-md inline-block ml-6 mt-1">
-                                    {item.note}
-                                  </div>
-                                )}
+                                <div className="flex gap-2">
+                                  {['รอ', 'กำลังเตรียม', 'กำลังทำ', 'เสร็จแล้ว'].includes(order.status) && (
+                                    <button
+                                      onClick={() => updateOrderStatus(order.id, 'เสร็จแล้ว')}
+                                      className="bg-green-50 text-green-600 p-2 rounded-xl hover:bg-green-100 transition-colors"
+                                    >
+                                      <CheckCircle2 size={18} />
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => deleteOrder(order.id)}
+                                    className="bg-red-50 text-red-300 p-2 rounded-xl hover:bg-red-100 transition-colors"
+                                  >
+                                    <Trash2 size={18} />
+                                  </button>
+                                </div>
                               </div>
-                            ))}
+                              <div className="space-y-2">
+                                {order.items?.map((item: any, idx: number) => (
+                                  <div key={idx} className="flex justify-between items-center text-sm">
+                                    <div className="flex items-start gap-2">
+                                      <span className="text-slate-400 font-bold">{item.quantity}x</span>
+                                      <div>
+                                        <p className="font-extrabold text-slate-800 leading-tight">
+                                          {item.name} {item.isSpecial && <span className="text-orange-500 text-xs">(พิเศษ)</span>}
+                                        </p>
+                                        {item.selectedNoodle && <p className="text-[10px] text-slate-400 font-bold">{item.selectedNoodle}</p>}
+                                        {item.note && <p className="text-[10px] text-emerald-500 font-bold bg-emerald-50 px-1.5 py-0.5 rounded mt-1 inline-block">{item.note}</p>}
+                                      </div>
+                                    </div>
+                                    <span className="font-black text-slate-900">฿{(item.price * item.quantity).toLocaleString()}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="bg-slate-50 rounded-[2.5rem] p-8 mt-4 border border-slate-100 flex justify-between items-center">
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">ยอดรวมเซสชั่นปัจจุบัน</p>
+                            <p className="text-3xl font-black text-slate-900">฿{totalSessionAmount.toLocaleString()}</p>
+                          </div>
+                          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                            <Wallet className="text-slate-400" size={24} />
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -1718,98 +1797,100 @@ export default function AdminApp() {
       }
 
       {/* ✅ MODAL: ORDER DETAIL (Sales Summary) */}
-      {selectedOrderForDetail && (
-        <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-xl rounded-[3rem] overflow-hidden shadow-2xl animate-in zoom-in duration-300 max-h-[85vh] flex flex-col">
-            <div className="bg-slate-900 p-8 text-white flex justify-between items-start">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="bg-white/10 p-3 rounded-2xl"><ClipboardList size={28} /></div>
-                  <h3 className="text-3xl font-black">รายละเอียดออเดอร์</h3>
-                </div>
-                <div className="flex gap-2">
-                  <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
-                    โต๊ะ {selectedOrderForDetail.table_no}
-                  </span>
-                  <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
-                    รหัสบิล: #{selectedOrderForDetail.id}
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedOrderForDetail(null)}
-                className="bg-white/10 hover:bg-white/20 transition-colors p-3 rounded-full"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-8">
-              <div className="space-y-6">
-                <div className="flex justify-between items-center bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
-                  <div className="flex items-center gap-3">
-                    <Clock size={20} className="text-slate-400" />
-                    <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">เวลาทำรายการ</p>
-                      <p className="font-bold text-slate-900">{formatOrderTime(selectedOrderForDetail.updated_at || selectedOrderForDetail.created_at)}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">สถานะบิล</p>
-                    <p className="font-black text-emerald-600 uppercase italic">ชำระเงินเรียบร้อย</p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h4 className="text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-2">รายการที่สั่ง</h4>
-                  <div className="space-y-3">
-                    {selectedOrderForDetail.items?.map((item: any, idx: number) => (
-                      <div key={idx} className="bg-white border border-slate-100 rounded-[1.8rem] p-5 flex justify-between items-center shadow-sm">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center font-black text-slate-900 border border-slate-100">
-                            {item.quantity}
-                          </div>
-                          <div>
-                            <p className="font-bold text-slate-900 leading-tight">
-                              {item.name} {item.isSpecial && '(พิเศษ)'}
-                            </p>
-                            {item.selectedNoodle && (
-                              <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mt-0.5">#{item.selectedNoodle}</p>
-                            )}
-                            {item.note && (
-                              <div className="text-[9px] text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-md inline-block mt-1">
-                                {item.note}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-black text-slate-900 tracking-tight">฿{((item.totalItemPrice || item.price) * item.quantity).toLocaleString()}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-8 bg-slate-50 border-t border-slate-200">
-              <div className="flex justify-between items-end">
+      {
+        selectedOrderForDetail && (
+          <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+            <div className="bg-white w-full max-w-xl rounded-[3rem] overflow-hidden shadow-2xl animate-in zoom-in duration-300 max-h-[85vh] flex flex-col">
+              <div className="bg-slate-900 p-8 text-white flex justify-between items-start">
                 <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">ยอดรวมชำระ</p>
-                  <p className="text-4xl font-black text-slate-900 tracking-tighter">฿{(Number(selectedOrderForDetail.total_price) || 0).toLocaleString()}</p>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="bg-white/10 p-3 rounded-2xl"><ClipboardList size={28} /></div>
+                    <h3 className="text-3xl font-black">รายละเอียดออเดอร์</h3>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+                      โต๊ะ {selectedOrderForDetail.table_no}
+                    </span>
+                    <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+                      รหัสบิล: #{selectedOrderForDetail.id}
+                    </span>
+                  </div>
                 </div>
                 <button
                   onClick={() => setSelectedOrderForDetail(null)}
-                  className="bg-slate-900 text-white px-10 py-4 rounded-[1.5rem] font-black text-sm shadow-xl active:scale-95 transition-all"
+                  className="bg-white/10 hover:bg-white/20 transition-colors p-3 rounded-full"
                 >
-                  ปิดหน้ารายละเอียด
+                  <X size={24} />
                 </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8">
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <Clock size={20} className="text-slate-400" />
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">เวลาทำรายการ</p>
+                        <p className="font-bold text-slate-900">{formatOrderTime(selectedOrderForDetail.updated_at || selectedOrderForDetail.created_at)}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">สถานะบิล</p>
+                      <p className="font-black text-emerald-600 uppercase italic">ชำระเงินเรียบร้อย</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-black uppercase text-slate-400 tracking-[0.2em] ml-2">รายการที่สั่ง</h4>
+                    <div className="space-y-3">
+                      {selectedOrderForDetail.items?.map((item: any, idx: number) => (
+                        <div key={idx} className="bg-white border border-slate-100 rounded-[1.8rem] p-5 flex justify-between items-center shadow-sm">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center font-black text-slate-900 border border-slate-100">
+                              {item.quantity}
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-900 leading-tight">
+                                {item.name} {item.isSpecial && '(พิเศษ)'}
+                              </p>
+                              {item.selectedNoodle && (
+                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mt-0.5">#{item.selectedNoodle}</p>
+                              )}
+                              {item.note && (
+                                <div className="text-[9px] text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-md inline-block mt-1">
+                                  {item.note}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-black text-slate-900 tracking-tight">฿{((item.totalItemPrice || item.price) * item.quantity).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-8 bg-slate-50 border-t border-slate-200">
+                <div className="flex justify-between items-end">
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">ยอดรวมชำระ</p>
+                    <p className="text-4xl font-black text-slate-900 tracking-tighter">฿{(Number(selectedOrderForDetail.total_price) || 0).toLocaleString()}</p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedOrderForDetail(null)}
+                    className="bg-slate-900 text-white px-10 py-4 rounded-[1.5rem] font-black text-sm shadow-xl active:scale-95 transition-all"
+                  >
+                    ปิดหน้ารายละเอียด
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
       {
         isModalOpen && (
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex justify-end">
@@ -1932,6 +2013,6 @@ export default function AdminApp() {
           </div>
         )
       }
-    </div>
+    </div >
   );
 }
