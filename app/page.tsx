@@ -140,16 +140,15 @@ function RestaurantAppContent() {
         (payload) => {
           console.log("Realtime Order Update received:", payload);
 
-          // Re-fetch orders to stay synced
-          fetchOrders();
-
           // ✅ Enhanced Clear Logic: If any order for this table becomes 'เสร็จสิ้น'
           const isFinished = (payload.new as any)?.status === 'เสร็จสิ้น';
 
           if (isFinished) {
+            console.log("Order finished, resetting customer view...");
             if (typeof window !== 'undefined') {
               localStorage.removeItem(`table_billing_${tableNo}`);
               localStorage.removeItem(`checkin_done_${tableNo}`);
+              localStorage.removeItem(`checkin_at_${tableNo}`);
               localStorage.setItem(`demo_session_clear_${tableNo}`, 'true');
             }
 
@@ -157,9 +156,9 @@ function RestaurantAppContent() {
             setCart([]);
             setIsCheckedIn(false);
             setView('menu');
-            alert("การชำระเงินเสร็จสิ้น ขอบคุณที่ใช้บริการค่ะ!");
-          } else if (payload.eventType === 'DELETE') {
-            // Just refresh orders if one is deleted, don't clear the whole session
+            // Not alerting here to prevent multiple alerts if multiple orders update
+          } else {
+            // Re-fetch only if not finishing, to stay synced with prep progress
             fetchOrders();
           }
         }
@@ -177,9 +176,33 @@ function RestaurantAppContent() {
       )
       .subscribe();
 
+    const tableChannel = supabase
+      .channel('table_status_changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'tables', filter: `table_number=eq.${tableNo}` },
+        (payload) => {
+          if ((payload.new as any)?.status === 'available') {
+            console.log("Table became available, clearing session...");
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem(`table_billing_${tableNo}`);
+              localStorage.removeItem(`checkin_done_${tableNo}`);
+              localStorage.removeItem(`checkin_at_${tableNo}`);
+              localStorage.setItem(`demo_session_clear_${tableNo}`, 'true');
+            }
+            setOrders([]);
+            setCart([]);
+            setIsCheckedIn(false);
+            setView('menu');
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(orderChannel);
       supabase.removeChannel(menuChannel);
+      supabase.removeChannel(tableChannel);
       channel.close();
     };
   }, [tableNo]);
@@ -303,12 +326,15 @@ function RestaurantAppContent() {
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
 
+      const checkinAt = localStorage.getItem(`checkin_at_${tableNo}`);
+      const startTime = checkinAt || startOfDay.toISOString();
+
       const { data, error } = await supabase
         .from('orders')
         .select('*')
         .eq('table_no', tableNo)
         .not('status', 'in', '("เสร็จสิ้น","ยกเลิก","ออร์เดอร์ยกเลิก")')
-        .gte('created_at', startOfDay.toISOString())
+        .gte('created_at', startTime) // Filter by check-in time or start of day
         .order('created_at', { ascending: true });
 
       if (!error) {
@@ -356,9 +382,11 @@ function RestaurantAppContent() {
   };
 
   const handleCheckIn = async () => {
+    const now = new Date().toISOString();
     setIsCheckedIn(true);
     if (typeof window !== 'undefined') {
       localStorage.setItem(`checkin_done_${tableNo}`, 'true');
+      localStorage.setItem(`checkin_at_${tableNo}`, now); // Store check-in time
       localStorage.removeItem(`demo_session_clear_${tableNo}`);
     }
     try {
