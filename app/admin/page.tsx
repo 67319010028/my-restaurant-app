@@ -341,8 +341,8 @@ export default function AdminApp() {
     const now = new Date().toISOString();
     let updatedOrders;
     if (newStatus === 'เสร็จสิ้น' && tableNo) {
-      // ✅ If paying, close ONLY active orders for that table
-      updatedOrders = orders.map(o => (o.table_no === tableNo && o.status !== 'เสร็จสิ้น') ? { ...o, status: newStatus, updated_at: now } : o);
+      // ✅ If paying, close ALL active orders for that table
+      updatedOrders = orders.map(o => (String(o.table_no) === String(tableNo) && o.status !== 'เสร็จสิ้น') ? { ...o, status: newStatus, updated_at: now } : o);
     } else {
       updatedOrders = orders.map(o => o.id === id ? { ...o, status: newStatus, updated_at: now } : o);
     }
@@ -363,11 +363,11 @@ export default function AdminApp() {
     // 4. Supabase Update
     try {
       if (newStatus === 'เสร็จสิ้น' && tableNo) {
-        // Calculate Total Amount for Payment Record
-        const tableOrders = orders.filter(o => o.table_no === tableNo && o.status !== 'เสร็จสิ้น');
+        // Calculate Total Amount from ALL non-finished orders for this table
+        const tableOrders = orders.filter(o => String(o.table_no) === String(tableNo) && o.status !== 'เสร็จสิ้น');
         const totalAmount = tableOrders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
 
-        // 4.1 Update all orders for this table to 'เสร็จสิ้น' with SAME updated_at for grouping
+        // 4.1 Update all orders for this table to 'เสร็จสิ้น'
         await supabase.from('orders').update({
           status: newStatus,
           updated_at: now
@@ -794,8 +794,8 @@ export default function AdminApp() {
                   </div>
                 ) : (
                   tables.map((table) => {
-                    const isOccupied = table.status === 'occupied' || orders.some(o => o.table_no === table.table_number && (o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ' || o.status === 'เสร็จแล้ว'));
-                    const isBilling = table.status === 'billing' || table.status === 'เรียกเช็คบิล' || orders.some(o => o.table_no === table.table_number && o.status === 'เรียกเช็คบิล');
+                    const isBilling = orders.some(o => String(o.table_no) === String(table.table_number) && o.status === 'เรียกเช็คบิล');
+                    const isOccupied = orders.some(o => String(o.table_no) === String(table.table_number) && o.status !== 'เสร็จสิ้น');
 
                     let statusClass = 'bg-white border-[#E8E4D8] text-[#2D3436] shadow-sm';
                     let labelClass = 'text-[#636E72]';
@@ -1005,7 +1005,7 @@ export default function AdminApp() {
 
                       <div className="p-8">
                         {(() => {
-                          const allTableOrders = orders.filter(o => o.table_no === tableNo && o.status !== 'เสร็จสิ้น');
+                          const allTableOrders = orders.filter(o => String(o.table_no) === String(tableNo) && o.status !== 'เสร็จสิ้น');
                           const unservedOrders = allTableOrders.filter(o => o.status === 'รอ' || o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ');
 
                           if (unservedOrders.length > 0) {
@@ -1507,13 +1507,13 @@ export default function AdminApp() {
                     <ClipboardList className="text-[#7C9070]" /> รายการออเดอร์ทั้งหมด
                   </h4>
 
-                  {orders.filter(o => o.table_no === selectedTableDetail.table_number && o.status !== 'เสร็จสิ้น').length === 0 ? (
+                  {orders.filter(o => String(o.table_no) === String(selectedTableDetail.table_number) && o.status !== 'เสร็จสิ้น').length === 0 ? (
                     <div className="py-20 text-center bg-gray-50 rounded-[2.5rem] border-2 border-dashed border-gray-100">
                       <p className="text-gray-400 font-bold uppercase tracking-widest text-sm">ยังไม่มีรายการสั่งอาหารในโต๊ะนี้</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {orders.filter(o => o.table_no === selectedTableDetail.table_number && o.status !== 'เสร็จสิ้น').map((order) => (
+                      {orders.filter(o => String(o.table_no) === String(selectedTableDetail.table_number) && o.status !== 'เสร็จสิ้น').map((order) => (
                         <div key={order.id} className="bg-white border-2 border-indigo-50 rounded-[2rem] p-6 shadow-sm">
                           <div className="flex justify-between items-center mb-4">
                             <div className="flex items-center gap-2">

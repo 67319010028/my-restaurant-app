@@ -296,6 +296,12 @@ function RestaurantAppContent() {
 
   const fetchOrders = async () => {
     try {
+      // ✅ Force clear if session was recently closed
+      if (typeof window !== 'undefined' && localStorage.getItem(`demo_session_clear_${tableNo}`) === 'true') {
+        setOrders([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('orders')
         .select('*')
@@ -311,25 +317,18 @@ function RestaurantAppContent() {
         // ตรวจสอบว่าโต๊ะนี้กำลังเช็คบิลอยู่หรือไม่
         const isCurrentlyBilling = activeOrders.some(o => o.status === 'เรียกเช็คบิล');
         if (isCurrentlyBilling) {
-          // ถ้ากำลังเช็คบิล ให้เซฟไว้ในเครื่องด้วยเพื่อช่วยคุม UI
           if (typeof window !== 'undefined') localStorage.setItem(`table_billing_${tableNo}`, 'true');
         } else {
           if (typeof window !== 'undefined') localStorage.removeItem(`table_billing_${tableNo}`);
         }
       } else {
         // กรณี Error
-        if (typeof window !== 'undefined' && localStorage.getItem(`demo_session_clear_${tableNo}`) === 'true') {
-          setOrders([]);
-        } else {
-          setOrders(MOCK_CUSTOMER_ORDERS);
-        }
+        setOrders([]);
+        console.warn("Fetch orders failed, showing empty state:", error);
       }
     } catch (e) {
-      if (typeof window !== 'undefined' && localStorage.getItem(`demo_session_clear_${tableNo}`) === 'true') {
-        setOrders([]);
-      } else {
-        setOrders(MOCK_CUSTOMER_ORDERS);
-      }
+      setOrders([]);
+      console.error("Fetch orders exception:", e);
     }
   };
 
@@ -356,7 +355,10 @@ function RestaurantAppContent() {
 
   const handleCheckIn = async () => {
     setIsCheckedIn(true);
-    localStorage.setItem(`checkin_done_${tableNo}`, 'true');
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`checkin_done_${tableNo}`, 'true');
+      localStorage.removeItem(`demo_session_clear_${tableNo}`);
+    }
     try {
       await supabase.from('tables').update({ status: 'occupied' }).eq('table_number', tableNo);
     } catch (e) {
