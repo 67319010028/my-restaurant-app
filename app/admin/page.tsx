@@ -193,15 +193,17 @@ export default function AdminApp() {
       } else if (payload.eventType === 'UPDATE') {
         // If it's a simple status/item update, update locally instead of full fetch
         const updatedOrder = payload.new;
+        const excludedStatuses = ['เสร็จสิ้น', 'ยกเลิก', 'ออร์เดอร์ยกเลิก'];
         setOrders(prev => {
           const exists = prev.find(o => o.id === updatedOrder.id);
           if (exists) {
-            // Update existing
+            // Update existing order in state
             return prev.map(o => o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o);
-          } else {
-            // Might be a new order that we missed or status change that makes it relevant
+          } else if (!excludedStatuses.includes(updatedOrder.status)) {
+            // Only add NEW relevant orders (not paid/cancelled ones) that we may have missed
             return [...prev, updatedOrder].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
           }
+          return prev;
         });
 
         if (updatedOrder.status === 'เรียกเช็คบิล') {
@@ -414,10 +416,14 @@ export default function AdminApp() {
           updated_at: now
         }).eq('table_no', tableNo).neq('status', 'เสร็จสิ้น');
 
+        // 4.2 Remove this table's orders from local state immediately so billing won't re-appear
+        setOrders(prev => prev.filter(o => String(o.table_no) !== String(tableNo)));
+
         // 4.3 Reset Table Status to 'available'
         await supabase.from('tables').update({ status: 'available' }).eq('table_number', tableNo);
         fetchTables(); // Refresh floor plan
-        fetchOrders(); // ✅ Refresh orders to clear finished ones from view
+        fetchOrders(true); // ✅ Force-refresh orders to sync with DB
+
       } else {
         await supabase.from('orders').update({
           status: newStatus,
@@ -1010,8 +1016,26 @@ export default function AdminApp() {
                   ตรวจสอบออเดอร์และยืนยันการชำระเงินของลูกค้า
                 </div>
               </div>
-              <div onClick={() => fetchOrders()} className="bg-white p-4 rounded-2xl text-black hover:text-orange-600 cursor-pointer border border-slate-100 shadow-sm transition-all hover:shadow-md active:scale-95">
-                <ClipboardList size={28} strokeWidth={2.5} />
+              <div className="flex gap-3">
+                {orders.filter(o => o.status === 'เรียกเช็คบิล').length > 0 && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`ต้องการล้างบิลค้างทั้งหมด ${orders.filter(o => o.status === 'เรียกเช็คบิล').length} รายการใช่หรือไม่?\n\n(สำหรับล้างข้อมูลทดสอบเก่า)`)) return;
+                      const billingIds = orders.filter(o => o.status === 'เรียกเช็คบิล').map(o => o.id);
+                      // Optimistic: remove from view
+                      setOrders(prev => prev.filter(o => !billingIds.includes(o.id)));
+                      try {
+                        await supabase.from('orders').update({ status: 'เสิร์ฟแล้ว' }).in('id', billingIds);
+                      } catch (e) { console.warn('Clear stale bills failed:', e); }
+                    }}
+                    className="bg-red-50 text-red-500 px-5 py-4 rounded-2xl font-black text-sm hover:bg-red-100 transition-all active:scale-95 border border-red-100 flex items-center gap-2"
+                  >
+                    <Trash2 size={18} /> ล้างบิลค้างทั้งหมด
+                  </button>
+                )}
+                <div onClick={() => fetchOrders(true)} className="bg-white p-4 rounded-2xl text-black hover:text-orange-600 cursor-pointer border border-slate-100 shadow-sm transition-all hover:shadow-md active:scale-95">
+                  <ClipboardList size={28} strokeWidth={2.5} />
+                </div>
               </div>
             </header>
 
@@ -1147,7 +1171,17 @@ export default function AdminApp() {
 
                         <div className="flex gap-4">
                           <button
-                            onClick={() => updateOrderStatus(tableOrders[0].id, 'กำลังเตรียม')}
+                            onClick={async () => {
+                              // Cancel ALL billing orders for this table, set back to active
+                              const tNo = tableNo as string;
+                              const billingIds = tableOrders.map(o => o.id);
+                              // Optimistic update
+                              setOrders(prev => prev.map(o => billingIds.includes(o.id) ? { ...o, status: 'กำลังเตรียม' } : o));
+                              try {
+                                await supabase.from('orders').update({ status: 'กำลังเตรียม' }).in('id', billingIds);
+                                await supabase.from('tables').update({ status: 'occupied' }).eq('table_number', tNo);
+                              } catch (e) { console.warn('Cancel billing failed:', e); }
+                            }}
                             className="px-6 py-5 bg-slate-50 text-slate-400 rounded-3xl font-black text-sm hover:bg-slate-100 transition-all active:scale-95"
                           >
                             ยกเลิก

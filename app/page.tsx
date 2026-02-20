@@ -786,12 +786,13 @@ function RestaurantAppContent() {
             <div className="p-6 space-y-4">
               {(() => {
                 const groupedBillItems = orders.flatMap(o => o.items || []).reduce((acc: any[], item: any) => {
-                  const key = `${item.id}-${item.selectedNoodle}-${item.isSpecial}-${item.note}`;
+                  // Use name+noodle+isSpecial+note as the key (item.id is undefined for sub-items)
+                  const key = `${item.name}|${item.selectedNoodle || ''}|${item.isSpecial ? '1' : '0'}|${item.note || ''}`;
                   const existing = acc.find(i => i.key === key);
                   if (existing) {
-                    existing.quantity += item.quantity;
+                    existing.quantity += Number(item.quantity) || 1;
                   } else {
-                    acc.push({ ...item, key });
+                    acc.push({ ...item, quantity: Number(item.quantity) || 1, key });
                   }
                   return acc;
                 }, []);
