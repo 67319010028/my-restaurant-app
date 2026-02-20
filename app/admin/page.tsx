@@ -1089,9 +1089,9 @@ export default function AdminApp() {
                           </button>
                           <button
                             onClick={() => updateOrderStatus(0, 'เสร็จสิ้น', tableNo as string)}
-                            className="flex-1 py-5 bg-emerald-500 text-white rounded-3xl font-black shadow-xl shadow-emerald-100 hover:bg-emerald-600 transition-all active:scale-95 flex items-center justify-center gap-3"
+                            className="flex-1 bg-slate-900 text-white py-5 rounded-3xl font-black text-lg shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all flex items-center justify-center gap-3 active:scale-95"
                           >
-                            <CheckCircle2 size={24} /> ยืนยันการชำระเงิน
+                            <CheckCircle2 size={24} /> ชำระเงินเรียบร้อย
                           </button>
                         </div>
                       </div>
@@ -1569,19 +1569,32 @@ export default function AdminApp() {
               </div>
 
               <div className="p-8 bg-gray-50 border-t flex gap-4">
+                {selectedTableDetail.status !== 'available' && (
+                  <button
+                    onClick={() => {
+                      if (confirm(`ยืนยันการชำระเงินและล้างข้อมูลโต๊ะ ${selectedTableDetail.table_number}?`)) {
+                        updateOrderStatus(0, 'เสร็จสิ้น', selectedTableDetail.table_number?.toString());
+                        setSelectedTableDetail(null);
+                      }
+                    }}
+                    className="flex-1 bg-slate-900 text-white py-5 rounded-[2rem] font-black text-lg shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all flex items-center justify-center gap-3 active:scale-95"
+                  >
+                    <CheckCircle2 size={24} /> ชำระเงิน/ล้างโต๊ะ
+                  </button>
+                )}
                 {selectedTableDetail.status === 'billing' ? (
                   <button
                     onClick={() => { setActiveTab('billing'); setSelectedTableDetail(null); }}
-                    className="flex-1 bg-red-500 text-white py-5 rounded-[2rem] font-black text-lg shadow-xl shadow-red-100 flex items-center justify-center gap-2 animate-pulse"
+                    className="px-8 bg-amber-500 text-white py-5 rounded-[2rem] font-black text-lg shadow-xl shadow-amber-100 flex items-center justify-center gap-2 animate-pulse"
                   >
                     <Wallet /> ไปที่คิวเช็คบิล
                   </button>
                 ) : (
                   <button
                     onClick={() => setSelectedTableDetail(null)}
-                    className="flex-1 bg-white border-2 border-gray-200 text-gray-400 py-5 rounded-[2rem] font-black text-lg hover:bg-gray-100 transition-colors"
+                    className="flex-[0.5] bg-white border-2 border-gray-200 text-gray-400 py-5 rounded-[2rem] font-black text-lg hover:bg-gray-100 transition-colors"
                   >
-                    ปิดหน้าต่าง
+                    ปิด
                   </button>
                 )}
               </div>

@@ -138,19 +138,31 @@ function RestaurantAppContent() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders', filter: `table_no=eq.${tableNo}` },
         (payload) => {
+          console.log("Realtime Order Update received:", payload);
+
+          // Re-fetch orders to stay synced
           fetchOrders();
 
-          // หากแอดมินกดรับเงินเรียบร้อย (เสร็จสิ้น) ให้รีเซ็ตหน้าจอทุกเครื่องในโต๊ะนี้
-          if (payload.new && (payload.new as any).status === 'เสร็จสิ้น') {
+          // ✅ Enhanced Clear Logic: If any order for this table becomes 'เสร็จสิ้น'
+          // OR if an order is deleted (payload.eventType === 'DELETE')
+          const isFinished = (payload.new as any)?.status === 'เสร็จสิ้น' ||
+            (payload.old as any)?.status === 'เสร็จสิ้น';
+
+          if (isFinished || payload.eventType === 'DELETE') {
             if (typeof window !== 'undefined') {
               localStorage.removeItem(`table_billing_${tableNo}`);
               localStorage.removeItem(`checkin_done_${tableNo}`);
               localStorage.setItem(`demo_session_clear_${tableNo}`, 'true');
             }
-            setOrders([]);
-            setCart([]);
-            setIsCheckedIn(false);
-            setView('menu');
+
+            // If it was a 'paid' event, force a full reset
+            if (isFinished) {
+              setOrders([]);
+              setCart([]);
+              setIsCheckedIn(false);
+              setView('menu');
+              alert("การชำระเงินเสร็จสิ้น ขอบคุณที่ใช้บริการค่ะ!");
+            }
           }
         }
       )
