@@ -155,14 +155,19 @@ export default function AdminApp() {
 
     const channel = new BroadcastChannel('restaurant_demo_channel');
     channel.onmessage = (event) => {
-      const { type, id, status } = event.data;
+      const { type, id, status, table_no } = event.data;
       if (type === 'ORDER_UPDATE') {
-        // Only update status of existing orders, don't add new ones
-        // (Supabase realtime will handle new orders via fetchOrders)
+        // ✅ Case: Table-wide update (e.g., Billing or Payment)
+        if ((status === 'เรียกเช็คบิล' || status === 'เสร็จสิ้น') && table_no) {
+          setOrders(prev => prev.map(o => (String(o.table_no) === String(table_no) && o.status !== 'เสร็จสิ้น') ? { ...o, status } : o));
+          if (status === 'เรียกเช็คบิล') playNotificationSound();
+          return;
+        }
+
+        // Single order update
         setOrders(prev => {
           const exists = prev.find(o => o.id === id);
           if (exists) {
-            // ✅ Update whole order with new data (including items array for progress tracking)
             return prev.map(o => o.id === id ? { ...o, ...event.data } : o);
           }
           return prev;
@@ -1081,29 +1086,52 @@ export default function AdminApp() {
                           return null;
                         })()}
 
-                        <div className="space-y-6 mb-8">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">สรุปรายการสั่งซื้อ</p>
-                          {tableOrders.map((order) => (
-                            <div key={order.id} className="space-y-3 border-b border-slate-50 pb-6 last:border-0 last:pb-0">
-                              {order.items?.map((item: any, i: number) => (
-                                <div key={i} className="mb-3 last:mb-0">
-                                  <div className="flex justify-between items-center text-sm">
-                                    <div className="flex items-center gap-3">
-                                      <span className="text-slate-400 font-black">{item.quantity}×</span>
-                                      <span className="text-slate-900 font-bold leading-tight">{item.name} {item.isSpecial && '(พิเศษ)'}</span>
-                                    </div>
-                                    <span className="font-black text-slate-900">฿{(item.totalItemPrice || item.price) * item.quantity}</span>
+                        <div className="space-y-3 mb-8">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">สรุปรายการสั่งซื้อ</p>
+                          {(() => {
+                            // รวมรายการอาหารทั้งหมดจากทุก order ของโต๊ะนี้เป็น 1 บิลเดียว
+                            const mergedItems: Record<string, any> = {};
+                            tableOrders.forEach(order => {
+                              order.items?.forEach((item: any) => {
+                                // Key = ชื่อ + ชนิดเส้น + note เพื่อแยกรายการที่ต่างกัน
+                                const key = `${item.name}|${item.selectedNoodle || ''}|${item.note || ''}|${item.isSpecial ? '1' : '0'}`;
+                                if (mergedItems[key]) {
+                                  mergedItems[key].quantity += Number(item.quantity) || 1;
+                                  mergedItems[key].totalItemPrice = (mergedItems[key].price || 0);
+                                } else {
+                                  mergedItems[key] = { ...item, quantity: Number(item.quantity) || 1 };
+                                }
+                              });
+                            });
+
+                            return Object.values(mergedItems).map((item: any, i: number) => (
+                              <div key={i} className="flex justify-between items-center py-3 border-b border-slate-50 last:border-0">
+                                <div className="flex items-start gap-3 flex-1">
+                                  <span className="bg-slate-100 text-slate-600 font-black text-sm px-2.5 py-0.5 rounded-xl min-w-[40px] text-center">
+                                    {item.quantity}×
+                                  </span>
+                                  <div>
+                                    <span className="text-slate-900 font-bold leading-tight">
+                                      {item.name} {item.isSpecial && <span className="text-orange-500 text-xs">(พิเศษ)</span>}
+                                    </span>
+                                    {item.selectedNoodle && (
+                                      <div className="text-[10px] text-slate-400 font-bold mt-0.5">เส้น: {item.selectedNoodle}</div>
+                                    )}
+                                    {item.note && (
+                                      <div className="text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-lg inline-block mt-1">
+                                        {item.note}
+                                      </div>
+                                    )}
                                   </div>
-                                  {item.note && (
-                                    <div className="text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-lg inline-block mt-1 ml-8">
-                                      {item.note}
-                                    </div>
-                                  )}
                                 </div>
-                              ))}
-                            </div>
-                          ))}
+                                <span className="font-black text-slate-900 ml-4">
+                                  ฿{((item.totalItemPrice || item.price || 0) * item.quantity).toLocaleString()}
+                                </span>
+                              </div>
+                            ));
+                          })()}
                         </div>
+
 
                         <div className="flex justify-between items-end pt-6 border-t border-slate-100 mb-8">
                           <div>

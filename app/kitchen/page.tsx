@@ -92,8 +92,8 @@ export default function KitchenPage() {
     }
   };
 
-  // ฟังก์ชันเช็คว่าสถานะนี้ถือว่า "ทำเสร็จแล้ว" ในมุมมองของห้องครัวหรือไม่
-  const isFinished = (status: string) => status === 'เสร็จแล้ว' || status === 'เรียกเช็คบิล';
+  // ฟังก์ชันเช็คว่าสถานะนี้ถือว่า "ทำเสร็จแล้ว" และยังค้างอยู่ในจอครัว
+  const isFinished = (status: string) => status === 'เสร็จแล้ว';
 
   useEffect(() => {
     const checkUser = async () => {
@@ -188,8 +188,10 @@ export default function KitchenPage() {
         } else if (payload.eventType === 'UPDATE') {
           // If it's a simple status/item update, we can update locally instead of full fetch
           const updatedOrder = payload.new;
-          if (updatedOrder.status === 'เสร็จสิ้น') {
-            // Remove from view if finished
+          const statusToRemove = ['เสร็จสิ้น', 'เสิร์ฟแล้ว', 'เรียกเช็คบิล', 'ยกเลิก', 'ออร์เดอร์ยกเลิก'];
+
+          if (statusToRemove.includes(updatedOrder.status)) {
+            // Remove from view if finished, served, billed or cancelled
             setOrders(prev => prev.filter(o => o.id !== updatedOrder.id));
           } else {
             // Update items/status for existing order
@@ -197,11 +199,10 @@ export default function KitchenPage() {
               const exists = prev.find(o => o.id === updatedOrder.id);
               if (exists) {
                 return prev.map(o => o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o);
-              } else if (updatedOrder.status !== 'เสร็จสิ้น') {
-                // If it's a status change from finished back to active (rare)
+              } else {
+                // If it's a status change from finished back to active
                 return [...prev, updatedOrder].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
               }
-              return prev;
             });
           }
         } else {
@@ -271,11 +272,11 @@ export default function KitchenPage() {
     }
 
     try {
-      // 1. Fetch from Real Database
+      // 1. Fetch from Real Database - กรองเอาเฉพาะที่ยังไม่จ่ายเงิน, ยังไม่เสิร์ฟ และยังไม่เรียกเช็คบิล
       const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .neq('status', 'เสร็จสิ้น')
+        .not('status', 'in', '("เสร็จสิ้น","เสิร์ฟแล้ว","เรียกเช็คบิล","ยกเลิก","ออร์เดอร์ยกเลิก")')
         .order('created_at', { ascending: true });
 
       if (!error) {
@@ -490,13 +491,13 @@ export default function KitchenPage() {
   };
 
   const filteredOrders = orders.filter(order => {
-    // กรองออเดอร์ที่เช็คบิลเสร็จสิ้นแล้ว (เสร็จสิ้น) ออกจากทุกหน้าในครัว
-    if (order.status === 'เสร็จสิ้น' || order.status === 'ยกเลิก' || order.status === 'ออร์เดอร์ยกเลิก') return false;
+    // กรองออเดอร์ที่เช็คบิลเสร็จสิ้นแล้ว, เสิร์ฟไปแล้ว หรือกำลังเรียกเช็คบิล ออกจากจอครัว
+    if (['เสร็จสิ้น', 'เสิร์ฟแล้ว', 'เรียกเช็คบิล', 'ยกเลิก', 'ออร์เดอร์ยกเลิก'].includes(order.status)) return false;
 
     if (activeTab === 'รอ') return order.status === 'กำลังเตรียม';
     if (activeTab === 'กำลังทำ') return order.status === 'กำลังทำ';
     if (activeTab === 'เสร็จแล้ว') return isFinished(order.status);
-    if (activeTab === 'ทั้งหมด') return true; // กรองเสร็จสิ้นไปแล้วข้างบน
+    if (activeTab === 'ทั้งหมด') return true;
     return true;
   });
 
@@ -565,16 +566,46 @@ export default function KitchenPage() {
             {[
               { label: 'รอดำเนินการ', count: orders.filter(o => o.status === 'กำลังเตรียม').length, icon: <Timer size={20} />, color: 'slate' },
               { label: 'กำลังทำ', count: orders.filter(o => o.status === 'กำลังทำ').length, icon: <ChefHat size={20} />, color: 'indigo' },
-              { label: 'เสร็จแล้ว', count: orders.filter(o => isFinished(o.status)).length, icon: <CheckCircle2 size={20} />, color: 'emerald' },
+              {
+                label: 'เสร็จแล้ว',
+                count: orders.filter(o => isFinished(o.status)).length,
+                icon: <CheckCircle2 size={20} />,
+                color: 'emerald',
+                action: async () => {
+                  if (confirm('ต้องการนำออเดอร์ที่ทำเสร็จแล้วทั้งหมดออกจากหน้าจอใช่หรือไม่?')) {
+                    const finishedIds = orders.filter(o => isFinished(o.status)).map(o => o.id);
+                    if (finishedIds.length === 0) return;
+
+                    // Optimistic update
+                    setOrders(prev => prev.map(o => isFinished(o.status) ? { ...o, status: 'เสิร์ฟแล้ว' } : o));
+
+                    try {
+                      await supabase.from('orders').update({ status: 'เสิร์ฟแล้ว' }).in('id', finishedIds);
+                    } catch (e) {
+                      console.error('Clear all finished failed:', e);
+                    }
+                  }
+                }
+              },
             ].map((stat, i) => (
-              <div key={i} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:translate-y-[-2px] transition-all group">
+              <div key={i} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:translate-y-[-2px] transition-all group relative">
                 <div className="flex items-center justify-between mb-3">
                   <div className={`p-2 rounded-xl bg-${stat.color}-50 text-${stat.color}-600 group-hover:bg-${stat.color}-600 group-hover:text-white transition-colors`}>
                     {stat.icon}
                   </div>
                   <div className="text-4xl font-black text-slate-900 tracking-tighter">{stat.count}</div>
                 </div>
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">{stat.label}</div>
+                <div className="flex justify-between items-center">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">{stat.label}</div>
+                  {stat.action && stat.count > 0 && (
+                    <button
+                      onClick={stat.action}
+                      className="text-[9px] font-black text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg uppercase transition-colors"
+                    >
+                      เคลียร์ทั้งหมด
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -791,9 +822,12 @@ export default function KitchenPage() {
                   </div>
 
                   {isFinished(order.status) ? (
-                    <div className="bg-green-500 text-white py-5 rounded-[1.8rem] text-center font-black text-lg flex items-center justify-center gap-2 shadow-lg shadow-green-100">
-                      <CheckCircle2 size={24} strokeWidth={3} /> เสร็จแล้ว
-                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); updateStatus(order.id, 'เสิร์ฟแล้ว'); }}
+                      className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-5 rounded-[1.8rem] text-center font-black text-lg flex items-center justify-center gap-2 shadow-lg shadow-green-100 transition-all active:scale-95"
+                    >
+                      <CheckCircle2 size={24} strokeWidth={3} /> นำออกจากจอ (เสิร์ฟแล้ว)
+                    </button>
                   ) : (
                     <div className="grid grid-cols-3 gap-3 pt-4">
                       <button
