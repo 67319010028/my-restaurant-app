@@ -144,25 +144,23 @@ function RestaurantAppContent() {
           fetchOrders();
 
           // ✅ Enhanced Clear Logic: If any order for this table becomes 'เสร็จสิ้น'
-          // OR if an order is deleted (payload.eventType === 'DELETE')
-          const isFinished = (payload.new as any)?.status === 'เสร็จสิ้น' ||
-            (payload.old as any)?.status === 'เสร็จสิ้น';
+          const isFinished = (payload.new as any)?.status === 'เสร็จสิ้น';
 
-          if (isFinished || payload.eventType === 'DELETE') {
+          if (isFinished) {
             if (typeof window !== 'undefined') {
               localStorage.removeItem(`table_billing_${tableNo}`);
               localStorage.removeItem(`checkin_done_${tableNo}`);
               localStorage.setItem(`demo_session_clear_${tableNo}`, 'true');
             }
 
-            // If it was a 'paid' event, force a full reset
-            if (isFinished) {
-              setOrders([]);
-              setCart([]);
-              setIsCheckedIn(false);
-              setView('menu');
-              alert("การชำระเงินเสร็จสิ้น ขอบคุณที่ใช้บริการค่ะ!");
-            }
+            setOrders([]);
+            setCart([]);
+            setIsCheckedIn(false);
+            setView('menu');
+            alert("การชำระเงินเสร็จสิ้น ขอบคุณที่ใช้บริการค่ะ!");
+          } else if (payload.eventType === 'DELETE') {
+            // Just refresh orders if one is deleted, don't clear the whole session
+            fetchOrders();
           }
         }
       )
@@ -302,11 +300,15 @@ function RestaurantAppContent() {
         return;
       }
 
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+
       const { data, error } = await supabase
         .from('orders')
         .select('*')
         .eq('table_no', tableNo)
-        .neq('status', 'เสร็จสิ้น')
+        .not('status', 'in', '("เสร็จสิ้น","ยกเลิก","ออร์เดอร์ยกเลิก")')
+        .gte('created_at', startOfDay.toISOString())
         .order('created_at', { ascending: true });
 
       if (!error) {

@@ -236,6 +236,7 @@ export default function KitchenPage() {
       const { data, error } = await supabase
         .from('orders')
         .select('*')
+        .neq('status', 'เสร็จสิ้น')
         .order('created_at', { ascending: true });
 
       if (!error) {
