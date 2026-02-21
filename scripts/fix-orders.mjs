@@ -8,7 +8,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://lvbhbxrmbch
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_sXmxJyC5jyYB2DWpsnfYNw_va4Slp2N';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const SESSION_GAP_MS = 30 * 60 * 1000; // 30 นาที — ห่างเกินนี้ = คนละรอบ
+
 
 async function fixOrders() {
     console.log('🔍 กำลังดึงออเดอร์ทั้งหมด...\n');
@@ -31,7 +31,8 @@ async function fixOrders() {
         return;
     }
 
-    // 1. จัดกลุ่มตามโต๊ะ
+
+    // 1. จัดกลุ่มตามโต๊ะ (โต๊ะเดียวกัน = บิลเดียวกัน)
     const byTable = {};
     allOrders.forEach(o => {
         const tNo = String(o.table_no).trim();
@@ -39,33 +40,17 @@ async function fixOrders() {
         byTable[tNo].push(o);
     });
 
-    // 2. แยกเซสชั่นภายในแต่ละโต๊ะ (ห่างกันเกิน 30 นาที = คนละรอบ)
-    const sessions = [];
-    for (const [tableNo, tableOrders] of Object.entries(byTable)) {
-        // เรียงตาม created_at
+    // 2. แต่ละโต๊ะ = 1 บิล
+    const sessions = Object.entries(byTable).map(([tableNo, tableOrders]) => {
         tableOrders.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-
-        let currentSession = [tableOrders[0]];
-        for (let i = 1; i < tableOrders.length; i++) {
-            const prevTime = new Date(currentSession[currentSession.length - 1].created_at).getTime();
-            const currTime = new Date(tableOrders[i].created_at).getTime();
-
-            if (currTime - prevTime > SESSION_GAP_MS) {
-                // ห่างเกิน 30 นาที → เป็นรอบใหม่
-                sessions.push({ tableNo, orders: currentSession });
-                currentSession = [tableOrders[i]];
-            } else {
-                currentSession.push(tableOrders[i]);
-            }
-        }
-        sessions.push({ tableNo, orders: currentSession });
-    }
+        return { tableNo, orders: tableOrders };
+    });
 
     console.log(`📋 แยกได้ ${sessions.length} บิล:\n`);
     sessions.forEach((s, i) => {
         const firstTime = new Date(s.orders[0].created_at).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
         const total = s.orders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
-        console.log(`   บิล ${i + 1}: โต๊ะ ${s.tableNo} | ${s.orders.length} ออเดอร์ | ฿${total} | เวลาสั่ง: ${firstTime}`);
+        console.log(`   บิล ${i + 1}: โต๊ะ ${s.tableNo} | ${s.orders.length} รายการ | ฿${total} | เวลาสั่ง: ${firstTime}`);
     });
 
     // 3. อัปเดต updated_at ให้แต่ละเซสชั่นมีเวลาต่างกัน

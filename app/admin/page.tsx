@@ -1716,9 +1716,10 @@ export default function AdminApp() {
                               }, [])
                               .sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime());
 
-                            const rows = groupedSales.map((order) => {
+                            const rows = groupedSales.map((order, idx) => {
                               const isMonthlyAgg = salesViewMode === 'monthly';
                               const rowDate = new Date(order.updated_at || order.created_at);
+                              const billNumber = groupedSales.length - idx;
 
                               return (
                                 <div
@@ -1737,9 +1738,7 @@ export default function AdminApp() {
                                             ? `สรุปยอดขายวันที่ ${rowDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}`
                                             : `โต๊ะ ${order.table_no}`}
                                         </span>
-                                        <span className="text-[9px] bg-slate-100 px-2 py-0.5 rounded-lg font-black text-slate-500 tracking-wider">
-                                          {`${order.combinedIds?.length || 1} ออเดอร์`}
-                                        </span>
+
                                       </div>
                                       <div className="flex items-center gap-3">
                                         <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1">
@@ -1938,19 +1937,7 @@ export default function AdminApp() {
               </div>
 
               <div className="p-8 bg-gray-50 border-t flex gap-4">
-                {selectedTableDetail.status !== 'available' && (
-                  <button
-                    onClick={() => {
-                      if (confirm(`ยืนยันการชำระเงินและล้างข้อมูลโต๊ะ ${selectedTableDetail.table_number}?`)) {
-                        updateOrderStatus(0, 'เสร็จสิ้น', selectedTableDetail.table_number?.toString());
-                        setSelectedTableDetail(null);
-                      }
-                    }}
-                    className="flex-1 bg-slate-900 text-white py-5 rounded-[2rem] font-black text-lg shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all flex items-center justify-center gap-3 active:scale-95"
-                  >
-                    <CheckCircle2 size={24} /> ชำระเงิน/ล้างโต๊ะ
-                  </button>
-                )}
+
                 {selectedTableDetail.status === 'billing' ? (
                   <button
                     onClick={() => { setActiveTab('billing'); setSelectedTableDetail(null); }}
