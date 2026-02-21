@@ -494,7 +494,7 @@ export default function KitchenPage() {
     // กรองออเดอร์ที่เช็คบิลเสร็จสิ้นแล้ว, เสิร์ฟไปแล้ว หรือกำลังเรียกเช็คบิล ออกจากจอครัว
     if (['เสร็จสิ้น', 'เสิร์ฟแล้ว', 'เรียกเช็คบิล', 'ยกเลิก', 'ออร์เดอร์ยกเลิก'].includes(order.status)) return false;
 
-    if (activeTab === 'รอ') return order.status === 'กำลังเตรียม';
+    if (activeTab === 'กำลังเตรียม') return order.status === 'กำลังเตรียม';
     if (activeTab === 'กำลังทำ') return order.status === 'กำลังทำ';
     if (activeTab === 'เสร็จแล้ว') return isFinished(order.status);
     if (activeTab === 'ทั้งหมด') return true;
@@ -614,10 +614,10 @@ export default function KitchenPage() {
 
       {/* Tabs Filter */}
       <div className="px-6 flex gap-3 mb-6 overflow-x-auto no-scrollbar py-3">
-        {['ทั้งหมด', 'รอ', 'กำลังทำ', 'เสร็จแล้ว'].map((tab) => {
+        {['ทั้งหมด', 'กำลังเตรียม', 'กำลังทำ', 'เสร็จแล้ว'].map((tab) => {
           const count = orders.filter(o => {
             if (tab === 'ทั้งหมด') return o.status === 'กำลังเตรียม' || o.status === 'กำลังทำ' || o.status === 'เสร็จแล้ว' || o.status === 'เรียกเช็คบิล';
-            if (tab === 'รอ') return o.status === 'กำลังเตรียม';
+            if (tab === 'กำลังเตรียม') return o.status === 'กำลังเตรียม';
             if (tab === 'กำลังทำ') return o.status === 'กำลังทำ';
             if (tab === 'เสร็จแล้ว') return isFinished(o.status);
             return false;
@@ -685,7 +685,7 @@ export default function KitchenPage() {
                         ? 'bg-indigo-50 text-indigo-600 border-indigo-100'
                         : 'bg-slate-50 text-slate-400 border-slate-100'
                       }`}>
-                      {order.status === 'กำลังเตรียม' ? 'รอดำเนินการ' : order.status === 'กำลังทำ' ? 'ภายในครัว' : 'เสร็จแล้ว'}
+                      {order.status === 'กำลังเตรียม' ? 'กำลังเตรียม' : order.status === 'กำลังทำ' ? 'ภายในครัว' : 'เสร็จแล้ว'}
                     </div>
                   </div>
                 </div>
@@ -720,7 +720,7 @@ export default function KitchenPage() {
                             <div className="flex flex-wrap gap-2 items-center">
                               {item.isSpecial && (
                                 <span className="text-white font-black text-[10px] uppercase bg-red-600 px-3 py-1 rounded-lg">
-                                  ⭐ พิเศษ
+                                  พิเศษ
                                 </span>
                               )}
                               {item.selectedNoodle && (
@@ -826,7 +826,6 @@ export default function KitchenPage() {
                       onClick={(e) => { e.stopPropagation(); updateStatus(order.id, 'เสิร์ฟแล้ว'); }}
                       className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-5 rounded-[1.8rem] text-center font-black text-lg flex items-center justify-center gap-2 shadow-lg shadow-green-100 transition-all active:scale-95"
                     >
-                      <CheckCircle2 size={24} strokeWidth={3} /> นำออกจากจอ (เสิร์ฟแล้ว)
                     </button>
                   ) : (
                     <div className="grid grid-cols-3 gap-3 pt-4">

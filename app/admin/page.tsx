@@ -27,22 +27,18 @@ export default function AdminApp() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ✅ จัดการเรื่องวันที่ให้เป็นปัจจุบันตามเวลาไทย (init ทันที)
+  // ✅ จัดการเรื่องวันที่ให้เป็นปัจจุบันตามเวลาไทย (UTC+7) — ป้องกันช่วง 00:00-06:59 ไทยตกไปวันก่อน
+  const getThaiToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' });
+  const getThaiMonth = () => getThaiToday().substring(0, 7);
+
   const [salesViewMode, setSalesViewMode] = useState<'daily' | 'monthly'>('daily');
-  const [selectedSalesDate, setSelectedSalesDate] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  });
-  const [selectedSalesMonth, setSelectedSalesMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
+  const [selectedSalesDate, setSelectedSalesDate] = useState(() => getThaiToday());
+  const [selectedSalesMonth, setSelectedSalesMonth] = useState(() => getThaiMonth());
 
   useEffect(() => {
     // Keep it here as backup or for manual re-sync if needed
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const today = getThaiToday();
+    const month = getThaiMonth();
     if (!selectedSalesDate) setSelectedSalesDate(today);
     if (!selectedSalesMonth) setSelectedSalesMonth(month);
   }, []);
@@ -346,13 +342,15 @@ export default function AdminApp() {
     }
 
     try {
-      // 1. Fetch from Real Database - Fetch desde el inicio del mes pasado para tener historial de ventas
+      // 1. Fetch from Real Database
       // ✅ ดึง 1000 รายการล่าสุดเพื่อให้ครอบคลุมข้อมูลปัจจุบันทั้งหมด
+      // ✅ ใช้ headers no-cache เพื่อให้ได้ข้อมูลล่าสุดทุกครั้ง (ไม่ใช้ cached data เก่า)
       const { data, error } = await supabase
         .from('orders')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(1000);
+        .limit(1000)
+        .abortSignal(AbortSignal.timeout(15000));
 
       if (!error) {
         // ✅ If database fetch succeeded, use it (even if empty) to prevent "hanging" old data
@@ -420,27 +418,52 @@ export default function AdminApp() {
         const totalAmount = tableOrders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
 
         // 4.1 Update all orders for this table to 'เสร็จสิ้น'
-        // ปรับปรุง Filter ให้แม่นยำและรองรับการทำงานของ Supabase 100%
-        const { error: updateError } = await supabase.from('orders')
-          .update({
-            status: newStatus,
-            updated_at: new Date().toISOString()
-          })
-          .eq('table_no', cleanTableNo)
-          .not('status', 'in', '(เสร็จสิ้น,ยกเลิก,ออร์เดอร์ยกเลิก)');
+        // ✅ แก้บั๊ก: ใช้ 2 ขั้นตอน — ดึง ID ก่อน แล้วอัปเดตด้วย ID (ป้องกันปัญหา .not() กับภาษาไทย)
+        const excludedStatuses = ['เสร็จสิ้น', 'ยกเลิก', 'ออร์เดอร์ยกเลิก'];
 
-        if (updateError) {
-          // Fallback: หากหาด้วย String ไม่เจอ ให้ลองหาด้วย Number
+        // Step A: ดึง ID ของออเดอร์ที่ active อยู่ในโต๊ะนี้
+        const { data: activeOrders, error: fetchErr } = await supabase
+          .from('orders')
+          .select('id, status')
+          .eq('table_no', cleanTableNo);
+
+        // Fallback: ลองด้วย Number ถ้า String ไม่เจอ
+        let orderIds: number[] = [];
+        if (activeOrders && activeOrders.length > 0) {
+          orderIds = activeOrders
+            .filter(o => !excludedStatuses.includes((o.status || '').trim()))
+            .map(o => o.id);
+        } else {
           const tableInt = parseInt(cleanTableNo);
           if (!isNaN(tableInt)) {
-            await supabase.from('orders')
-              .update({ status: newStatus, updated_at: new Date().toISOString() })
-              .eq('table_no', tableInt)
-              .not('status', 'in', '(เสร็จสิ้น,ยกเลิก,ออร์เดอร์ยกเลิก)');
+            const { data: fallbackOrders } = await supabase
+              .from('orders')
+              .select('id, status')
+              .eq('table_no', tableInt);
+            if (fallbackOrders) {
+              orderIds = fallbackOrders
+                .filter(o => !excludedStatuses.includes((o.status || '').trim()))
+                .map(o => o.id);
+            }
           }
         }
 
+        console.log(`[Payment] Table ${cleanTableNo}: found ${orderIds.length} active orders to update`, orderIds);
+
+        // Step B: อัปเดตด้วย ID list (เชื่อถือได้ 100%)
+        let updateError = null;
+        if (orderIds.length > 0) {
+          const { error: err } = await supabase.from('orders')
+            .update({
+              status: newStatus,
+              updated_at: new Date().toISOString()
+            })
+            .in('id', orderIds);
+          updateError = err;
+        }
+
         if (updateError) console.error("Database Update Error:", updateError);
+        if (fetchErr) console.error("Database Fetch Error:", fetchErr);
 
         // 4.2 Reset Table Status to 'available'
         await supabase.from('tables').update({ status: 'available' }).eq('table_number', cleanTableNo);
@@ -904,7 +927,7 @@ export default function AdminApp() {
                     if (isOccupied) {
                       statusClass = 'bg-[#7C9070] border-[#7C9070] text-white shadow-xl shadow-[#7C9070]/20';
                       labelClass = 'text-[#F0F4EF]';
-                      statusText = 'มีออเดอร์';
+                      statusText = 'มีลูกค้า';
                     }
 
                     return (
@@ -1254,7 +1277,13 @@ export default function AdminApp() {
                             ยกเลิก
                           </button>
                           <button
-                            onClick={() => updateOrderStatus(0, 'เสร็จสิ้น', tableNo as string)}
+                            onClick={async () => {
+                              await updateOrderStatus(0, 'เสร็จสิ้น', tableNo as string);
+                              // ✅ บังคับรีเฟรชข้อมูลทันทีหลังชำระเงินสำเร็จ เพื่อให้หน้าประวัติการขายอัปเดต
+                              setTimeout(async () => {
+                                await fetchOrders(true);
+                              }, 500);
+                            }}
                             className="flex-1 bg-slate-900 text-white py-5 rounded-3xl font-black text-lg shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all flex items-center justify-center gap-3 active:scale-95"
                           >
                             <CheckCircle2 size={24} /> ชำระเงินเรียบร้อย
@@ -1355,41 +1384,83 @@ export default function AdminApp() {
               // Wrap calculations in useMemo style logic (using a self-executing function but we should consider useMemo if it becomes a problem)
               // For now, let's keep it clean
               const salesData = (() => {
-                const filteredSales = (orders || []).filter(o => {
-                  const s = (o.status || '').trim();
-                  // ✅ รองรับสถานะที่เกี่ยวข้องกับบิลที่จบแล้วทั้งหมด
-                  const isFinished = ['เสร็จสิ้น', 'ชำระเงินแล้ว', 'ชำระเงิน', 'เสร็จแล้ว'].includes(s);
-                  if (!isFinished) return false;
+                // ✅ Helper: แปลง Date เป็น YYYY-MM-DD ตามเวลาไทย (Asia/Bangkok) 100%
+                const toThaiDateStr = (date: Date) => {
+                  return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' });
+                };
+                const toThaiMonthStr = (date: Date) => {
+                  return toThaiDateStr(date).substring(0, 7); // format: YYYY-MM
+                };
 
-                  // ✅ ใช้เวลาที่ชำระเงิน (updated_at) เป็นหลัก ถ้าไม่มีค่อยใช้เวลาสั่ง (created_at)
-                  const timestamp = o.updated_at || o.created_at;
-                  if (!timestamp) return false;
+                const filteredSales = (() => {
+                  // ✅ Safety: ถ้า selectedSalesDate ยังว่าง ให้ใช้วันนี้ตามเวลาไทย
+                  const effectiveDate = selectedSalesDate || getThaiToday();
+                  const effectiveMonth = selectedSalesMonth || getThaiMonth();
 
-                  const d = new Date(timestamp);
-                  if (isNaN(d.getTime())) return false;
+                  // 🔍 Debug: แสดงค่าที่ใช้กรอง
+                  console.log('[Sales Debug] effectiveDate:', effectiveDate, '| effectiveMonth:', effectiveMonth, '| mode:', salesViewMode);
+                  console.log('[Sales Debug] Total orders in state:', (orders || []).length);
 
-                  // 🎯 สร้าง Key สำหรับเปรียบเทียบ โดยใช้ Local Time (YYYY-MM-DD)
-                  // ทำแบบ Manual เพื่อความชัวร์ 100% ในทุก Browser
-                  const year = d.getFullYear();
-                  const month = String(d.getMonth() + 1).padStart(2, '0');
-                  const day = String(d.getDate()).padStart(2, '0');
-                  const orderDateStr = `${year}-${month}-${day}`;
-                  const orderMonthStr = `${year}-${month}`;
+                  // Debug: แสดง status ทั้งหมดที่มีในระบบ (ใช้ JSON.stringify ให้อ่านง่าย)
+                  const statusCounts: Record<string, number> = {};
+                  (orders || []).forEach(o => {
+                    const s = (o.status || '(empty)').trim();
+                    statusCounts[s] = (statusCounts[s] || 0) + 1;
+                  });
+                  console.log('[Sales Debug] All statuses:', JSON.stringify(statusCounts));
 
-                  if (salesViewMode === 'daily') {
-                    return orderDateStr === selectedSalesDate;
-                  } else {
-                    return orderMonthStr === selectedSalesMonth;
-                  }
-                });
+                  // Debug: แสดงตัวอย่างออเดอร์ที่เป็น finished พร้อมวันที่
+                  const finishedCheck = ['เสร็จสิ้น', 'ชำระเงินแล้ว', 'ชำระเงิน', 'เสร็จแล้ว', 'paid', 'completed'];
+                  const sampleFinished = (orders || [])
+                    .filter(o => finishedCheck.includes((o.status || '').trim()) || finishedCheck.includes((o.status || '').trim().toLowerCase()))
+                    .slice(0, 3)
+                    .map(o => ({
+                      id: o.id,
+                      status: o.status,
+                      updated_at: o.updated_at,
+                      created_at: o.created_at,
+                      thaiDate: o.updated_at ? toThaiDateStr(new Date(o.updated_at)) : toThaiDateStr(new Date(o.created_at)),
+                      match: (o.updated_at ? toThaiDateStr(new Date(o.updated_at)) : toThaiDateStr(new Date(o.created_at))) === effectiveDate
+                    }));
+                  console.log('[Sales Debug] Sample finished orders:', JSON.stringify(sampleFinished, null, 2));
+                  console.log('[Sales Debug] Total finished orders:', (orders || []).filter(o => finishedCheck.includes((o.status || '').trim())).length);
+
+                  return (orders || []).filter(o => {
+                    const s = (o.status || '').trim();
+                    const sLower = s.toLowerCase();
+                    // ✅ รองรับสถานะที่เกี่ยวข้องกับบิลที่จบแล้วทั้งหมด (ทั้งภาษาไทยและอังกฤษ)
+                    const finishedStatuses = ['เสร็จสิ้น', 'ชำระเงินแล้ว', 'ชำระเงิน', 'เสร็จแล้ว', 'paid', 'completed'];
+                    const isFinished = finishedStatuses.includes(s) || finishedStatuses.includes(sLower);
+                    if (!isFinished) return false;
+
+                    // ✅ เช็คทั้ง updated_at และ created_at — ถ้าตรงวันโดยอันใดอันหนึ่ง ก็โชว์
+                    const timestamps = [o.updated_at, o.created_at].filter(Boolean);
+                    if (timestamps.length === 0) return false;
+
+                    for (const timestamp of timestamps) {
+                      const d = new Date(timestamp);
+                      if (isNaN(d.getTime())) continue;
+
+                      const orderDateStr = toThaiDateStr(d);
+                      const orderMonthStr = toThaiMonthStr(d);
+
+                      if (salesViewMode === 'daily') {
+                        if (orderDateStr === effectiveDate) return true;
+                      } else {
+                        if (orderMonthStr === effectiveMonth) return true;
+                      }
+                    }
+                    return false;
+                  });
+                })();
 
                 const groupedSalesForMetrics = filteredSales
                   .reduce((acc: any[], order) => {
-                    const orderTime = new Date(order.updated_at || order.created_at).getTime();
-                    // ✅ สำหรับตัวเลขสรุป (Metrics): นับเป็น "จำนวนบิล" (โต๊ะเดียวกันจ่ายไล่เลี่ยกัน = 1 บิล)
+                    // ✅ จัดกลุ่มบิลตาม "รอบเช็คบิล": โต๊ะเดียวกัน + updated_at ตรงกัน (ภายใน 5 วินาที) = บิลเดียว
+                    const orderUpdatedTime = new Date(order.updated_at || order.created_at).getTime();
                     const existing = acc.find(item =>
                       String(item.table_no).trim() === String(order.table_no).trim() &&
-                      Math.abs(new Date(item.updated_at || item.created_at).getTime() - orderTime) < 60 * 1000
+                      Math.abs(new Date(item.updated_at || item.created_at).getTime() - orderUpdatedTime) < 5 * 1000
                     );
                     if (existing) {
                       existing.total_price = (Number(existing.total_price) || 0) + (Number(order.total_price) || 0);
@@ -1446,18 +1517,28 @@ export default function AdminApp() {
                       </div>
                       <div className="p-10 flex-1 flex flex-col justify-center">
                         {(() => {
+                          // ✅ Helper: แปลง Date เป็น YYYY-MM-DD ตามเวลาไทย
+                          const toThaiDate = (date: Date) => date.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' });
+                          const finishedStatuses = ['เสร็จสิ้น', 'ชำระเงินแล้ว', 'ชำระเงิน', 'เสร็จแล้ว', 'paid', 'completed'];
+
+                          // ✅ ใช้วันที่ปัจจุบันตามเวลาไทย (UTC+7) เป็นจุดเริ่มต้น
+                          // ป้องกันปัญหาช่วง 00:00-06:59 ไทย ที่ new Date() จะได้วันก่อนหน้าใน UTC
+                          const todayThaiStr = getThaiToday(); // YYYY-MM-DD ตามเวลาไทย
+                          const todayAnchor = new Date(todayThaiStr + 'T00:00:00+07:00');
+
                           const last7Days = [...Array(7)].map((_, i) => {
-                            const d = new Date();
+                            const d = new Date(todayAnchor);
                             d.setDate(d.getDate() - (6 - i));
-                            return d.toISOString().split('T')[0];
+                            return toThaiDate(d);
                           });
 
                           const dailyData = last7Days.map(dateStr => {
                             const dayRevenue = orders.filter(o => {
-                              if (o.status !== 'เสร็จสิ้น') return false;
-                              // ✅ ใช้เวลาที่ชำระเงิน (updated_at) เพื่อให้ตรงกับหน้าสรุปยอดขาย
+                              const s = (o.status || '').trim();
+                              if (!finishedStatuses.includes(s) && !finishedStatuses.includes(s.toLowerCase())) return false;
+                              // ✅ ใช้เวลาที่ชำระเงิน (updated_at) และเปรียบเทียบด้วยเวลาไทย
                               const d = new Date(o.updated_at || o.created_at || Date.now());
-                              return d.toISOString().split('T')[0] === dateStr;
+                              return toThaiDate(d) === dateStr;
                             }).reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
                             return dayRevenue;
                           });
@@ -1607,11 +1688,15 @@ export default function AdminApp() {
                                 const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                                 const orderTime = d.getTime();
 
-                                // 🎯 DIFFERENCE: รายวัน=รวมแยกโต๊ะ/เซสชั่น | รายเดือน=รวมตามวัน ("รวมไปเลย")
+                                // 🎯 DIFFERENCE: รายวัน=แยกตามรอบเช็คบิล | รายเดือน=รวมตามวัน
                                 const existing = acc.find(item => {
                                   if (salesViewMode === 'daily') {
+                                    // ✅ แยกบิลตาม "รอบเช็คบิล": โต๊ะเดียวกัน + updated_at ตรงกัน (ภายใน 5 วินาที) = บิลเดียว
+                                    // ตอนกด "ชำระเงินเรียบร้อย" ออเดอร์ทุกรายการในโต๊ะจะได้ updated_at เดียวกัน
+                                    const itemUpdatedTime = new Date(item.updated_at || item.created_at).getTime();
+                                    const orderUpdatedTime = new Date(order.updated_at || order.created_at).getTime();
                                     return String(item.table_no).trim() === String(order.table_no).trim() &&
-                                      Math.abs(new Date(item.updated_at || item.created_at).getTime() - orderTime) < 60 * 1000;
+                                      Math.abs(itemUpdatedTime - orderUpdatedTime) < 5 * 1000;
                                   } else {
                                     // โหมดรายเดือน: รวมยอดตาม "วัน" (ignore table_no)
                                     const id = new Date(item.updated_at || item.created_at || Date.now());
@@ -2042,7 +2127,7 @@ export default function AdminApp() {
         ].map(tab => (
           <button
             key={tab.id}
-            onClick={() => { setActiveTab(tab.id as any); setIsTableManageMode(false); }}
+            onClick={() => { setActiveTab(tab.id as any); setIsTableManageMode(false); if (tab.id === 'sales') fetchOrders(true); }}
             className={`flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all duration-500 relative group ${activeTab === tab.id ? 'bg-[#7C9070] text-white shadow-xl scale-110' : 'text-[#636E72] hover:text-[#7C9070]'}`}
           >
             {tab.icon}
