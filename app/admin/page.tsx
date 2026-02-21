@@ -916,15 +916,19 @@ export default function AdminApp() {
                       return String(o.table_no).trim() === tableNo && t > twelveHoursAgo;
                     });
 
-                    // ✅ ตามความต้องการเจ้าของร้าน: ถ้าเรียกเช็คบิลแล้ว ให้หน้าแผนผังขึ้นเป็น "ว่าง" ทันที
-                    // เพื่อให้ดูออกว่ามีกี่โต๊ะที่ "กำลังนั่งกินอยู่จริงๆ" โดยไม่รวมพวกที่รอจ่ายเงินแล้วจะลุก
+                    // ✅ ตรวจสอบสถานะโต๊ะ: แยก 3 สถานะตาม legend — ว่าง / มีลูกค้า / รอเช็คบิล
+                    const isBilling = activeOrders.some(o => o.status === 'เรียกเช็คบิล');
                     const isOccupied = activeOrders.some(o => !['เสร็จสิ้น', 'เรียกเช็คบิล', 'ยกเลิก', 'ออร์เดอร์ยกเลิก'].includes(o.status));
 
                     let statusClass = 'bg-white border-slate-100 text-slate-900 shadow-sm';
                     let labelClass = 'text-slate-400';
                     let statusText = 'โต๊ะว่าง';
 
-                    if (isOccupied) {
+                    if (isBilling) {
+                      statusClass = 'bg-amber-400 border-amber-400 text-white shadow-xl shadow-amber-400/20';
+                      labelClass = 'text-amber-50';
+                      statusText = 'รอเช็คบิล';
+                    } else if (isOccupied) {
                       statusClass = 'bg-[#7C9070] border-[#7C9070] text-white shadow-xl shadow-[#7C9070]/20';
                       labelClass = 'text-[#F0F4EF]';
                       statusText = 'มีลูกค้า';
@@ -943,9 +947,9 @@ export default function AdminApp() {
                             <Users size={16} /> {table.capacity} ที่นั่ง
                           </p>
                         </div>
-                        {isOccupied && (
+                        {(isOccupied || isBilling) && (
                           <div className="mt-2 bg-white/30 backdrop-blur-md px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border border-white/20 scale-90 group-hover:scale-100 transition-transform">
-                            กำลังทาน
+                            {isBilling ? 'รอชำระเงิน' : 'กำลังทาน'}
                           </div>
                         )}
                       </button>
