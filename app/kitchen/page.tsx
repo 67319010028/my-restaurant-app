@@ -748,8 +748,21 @@ export default function KitchenPage() {
                                     e.stopPropagation();
                                     const newItems = [...order.items];
                                     newItems[idx] = { ...item, status: 'cooking' };
-                                    setOrders(prev => prev.map(o => o.id === order.id ? { ...o, items: newItems, status: o.status === 'กำลังเตรียม' ? 'กำลังทำ' : o.status } : o));
-                                    supabase.from('orders').update({ items: newItems }).eq('id', order.id);
+                                    const newOrderStatus = order.status === 'กำลังเตรียม' ? 'กำลังทำ' : order.status;
+                                    setOrders(prev => prev.map(o => o.id === order.id ? { ...o, items: newItems, status: newOrderStatus } : o));
+
+                                    // ✅ Broadcast ไปหน้าลูกค้าด้วย
+                                    const bc = new BroadcastChannel('restaurant_demo_channel');
+                                    bc.postMessage({
+                                      type: 'ORDER_UPDATE',
+                                      id: order.id,
+                                      items: newItems,
+                                      status: newOrderStatus,
+                                      table_no: order.table_no
+                                    });
+
+                                    // ✅ อัปเดตทั้ง items และ status ไปที่ Supabase
+                                    supabase.from('orders').update({ items: newItems, status: newOrderStatus }).eq('id', order.id);
                                   }}
                                   className="flex-1 bg-indigo-50 text-indigo-600 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center justify-center gap-2 shadow-sm"
                                 >

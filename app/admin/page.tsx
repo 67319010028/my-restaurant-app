@@ -916,9 +916,14 @@ export default function AdminApp() {
                       return String(o.table_no).trim() === tableNo && t > twelveHoursAgo;
                     });
 
-                    // ✅ ตรวจสอบสถานะโต๊ะ: แยก 3 สถานะตาม legend — ว่าง / มีลูกค้า / รอเช็คบิล
-                    const isBilling = activeOrders.some(o => o.status === 'เรียกเช็คบิล');
-                    const isOccupied = activeOrders.some(o => !['เสร็จสิ้น', 'เรียกเช็คบิล', 'ยกเลิก', 'ออร์เดอร์ยกเลิก'].includes(o.status));
+                    // ✅ ตรวจสอบสถานะโต๊ะ: ใช้ทั้ง orders และ table.status จาก DB
+                    const isBillingFromOrders = activeOrders.some(o => o.status === 'เรียกเช็คบิล');
+                    const isOccupiedFromOrders = activeOrders.some(o => !['เสร็จสิ้น', 'เรียกเช็คบิล', 'ยกเลิก', 'ออร์เดอร์ยกเลิก'].includes(o.status));
+
+                    // ✅ ดูสถานะจาก table.status ใน DB ด้วย (source of truth)
+                    const dbStatus = (table.status || '').toLowerCase();
+                    const isBilling = isBillingFromOrders || dbStatus === 'billing';
+                    const isOccupied = isOccupiedFromOrders || dbStatus === 'occupied';
 
                     let statusClass = 'bg-white border-slate-100 text-slate-900 shadow-sm';
                     let labelClass = 'text-slate-400';
