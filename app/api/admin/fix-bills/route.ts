@@ -20,7 +20,7 @@ export async function GET() {
         if (!allOrders || allOrders.length === 0) return NextResponse.json({ message: 'ไม่มีออเดอร์ค้าง' });
 
         // 2. จัดกลุ่มตามโต๊ะ
-        const byTable = {};
+        const byTable: Record<string, any[]> = {};
         allOrders.forEach(o => {
             const tNo = String(o.table_no).trim();
             if (!byTable[tNo]) byTable[tNo] = [];
@@ -28,9 +28,9 @@ export async function GET() {
         });
 
         // 3. แยกเซสชั่นภายในแต่ละโต๊ะ
-        const sessions = [];
+        const sessions: any[] = [];
         for (const [tableNo, tableOrders] of Object.entries(byTable)) {
-            tableOrders.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+            (tableOrders as any[]).sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
             let currentSession = [tableOrders[0]];
             for (let i = 1; i < tableOrders.length; i++) {
@@ -48,12 +48,12 @@ export async function GET() {
         }
 
         // 4. อัปเดต updated_at ให้แต่ละเซสชั่นมีเวลาต่างกัน
-        const results = [];
+        const results: any[] = [];
         for (const session of sessions) {
             const lastCreatedAt = session.orders[session.orders.length - 1].created_at;
             const checkoutTime = new Date(new Date(lastCreatedAt).getTime() + 1000).toISOString();
-            const ids = session.orders.map(o => o.id);
-            const total = session.orders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
+            const ids = session.orders.map((o: any) => o.id);
+            const total = session.orders.reduce((sum: number, o: any) => sum + (Number(o.total_price) || 0), 0);
 
             const { error: updateErr } = await supabase
                 .from('orders')
