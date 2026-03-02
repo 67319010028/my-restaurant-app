@@ -114,6 +114,15 @@ function RestaurantAppContent() {
           setIsCheckedIn(false);
           setView('menu');
         } else {
+          // ✅ อัปเดต status และ items ใน local state ทันที (ไม่ต้องรอ fetch จาก DB)
+          const broadcastItems = event.data.items;
+          setOrders(prev => prev.map(o => {
+            if (o.id === id) {
+              return { ...o, status: status || o.status, ...(broadcastItems ? { items: broadcastItems } : {}) };
+            }
+            return o;
+          }));
+          // fetch เพิ่มเพื่อ sync กับ DB ด้วย
           fetchOrders();
         }
       }
